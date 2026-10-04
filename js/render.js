@@ -5,7 +5,7 @@
   const TAU = Math.PI * 2;
   const OUT = '#1d1d22';
   const METAL = '#eef2f6', METAL_D = '#b4c0cb', WOOD = '#a0612f', WOOD_D = '#6e3d1c', GOLD = '#f6c431', GREY = '#8d969f';
-  const FONT = '"Lilita One", "Arial Black", system-ui, sans-serif';
+  const FONT = "Anton, \"Lilita One\", Impact, sans-serif";
 
   function path(ctx, pts) {
     ctx.beginPath();

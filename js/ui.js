@@ -283,7 +283,7 @@
           f.appendChild(t);
           body.appendChild(f);
         }
-        const credits = el('div', 'f-s', 'Font: Lilita One (SIL Open Font License). Battles won: ' + BB.save.data.stats.wins + ' / ' + BB.save.data.stats.battles);
+        const credits = el('div', 'f-s', 'Fonts: Anton, Pixelify Sans, Lilita One (SIL Open Font License). Battles won: ' + BB.save.data.stats.wins + ' / ' + BB.save.data.stats.battles);
         credits.style.textAlign = 'center';
         body.appendChild(credits);
       }, { onClose: () => app.onSettingsClosed() });

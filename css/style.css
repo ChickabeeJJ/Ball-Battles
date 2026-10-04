@@ -272,3 +272,51 @@ input[type=range] { width: 160px; accent-color: var(--green); }
   .slot img { width: 30px; height: 30px; }
   .slot .sl-s { display: none; }
 }
+
+/* ================================================================ arcade theme
+   Condensed outlined display font (Anton) + pixel UI font (Pixelify Sans),
+   cream play area and dark arcade panels. */
+@font-face { font-family: 'Anton'; src: url('../fonts/anton.woff2') format('woff2'); font-display: block; }
+@font-face { font-family: 'Pixelify Sans'; src: url('../fonts/pixelify.woff2') format('woff2'); font-weight: 600; font-display: block; }
+:root {
+  --font: 'Pixelify Sans', 'Lilita One', monospace;
+  --display: 'Anton', Impact, 'Arial Narrow', sans-serif;
+  --panel: #2f2f33; --panel2: #3c3c42; --panel-ink: #ffffff;
+  --radius: 4px; --shadow: 0 4px 0 #111; --shadow-sm: 0 3px 0 #111;
+}
+html, body { font-weight: 600; letter-spacing: 0.01em; }
+.brand, .matchup, .big-btn, .sh-title, .d-n, .r-t, .m-n, .banner, .mp-n, .stat-row, .sl-n, .opt-v {
+  font-family: var(--display); font-weight: 400; letter-spacing: 0.02em;
+}
+.brand { font-size: 26px; color: var(--green); text-shadow: 2px 2px 0 #111, -2px 2px 0 #111, 2px -2px 0 #111, -2px -2px 0 #111, 0 3px 0 #111; }
+.matchup { font-size: 28px; }
+.matchup .vs { font-family: var(--display); color: var(--ink); }
+.stat-row { font-size: 16px; }
+.big-btn { font-size: 40px; background: transparent; border: 0; box-shadow: none; color: var(--ink); padding: 4px; text-shadow: 0 3px 0 rgba(0,0,0,.15); }
+body.dark .big-btn { color: #fff; }
+.big-btn:active { transform: scale(.96); box-shadow: none; }
+.big-btn::after { content: '(press Space to start)'; display: block; font-family: var(--font); font-size: 12px; opacity: .6; letter-spacing: 0; }
+.coins, .icon-btn, .slot, .opt, .tab, .tile, .btn, .x-btn, .field, .detail, .map-tile, .mode-btn, .stepper button, .stepper input, .joystick .knob, .toggle, .toggle::after {
+  border-radius: var(--radius) !important;
+}
+.slot, .opt, .tile, .map-tile, .detail, .field, .btn, .tab, .icon-btn, .coins { background: var(--panel); color: var(--panel-ink); border-color: #111; }
+.slot .sl-s, .opt-k, .f-s, .d-d, .mp-d { color: #b9b4ac; }
+.opt.on { background: var(--green); }
+.tab.on { background: var(--accent); color: #111; }
+.sheet { background: #252528; color: #fff; border-color: #111; border-radius: 6px; box-shadow: 0 6px 0 #111; }
+.sh-head, .sh-foot { background: var(--panel); border-color: #111; }
+.sh-title { font-size: 30px; }
+.section-t { color: #b9b4ac; }
+.stepper button, .stepper input { background: var(--panel2); color: #fff; border-color: #111; }
+.toggle { background: var(--panel2); }
+.btn.primary { background: var(--accent); color: #111; }
+.btn.green { background: var(--green); }
+.btn.blue { background: var(--blue); }
+.btn.red, .x-btn { background: var(--red); }
+.x-btn.ok-btn { background: var(--green); }
+.tile .price { background: #111; color: #ffd23f; }
+.result .r-t { font-size: 48px; }
+.result .r-sub, .result .r-stats { color: #b9b4ac; }
+.joystick { background: #9c9a98; border-color: #6d6b69; }
+.joystick .knob { background: #2f2f33; border-color: #111; border-radius: 50% !important; }
+.toast { background: #2f2f33; color: #fff; border: 3px solid #111; border-radius: 4px; }

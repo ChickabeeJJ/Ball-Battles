@@ -24,7 +24,7 @@
       BB.save.load();
 
       try {
-        await Promise.race([document.fonts.load('20px "Lilita One"'), new Promise((r) => setTimeout(r, 2500))]);
+        await Promise.race([Promise.all([document.fonts.load('20px Anton'), document.fonts.load('20px "Pixelify Sans"')]), new Promise((r) => setTimeout(r, 2500))]);
       } catch (e) { /* fall back to system font */ }
 
       App.renderer = new BB.Renderer($('arena'));

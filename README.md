@@ -87,4 +87,4 @@ node tools/seeds.js       # finds seeds whose battles end with a K.O. inside a c
 
 ## Credits
 
-Font: Lilita One by Juan Montoreano, SIL Open Font License (`fonts/OFL.txt`). All art and sound are generated in code.
+Fonts: Anton, Pixelify Sans and Lilita One, all SIL Open Font License (`fonts/`). All art and sound are generated in code.
