@@ -32,7 +32,7 @@ let log = await page.evaluate(() => __log.slice());
 check('init -> loadingStart -> loadingStop', log.join(',').startsWith('init,loadingStart') && log.includes('loadingStop'));
 check('no gameplayStart on menu', !log.includes('gameplayStart'));
 
-await page.click('#btnStart');
+await page.click('#btnStart'); await page.click('text=Just watch');
 await page.waitForTimeout(300);
 log = await page.evaluate(() => __log.slice());
 check('gameplayStart on battle start', log[log.length - 1] === 'gameplayStart');
@@ -75,7 +75,7 @@ await page.click('text=Continue');
 await page.waitForTimeout(300);
 log = await page.evaluate(() => __log.slice());
 check('no midgame within 3 minutes of start', !log.includes('requestAd:midgame'));
-await page.click('#btnStart');
+await page.click('#btnStart'); await page.click('text=Just watch');
 await page.evaluate(() => { BB.sdk.lastMidgame = Date.now() - 200000; BB.app.sim.balls.filter((b) => b.team === 1).forEach((b) => (b.hp = 0.5)); });
 await page.waitForSelector('.result', { timeout: 30000 });
 await page.click('text=Continue');

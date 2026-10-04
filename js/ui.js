@@ -289,6 +289,30 @@
       }, { onClose: () => app.onSettingsClosed() });
     },
 
+    // ------------------------------------------------------------- prediction
+    predict(mode, setup, onPick) {
+      const streak = BB.save.data.stats.streak || 0;
+      UI.open((sheet) => {
+        const body = UI.head(sheet, 'Who Will Win?', { onX: () => { UI.onClose = null; UI.close(); onPick(null); } });
+        body.appendChild(el('div', 'f-s', 'Guess right for bonus coins.' + (streak ? ' Current streak: x' + streak + '!' : ' Build a streak for bigger rewards!')));
+        const row = el('div', 'pred-row');
+        mode.teams.forEach((members, team) => {
+          const tm = BB.TEAMS[team];
+          const b = el('button', 'pred-btn');
+          b.style.setProperty('--tc', tm.fill);
+          const icons = members.map((i) => `<img src="${BB.icon(setup.slots[i].id)}" alt="">`).join('');
+          const label = members.length === 1 ? BB.ITEM[setup.slots[members[0]].id].name : tm.name + ' Team';
+          b.innerHTML = `<span class="pred-ic">${icons}</span><span class="pred-n">${esc(label)}</span>`;
+          b.onclick = () => { BB.audio.play('click'); UI.onClose = null; UI.close(); onPick(team); };
+          row.appendChild(b);
+        });
+        body.appendChild(row);
+        const skip = el('button', 'btn', 'Just watch');
+        skip.onclick = () => { BB.audio.play('click'); UI.onClose = null; UI.close(); onPick(null); };
+        body.appendChild(skip);
+      }, { width: '460px' });
+    },
+
     // ------------------------------------------------------------- pause / results
     pause() {
       const app = BB.app;
@@ -317,6 +341,7 @@
           <div class="r-sub">${esc(res.sub)}</div>
           ${res.icon ? `<img src="${BB.icon(res.icon, 160)}" alt="">` : ''}
           <div class="r-coins" id="rCoins">+${coinHtml(res.coins)}</div>
+          ${res.predict ? `<div class="r-pred ${res.predict.ok ? 'ok' : 'bad'}">${esc(res.predict.text)}</div>` : ''}
           <div class="r-stats">${esc(res.stats)}</div>`;
         body.appendChild(wrap);
         const foot = el('div', 'sh-foot');

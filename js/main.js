@@ -78,9 +78,9 @@
       const ui = land ? BB.clamp(Math.min(vh / 760, vw / 1350), 1, 1.7) : BB.clamp(Math.min(vw / 440, vh / 900), 1, 2);
       document.documentElement.style.setProperty('--ui', ui);
       const top = (land && vh <= 520 ? 44 : 52) * ui;
-      const header = 46 * ui, stats = 32 * ui;
+      const teamMode = App.mode().teams[0].length > 1 || App.mode().teams.length > 2;
+      const header = 46 * ui, stats = (teamMode ? 96 : 58) * ui;
       let S;
-      const teamMode = App.mode().teams[0].length > 1;
       if (land) {
         const pw = BB.clamp(Math.round(vw * 0.32 / ui), 250, 400);
         document.documentElement.style.setProperty('--panelw', pw + 'px');
@@ -167,7 +167,10 @@
       m.style.fontSize = '';
       const max = parseFloat(getComputedStyle(m).fontSize);
       let fs = max;
-      while (m.scrollWidth > m.clientWidth - 6 && fs > 11) { fs -= 1; m.style.fontSize = fs + 'px'; }
+      // Fit against the space actually available (arena width + a little), not the header's own box.
+      const ui = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui')) || 1;
+      const avail = Math.min(window.innerWidth - 16, (App.renderer ? App.renderer.px : 400) + 40) / ui;
+      while (m.scrollWidth > avail && fs > 11) { fs -= 1; m.style.fontSize = fs + 'px'; }
       m.querySelectorAll('img').forEach((i) => { i.style.width = i.style.height = Math.round(fs * 1.1) + 'px'; });
     },
 
@@ -179,7 +182,8 @@
       for (const b of mains) {
         const lines = sim.stats(b);
         const txt = (one ? '' : b.def.name + ': ') + (lines.join(' · ') || '');
-        html += `<span class="st" style="color:${BB.TEAMS[b.team].fill};${b.alive ? '' : 'opacity:.35'}">${txt}</span>`;
+        const pct = Math.max(0, Math.min(100, (b.hp / b.maxHp) * 100)).toFixed(1);
+        html += `<span class="st" style="color:${BB.TEAMS[b.team].fill};${b.alive ? '' : 'opacity:.35'}"><span class="hpbar"><i style="width:${pct}%;background:${BB.TEAMS[b.team].fill}"></i><b>${Math.ceil(b.hp)}</b></span>${txt}</span>`;
       }
       if (force || html !== App._lastStats) {
         App._lastStats = html;
@@ -211,7 +215,15 @@
     },
 
     // ------------------------------------------------------------- battle
-    startBattle() {
+    // Engagement hook: guess the winner for bonus coins and a streak.
+    predictThenStart() {
+      App.prediction = null;
+      BB.ui.predict(App.mode(), BB.save.data.setup, (team) => { App.prediction = team; App.startBattle(true); });
+    },
+
+    startBattle(keepPrediction) {
+      if (!keepPrediction) App.prediction = null;
+      App.slowmo = 0; App.shake = 0;
       BB.audio.unlock();
       const setup = BB.save.data.setup;
       const mode = App.mode();
@@ -284,13 +296,28 @@
       App.trials = {};
       BB.save.write();
       App.refreshCoins();
+      let predict = null;
+      if (App.prediction != null) {
+        save.stats.streak = save.stats.streak || 0;
+        if (App.prediction === w) {
+          save.stats.streak++;
+          const bonus = 30 + Math.min(save.stats.streak - 1, 5) * 10;
+          save.coins += bonus; coins += bonus;
+          predict = { ok: true, text: 'Prediction correct! +' + bonus + (save.stats.streak > 1 ? ' · Streak x' + save.stats.streak : '') };
+        } else {
+          save.stats.streak = 0;
+          predict = { ok: false, text: 'Prediction missed · streak reset' };
+        }
+        save.stats.bestStreak = Math.max(save.stats.bestStreak || 0, save.stats.streak);
+        BB.save.write(); App.refreshCoins();
+      }
       const stats = 'Battle time ' + Math.round(sim.t) + 's · Biggest hit ' + BB.fmt(App.maxHit);
-      setTimeout(() => BB.ui.results({ winner: w, title, sub, icon, coins, stats }), 300);
+      setTimeout(() => BB.ui.results({ winner: w, title, sub, icon, coins, stats, predict }), 300);
     },
 
     async afterResults(rematch) {
       await BB.sdk.maybeMidgame();
-      if (rematch) { App.refreshMenu(); App.startBattle(); }
+      if (rematch) { App.refreshMenu(); App.predictThenStart(); }
       else App.toMenu();
     },
 
@@ -298,6 +325,7 @@
       for (const e of sim.events) {
         switch (e.type) {
           case 'hit':
+            App.shake = Math.min(14, (App.shake || 0) + Math.min(10, 1.5 + e.amt * 0.5));
             BB.audio.play('hit', e);
             if (e.amt > App.maxHit) App.maxHit = e.amt;
             if (BB.save.data.setup.control && e.team === 0) App.vibrate(25);
@@ -313,7 +341,7 @@
           case 'break': BB.audio.play('break'); break;
           case 'pass': BB.audio.play('pass'); break;
           case 'overtime': BB.audio.play('overtime'); BB.ui.banner('OVERTIME x' + e.mul, 1000); break;
-          case 'ko': BB.ui.banner(e.winner < 0 ? 'DRAW!' : 'K.O.!', 1000); break;
+          case 'ko': App.slowmo = 1.1; App.shake = 14; BB.ui.banner(e.winner < 0 ? 'DRAW!' : 'K.O.!', 1000); break;
         }
       }
       sim.events.length = 0;
@@ -334,6 +362,7 @@
           App.sim.input = App.readInput();
           App.acc += dt;
           let n = 0;
+          if (App.slowmo > 0) { App.slowmo -= dt; App.acc -= dt * 0.65; } // slow-motion knockout
           while (App.acc >= STEP - 1e-9 && n < 12) { App.sim.step(STEP); App.acc -= STEP; n++; }
           if (n >= 12) App.acc = 0;
           App.handleEvents(App.sim);
@@ -352,7 +381,8 @@
 
     draw() {
       const s = App.state === 'battle' ? App.sim : App.preview;
-      if (s && App.renderer) App.renderer.draw(s);
+      if (App.shake > 0) App.shake = Math.max(0, App.shake - 0.8);
+      if (s && App.renderer) App.renderer.draw(s, { shake: App.state === 'battle' && !App.paused ? App.shake : 0 });
     },
 
     readInput() {
@@ -375,7 +405,7 @@
     // ------------------------------------------------------------- binding
     bindUI() {
       const click = (id, fn) => $(id).addEventListener('click', () => { BB.audio.unlock(); BB.audio.play('click'); fn(); });
-      click('btnStart', () => App.startBattle());
+      click('btnStart', () => App.predictThenStart());
       click('btnSettings', () => { if (App.state === 'battle' && !App.paused) { App.pausedSettings = true; App.paused = true; BB.sdk.gameplayStop(); } BB.ui.settings(); });
       click('btnPause', () => App.pause());
       click('optMode', () => BB.ui.pickMode());
@@ -413,7 +443,7 @@
         if ((e.code === 'Escape' || e.code === 'KeyP') && App.state === 'battle' && !App.resultsShown) {
           if (App.paused && !App.pausedSettings) App.resume(); else App.pause();
         }
-        if ((e.code === 'Enter' || e.code === 'Space') && App.state === 'menu' && !BB.ui.isOpen()) { BB.audio.unlock(); App.startBattle(); }
+        if ((e.code === 'Enter' || e.code === 'Space') && App.state === 'menu' && !BB.ui.isOpen()) { BB.audio.unlock(); App.predictThenStart(); }
       });
       window.addEventListener('keyup', (e) => { App.keys[e.code] = false; });
       window.addEventListener('blur', () => { App.keys = {}; });

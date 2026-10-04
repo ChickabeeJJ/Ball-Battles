@@ -338,6 +338,8 @@
 
     draw(sim, opts) {
       opts = opts || {};
+      const shake = opts.shake || 0;
+      opts = opts || {};
       const ctx = this.ctx, Wc = this.c.width;
       const S = sim.size;
       const scale = Wc / (S + 12); // leave room for the wall stroke
@@ -345,7 +347,8 @@
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.fillStyle = this.dark ? '#1c1d22' : '#fbf3e6';
       ctx.fillRect(0, 0, Wc, Wc);
-      ctx.setTransform(scale, 0, 0, scale, Wc / 2, Wc / 2);
+      const sx = shake ? (Math.random() - 0.5) * shake * 2 : 0, sy = shake ? (Math.random() - 0.5) * shake * 2 : 0;
+      ctx.setTransform(scale, 0, 0, scale, Wc / 2 + sx * scale, Wc / 2 + sy * scale);
       const lw = 2.4;
 
       // arena floor + walls (shrinks on the Shrinking map)
@@ -356,6 +359,9 @@
       }
       ctx.fillStyle = this.dark ? '#26272d' : '#ffffff';
       ctx.fillRect(-hw, -hh, sim.W, sim.H);
+      ctx.save(); ctx.beginPath(); ctx.rect(-hw, -hh, sim.W, sim.H); ctx.clip();
+      BB.drawFloor(ctx, sim, this.dark);
+      ctx.restore();
       if (sim.map.id === 'bouncy') {
         ctx.fillStyle = this.dark ? 'rgba(61,139,242,0.12)' : 'rgba(61,139,242,0.08)';
         ctx.fillRect(-hw, hh - 40, sim.W, 40);
@@ -526,6 +532,54 @@
         rect(ctx, -8, 8, p.r * 1.2, tm.fill, 1.5);
       }
       ctx.restore();
+    }
+  };
+
+  // Themed arena floors: each map gets its own look so maps feel distinct.
+  BB.drawFloor = function (ctx, sim, dark) {
+    const hw = sim.W / 2, hh = sim.H / 2, S = sim.size, id = sim.map.id, t = sim.t;
+    const line = (a) => (dark ? 'rgba(255,255,255,' + a + ')' : 'rgba(29,29,34,' + a + ')');
+    const grid = (step, a) => {
+      ctx.beginPath();
+      for (let x = -S / 2; x <= S / 2; x += step) { ctx.moveTo(x, -S / 2); ctx.lineTo(x, S / 2); }
+      for (let y = -S / 2; y <= S / 2; y += step) { ctx.moveTo(-S / 2, y); ctx.lineTo(S / 2, y); }
+      ctx.strokeStyle = line(a); ctx.lineWidth = 1.5; ctx.stroke();
+    };
+    if (id === 'classic') {
+      grid(60, 0.05);
+      ctx.beginPath(); ctx.arc(0, 0, 70, 0, TAU); ctx.moveTo(0, -hh); ctx.lineTo(0, hh);
+      ctx.strokeStyle = line(0.07); ctx.lineWidth = 4; ctx.stroke();
+    } else if (id === 'large') {
+      grid(45, 0.045); grid(180, 0.06);
+    } else if (id === 'bouncy') {
+      const g = ctx.createLinearGradient(0, -hh, 0, hh);
+      g.addColorStop(0, dark ? '#1d2a44' : '#e3f2ff'); g.addColorStop(1, dark ? '#26272d' : '#ffffff');
+      ctx.fillStyle = g; ctx.fillRect(-hw, -hh, sim.W, sim.H);
+      for (let i = 0; i < 4; i++) { const cx = ((i * 190 + t * 12) % (S + 160)) - S / 2 - 80, cy = -hh + 70 + i * 55; ctx.fillStyle = dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.9)'; ctx.beginPath(); ctx.arc(cx, cy, 26, 0, TAU); ctx.arc(cx + 28, cy - 10, 32, 0, TAU); ctx.arc(cx + 60, cy, 24, 0, TAU); ctx.fill(); }
+      ctx.fillStyle = '#3d8bf2'; ctx.fillRect(-hw, hh - 14, sim.W, 14);
+      ctx.fillStyle = '#ffd23f'; for (let x = -hw; x < hw; x += 40) ctx.fillRect(x, hh - 14, 20, 14);
+    } else if (id === 'pillars') {
+      for (let x = -S / 2, i = 0; x < S / 2; x += 50, i++) for (let y = -S / 2, j = 0; y < S / 2; y += 50, j++) if ((i + j) % 2) { ctx.fillStyle = dark ? 'rgba(255,255,255,0.03)' : 'rgba(180,160,130,0.10)'; ctx.fillRect(x, y, 50, 50); }
+    } else if (id === 'saws') {
+      ctx.fillStyle = dark ? '#2a2c32' : '#f2f4f6'; ctx.fillRect(-hw, -hh, sim.W, sim.H);
+      for (const [x, y] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { ctx.beginPath(); ctx.arc(x * (hw - 18), y * (hh - 18), 5, 0, TAU); ctx.fillStyle = line(0.2); ctx.fill(); }
+      ctx.beginPath(); ctx.arc(0, 0, 0.3 * S, 0, TAU); ctx.setLineDash([14, 12]); ctx.strokeStyle = 'rgba(226,59,59,0.35)'; ctx.lineWidth = 4; ctx.stroke(); ctx.setLineDash([]);
+      ctx.save(); ctx.strokeStyle = 'rgba(245,184,46,0.55)'; ctx.lineWidth = 12;
+      for (let k = -S; k < S; k += 34) { ctx.beginPath(); ctx.moveTo(k, -hh); ctx.lineTo(k + 24, -hh + 24); ctx.moveTo(k, hh); ctx.lineTo(k + 24, hh - 24); ctx.stroke(); }
+      ctx.restore();
+    } else if (id === 'shrink') {
+      for (let r = 40; r < S; r += 60) { ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.strokeStyle = line(0.05); ctx.lineWidth = 3; ctx.stroke(); }
+      const k = 1 - sim.W / S;
+      if (k > 0) { ctx.strokeStyle = 'rgba(226,59,59,' + (0.25 + 0.25 * Math.sin(t * 6)) + ')'; ctx.lineWidth = 10; ctx.strokeRect(-hw + 5, -hh + 5, sim.W - 10, sim.H - 10); }
+    } else if (id === 'potato') {
+      for (let x = -S / 2, i = 0; x < S / 2; x += 60, i++) for (let y = -S / 2, j = 0; y < S / 2; y += 60, j++) if ((i + j) % 2) { ctx.fillStyle = dark ? 'rgba(255,140,60,0.06)' : 'rgba(255,140,60,0.10)'; ctx.fillRect(x, y, 60, 60); }
+      if (sim.potato && sim.potato.t < 3) { ctx.fillStyle = 'rgba(255,60,30,' + (0.06 + 0.06 * Math.sin(t * 18)) + ')'; ctx.fillRect(-hw, -hh, sim.W, sim.H); }
+    } else if (id === 'meteor') {
+      ctx.fillStyle = dark ? '#2b2420' : '#f4ece4'; ctx.fillRect(-hw, -hh, sim.W, sim.H);
+      const r = BB.RNG(99);
+      ctx.strokeStyle = dark ? 'rgba(255,200,150,0.08)' : 'rgba(120,80,50,0.14)'; ctx.lineWidth = 2.5;
+      for (let i = 0; i < 9; i++) { let x = (r() - 0.5) * S, y = (r() - 0.5) * S; ctx.beginPath(); ctx.moveTo(x, y); for (let k = 0; k < 4; k++) { x += (r() - 0.5) * 90; y += (r() - 0.5) * 90; ctx.lineTo(x, y); } ctx.stroke(); }
+      for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.ellipse((r() - 0.5) * S, (r() - 0.5) * S, 18 + r() * 20, 10 + r() * 10, 0, 0, TAU); ctx.fillStyle = dark ? 'rgba(0,0,0,0.25)' : 'rgba(120,80,50,0.08)'; ctx.fill(); }
     }
   };
 
