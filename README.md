@@ -71,7 +71,7 @@ Regenerate them with:
 ```bash
 npx http-server -p 8080 . &
 node tools/covers.mjs     # covers + video title frames (tools/art.html)
-node tools/capture.mjs    # records gameplay deterministically and encodes with ffmpeg
+node tools/trailer.mjs    # fast-cut cinematic trailers from real 1x gameplay (impact frames on)
 node tools/seeds.js       # finds seeds whose battles end with a K.O. inside a clip
 ```
 

@@ -194,7 +194,7 @@
       const c = M.cup;
       const names = ['Quarterfinal', 'Semifinal', 'Final', 'Champion'];
       BB.ui.open((sheet) => {
-        const body = BB.ui.head(sheet, '🏆 Ball Cup', { onX: () => { M.cup = null; BB.ui.close(); } });
+        const body = BB.ui.head(sheet, 'Ball Cup', { onX: () => { M.cup = null; BB.ui.close(); } });
         if (msg) body.appendChild(Object.assign(document.createElement('div'), { className: 'cup-msg', innerHTML: msg }));
         const br = document.createElement('div');
         br.className = 'bracket';
@@ -265,7 +265,7 @@
           const m = M.data(); m.trophies++;
           BB.save.data.coins += 400; BB.save.write(); app.refreshCoins();
           BB.audio.play('win'); BB.sdk.happytime();
-          M.showBracket('<b>CHAMPION!</b> +' + coin(400) + ' and a trophy 🏆');
+          M.showBracket('<b>CHAMPION!</b> +' + coin(400) + ' and a trophy!');
           return;
         }
         BB.save.data.coins += prize; BB.save.write(); app.refreshCoins(); BB.audio.play('win');

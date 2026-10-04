@@ -171,7 +171,7 @@
               s.id = sel; BB.save.write();
               UI.pickItem(slotIdx, tab);
             };
-            const trial = el('button', 'btn blue', '<span class="ad-ic">AD</span> Try once');
+            const trial = el('button', 'btn blue', '<span class="ad-ic">' + BB.ICON.video + '</span> Try once');
             trial.onclick = async () => {
               BB.audio.play('click');
               trial.disabled = true;
@@ -186,7 +186,8 @@
                 trial.disabled = false;
               }
             };
-            foot.append(buy, trial);
+            foot.append(buy);
+            if (app.adsAvailable()) foot.append(trial);
           }
           grid.querySelectorAll('.tile').forEach((t) => t.classList.toggle('sel', t.dataset.id === sel));
         };
@@ -312,10 +313,10 @@
         const big = (cls, icon, label, fn) => { const b = el('button', 'btn pz-btn ' + cls, `<span class="pz-ic">${icon}</span>${label}`); b.onclick = () => { BB.audio.play('click'); fn(); }; return b; };
         const grid = el('div', 'pz-grid');
         grid.append(
-          big('green pz-main', '▶', 'Resume', () => app.resume()),
-          big('primary', '↻', 'Restart', () => { UI.onClose = null; UI.close(); app.startBattle(); }),
-          big('', '⚙', 'Settings', () => { UI.onClose = null; UI.settings(); }),
-          big('red', '⌂', 'Quit', () => { UI.onClose = null; UI.close(); app.pvp = null; app.event = null; BB.meta.cup = null; BB.meta.gaunt = null; app.toMenu(); }),
+          big('green pz-main', BB.ICON.play, 'Resume', () => app.resume()),
+          big('primary', BB.ICON.restart, 'Restart', () => { UI.onClose = null; UI.close(); app.startBattle(); }),
+          big('', BB.ICON.gear, 'Settings', () => { UI.onClose = null; UI.settings(); }),
+          big('red', BB.ICON.home, 'Quit', () => { UI.onClose = null; UI.close(); app.pvp = null; app.event = null; BB.meta.cup = null; BB.meta.gaunt = null; app.toMenu(); }),
         );
         body.appendChild(grid);
         // quick toggles
@@ -440,7 +441,7 @@
         body.appendChild(wrap);
         const foot = el('div', 'sh-foot');
         foot.style.flexDirection = 'column';
-        const dbl = el('button', 'btn blue', '<span class="ad-ic">AD</span> Double coins');
+        const dbl = el('button', 'btn blue', '<span class="ad-ic">' + BB.ICON.video + '</span> Double coins');
         dbl.onclick = async () => {
           BB.audio.play('click');
           dbl.disabled = true;
@@ -457,7 +458,7 @@
             dbl.disabled = false;
           }
         };
-        if (res.coins > 0) foot.appendChild(dbl);
+        if (res.coins > 0 && app.adsAvailable()) foot.appendChild(dbl);
         if (res.pvp) {
           const back = el('button', 'btn primary', 'Send a challenge back');
           back.onclick = () => {

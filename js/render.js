@@ -6,6 +6,8 @@
   const OUT = '#1d1d22';
   const METAL = '#eef2f6', METAL_D = '#b4c0cb', WOOD = '#a0612f', WOOD_D = '#6e3d1c', GOLD = '#f6c431', GREY = '#8d969f';
   const FONT = "Anton, \"Lilita One\", Impact, sans-serif";
+  const NUM_FONT = "\"Lilita One\", \"Arial Black\", sans-serif";
+  BB.NUM_FONT = NUM_FONT;
 
   function path(ctx, pts) {
     ctx.beginPath();
@@ -442,7 +444,7 @@
         circle(ctx, 0, 0, 15, '#2d2d33', lw);
         ctx.beginPath(); ctx.moveTo(6, -12); ctx.quadraticCurveTo(12, -22, 18, -20); ctx.strokeStyle = '#d9a066'; ctx.lineWidth = 3; ctx.stroke();
         ctx.fillStyle = sim.t * 8 % 1 < 0.5 ? '#ffd23f' : '#ff6a1f'; ctx.beginPath(); ctx.arc(18, -20, 4.5, 0, TAU); ctx.fill();
-        ctx.font = '15px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ffffff';
+        ctx.font = '15px ' + NUM_FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ffffff';
         ctx.fillText(String(Math.ceil(k)), 0, 1);
         ctx.restore();
       }
@@ -465,7 +467,7 @@
           ctx.strokeStyle = '#7fd3ff'; ctx.lineWidth = 10; ctx.stroke(); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3.5; ctx.stroke();
         } else if (f.k === 'n') {
           ctx.globalAlpha = Math.min(1, a * 2);
-          ctx.font = '22px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.font = '24px ' + NUM_FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           ctx.lineWidth = 5; ctx.strokeStyle = this.dark ? '#1c1d22' : '#ffffff'; ctx.lineJoin = 'round';
           ctx.strokeText(f.text, f.x, f.y);
           ctx.fillStyle = f.c === '#1d1d22' && this.dark ? '#ffffff' : f.c; ctx.fillText(f.text, f.x, f.y);

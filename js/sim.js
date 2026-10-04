@@ -215,7 +215,7 @@
       }
       if (this.settings.dmgNumbers !== false) this.fxNum(target.x, target.y - target.r - 4, (info && info.crit ? 'CRIT ' : '') + BB.fmt(a), info && info.dot ? (info.color || '#ff8a1f') : '#1d1d22');
       this.emit({ type: info && info.dot ? 'dot' : 'hit', amt: a, x, y, team: target.team, crit: info && info.crit });
-      if (!(info && info.dot) && (a >= 4 || (info && info.crit))) this.emit({ type: 'impact', x, y, amt: a, crit: info && info.crit });
+      if (!(info && info.dot)) this.emit({ type: 'impact', x, y, amt: a, crit: info && info.crit });
       if (target.def.onDamaged && !(info && info.dot)) target.def.onDamaged(this, target, a, src, info);
       if (target.hp <= 0.0001) { target.hp = 0; this.kill(target, src); this.emit({ type: 'impact', x: target.x, y: target.y, amt: 99 }); }
       return a;

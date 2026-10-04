@@ -215,7 +215,7 @@
     if (b.main || b.r > 12) {
       const hp = Math.ceil(b.hp);
       const fs = r * (hp >= 1000 ? 0.66 : hp >= 100 ? 0.82 : 1.0);
-      ctx.font = fs + 'px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = fs + 'px ' + BB.NUM_FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.lineJoin = 'round'; ctx.lineWidth = fs * 0.2; ctx.strokeStyle = OUT;
       ctx.strokeText(String(hp), b.x, b.y + fs * 0.05);
       ctx.fillStyle = '#ffffff'; ctx.fillText(String(hp), b.x, b.y + fs * 0.05);
@@ -316,7 +316,58 @@
     }
   };
 
+  // Lighting + ambient life drawn over the arena (under the walls).
+  BB.drawAmbient = function (ctx, sim) {
+    const hw = sim.W / 2, hh = sim.H / 2, S = sim.size, id = sim.map.id, t = sim.t;
+    const r = BB.RNG(77);
+    ctx.save(); ctx.beginPath(); ctx.rect(-hw, -hh, sim.W, sim.H); ctx.clip();
+    const tint = { classic: 'rgba(40,30,20,', large: 'rgba(90,50,10,', bouncy: 'rgba(20,60,140,', pillars: 'rgba(90,70,20,', saws: 'rgba(20,20,30,', shrink: 'rgba(40,0,80,', potato: 'rgba(120,40,0,', meteor: 'rgba(60,0,0,' }[id] || 'rgba(0,0,0,';
+    const vg = ctx.createRadialGradient(0, 0, S * 0.25, 0, 0, S * 0.78);
+    vg.addColorStop(0, tint + '0)'); vg.addColorStop(1, tint + (id === 'classic' ? '0.10)' : '0.32)'));
+    ctx.fillStyle = vg; ctx.fillRect(-S / 2, -S / 2, S, S);
+    if (id === 'large') {
+      // drifting dust motes in shafts of sunlight
+      ctx.fillStyle = 'rgba(255,240,200,0.10)';
+      for (let k = 0; k < 3; k++) { const x = -S / 2 + ((k * 260 + t * 8) % (S + 300)) - 150; ctx.beginPath(); ctx.moveTo(x, -S / 2); ctx.lineTo(x + 120, -S / 2); ctx.lineTo(x + 320, S / 2); ctx.lineTo(x + 200, S / 2); ctx.fill(); }
+      for (let k = 0; k < 30; k++) { ctx.beginPath(); ctx.arc((r() - 0.5) * S + Math.sin(t * 0.7 + k) * 20, ((r() * S + t * 12) % S) - S / 2, 2, 0, TAU); ctx.fillStyle = 'rgba(255,240,200,0.5)'; ctx.fill(); }
+    } else if (id === 'bouncy') {
+      for (let k = 0; k < 4; k++) {
+        const bx = ((k * 230 + t * (40 + k * 9)) % (S + 120)) - S / 2 - 60, by = -hh + 60 + k * 45 + Math.sin(t * 6 + k) * 6;
+        ctx.strokeStyle = 'rgba(30,40,60,0.55)'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+        const f = Math.sin(t * 12 + k) * 5;
+        ctx.beginPath(); ctx.moveTo(bx - 9, by - f); ctx.quadraticCurveTo(bx - 4, by - 5, bx, by); ctx.quadraticCurveTo(bx + 4, by - 5, bx + 9, by - f); ctx.stroke();
+      }
+    } else if (id === 'pillars') {
+      for (const [x, y] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+        const fx = x * (hw - 28), fy = y * (hh - 28), fl = 0.8 + 0.2 * Math.sin(t * 13 + x * 3 + y);
+        const g = ctx.createRadialGradient(fx, fy, 2, fx, fy, 110 * fl); g.addColorStop(0, 'rgba(255,190,80,0.45)'); g.addColorStop(1, 'rgba(255,190,80,0)');
+        ctx.fillStyle = g; ctx.fillRect(fx - 120, fy - 120, 240, 240);
+        ctx.beginPath(); ctx.moveTo(fx - 6, fy + 4); ctx.quadraticCurveTo(fx, fy - 16 * fl, fx + 6, fy + 4); ctx.fillStyle = '#ffb43a'; ctx.fill();
+      }
+    } else if (id === 'saws') {
+      for (const o of sim.obstacles) {
+        if (o.kind !== 'saw') continue;
+        for (let k = 0; k < 5; k++) { const a = r() * TAU + t * 20, d = o.r + r() * 26; ctx.fillStyle = r() < 0.5 ? '#ffd23f' : '#ff8a1f'; ctx.fillRect(o.x + Math.cos(a) * d, o.y + Math.sin(a) * d, 3, 3); }
+      }
+    } else if (id === 'shrink') {
+      const pr = ((t * 120) % (S * 0.8));
+      ctx.beginPath(); ctx.arc(0, 0, pr, 0, TAU); ctx.strokeStyle = 'rgba(255,63,208,' + (0.35 * (1 - pr / (S * 0.8))) + ')'; ctx.lineWidth = 3; ctx.stroke();
+      for (let k = 0; k < 24; k++) { ctx.fillStyle = 'rgba(120,220,255,' + (0.3 + 0.3 * Math.sin(t * 3 + k)) + ')'; ctx.fillRect((r() - 0.5) * S, (r() - 0.5) * S, 2, 2); }
+    } else if (id === 'potato') {
+      for (const [x, y] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) for (let k = 0; k < 3; k++) {
+        const ph = (t * 0.6 + k / 3 + (x + y) * 0.1) % 1;
+        ctx.beginPath(); ctx.arc(x * (hw - 70) + Math.sin(ph * 6 + k) * 8, y * (hh - 70) - ph * 70, 10 + ph * 16, 0, TAU);
+        ctx.fillStyle = 'rgba(255,255,255,' + 0.28 * (1 - ph) + ')'; ctx.fill();
+      }
+    } else if (id === 'meteor') {
+      const fl = 0.08 + 0.05 * Math.sin(t * 2.3);
+      ctx.fillStyle = 'rgba(255,90,20,' + fl + ')'; ctx.fillRect(-S / 2, -S / 2, S, S);
+    }
+    ctx.restore();
+  };
+
   BB.drawWalls = function (ctx, sim, dark) {
+    BB.drawAmbient(ctx, sim);
     const th = THEME[sim.map.id] || THEME.classic;
     const hw = sim.W / 2, hh = sim.H / 2, w = th.wallW, t = sim.t;
     const x = -hw - w / 2, y = -hh - w / 2, W = sim.W + w, H = sim.H + w;
@@ -378,52 +429,101 @@
   // Anime-style impact: the action freezes and the arena becomes a stark two-tone
   // silhouette that punches in toward the hit, flips negative, then flashes red,
   // with radial speed lines throughout. imp.p goes 0 -> 1 over the hold.
-  let tmp = null;
+  let tmp = null, dots = null;
+  const SFX = ['BAM!', 'WHAM!', 'CRACK!', 'POW!', 'SMASH!', 'THWACK!'];
+  function halftone(px) {
+    // cached dot pattern tile for comic-book shading
+    if (dots && dots.px === px) return dots.pat;
+    const c = document.createElement('canvas'), n = Math.max(6, Math.round(px));
+    c.width = c.height = n;
+    const g = c.getContext('2d');
+    g.fillStyle = '#000'; g.beginPath(); g.arc(n / 2, n / 2, n * 0.28, 0, TAU); g.fill();
+    dots = { px, pat: c };
+    return c;
+  }
   BB.impactFrame = function (R, imp, scale, sx, sy) {
     const ctx = R.ctx, c = R.c, Wc = c.width;
     const cx = Wc / 2 + (imp.x + sx) * scale, cy = Wc / 2 + (imp.y + sy) * scale;
-    const p = imp.p;
-    // 1) punch-in zoom around the impact point
+    const p = imp.p, big = !imp.mini;
     if (!tmp) tmp = document.createElement('canvas');
     if (tmp.width !== Wc) { tmp.width = Wc; tmp.height = Wc; }
     const tctx = tmp.getContext('2d');
     tctx.setTransform(1, 0, 0, 1, 0, 0);
     tctx.drawImage(c, 0, 0);
-    const z = 1 + 0.14 * Math.sin(Math.min(1, p * 2.2) * Math.PI * 0.5) + (imp.ko ? 0.06 : 0);
+    // punch-in zoom + dutch tilt toward the hit
+    const ease = Math.sin(Math.min(1, p * 2.4) * Math.PI * 0.5);
+    const z = 1 + (big ? 0.16 : 0.07) * ease + (imp.ko ? 0.08 : 0);
+    const tilt = (imp.seed % 2 ? 1 : -1) * (big ? 0.06 : 0.025) * ease;
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.translate(cx, cy); ctx.scale(z, z); ctx.translate(-cx, -cy);
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, Wc, Wc);
+    ctx.translate(cx, cy); ctx.rotate(tilt); ctx.scale(z, z); ctx.translate(-cx, -cy);
     ctx.drawImage(tmp, 0, 0);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    // 2) two-tone posterize: ink silhouettes on paper, then negative, then red
-    const phase = p < 0.38 ? 0 : p < 0.72 ? 1 : 2;
+    // two-tone ink: paper -> negative -> blood red (mini frames stay on paper)
+    const phase = !big ? 0 : p < 0.36 ? 0 : p < 0.7 ? 1 : 2;
     const img = ctx.getImageData(0, 0, Wc, Wc), d = img.data;
-    const ink = phase === 0 ? [12, 12, 16] : phase === 1 ? [250, 250, 250] : [20, 0, 4];
-    const paper = phase === 0 ? [250, 248, 240] : phase === 1 ? [10, 10, 14] : [226, 30, 40];
-    for (let i = 0; i < d.length; i += 4) {
-      const l = d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11;
-      const k = l < 150 ? ink : paper;
-      d[i] = k[0]; d[i + 1] = k[1]; d[i + 2] = k[2];
+    const ink = phase === 1 ? [248, 246, 238] : phase === 2 ? [18, 0, 6] : [10, 10, 14];
+    const paper = phase === 1 ? [8, 8, 12] : phase === 2 ? [214, 28, 44] : [248, 245, 236];
+    const mid = phase === 2 ? [120, 10, 24] : phase === 1 ? [70, 70, 78] : [170, 168, 160];
+    for (let k = 0; k < d.length; k += 4) {
+      const l = d[k] * 0.3 + d[k + 1] * 0.59 + d[k + 2] * 0.11;
+      const col = l < 105 ? ink : l < 175 ? mid : paper;
+      d[k] = col[0]; d[k + 1] = col[1]; d[k + 2] = col[2];
     }
     ctx.putImageData(img, 0, 0);
-    // 3) radial speed lines converging on the hit, plus a focus burst
+    // halftone shading that thickens toward the frame edges
+    ctx.save();
+    const pat = ctx.createPattern(halftone(Wc / 70), 'repeat');
+    const vg = ctx.createRadialGradient(cx, cy, Wc * 0.15, cx, cy, Wc * 0.85);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,1)');
+    ctx.globalAlpha = phase === 1 ? 0.25 : 0.4;
+    ctx.globalCompositeOperation = phase === 1 ? 'lighter' : 'multiply';
+    ctx.fillStyle = pat; ctx.fillRect(0, 0, Wc, Wc);
+    ctx.globalCompositeOperation = 'destination-over';
+    ctx.restore();
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    // brush-stroke speed lines converging on the hit
     const rng = BB.RNG(imp.seed + phase * 31);
-    ctx.fillStyle = phase === 1 ? '#ffffff' : '#0c0c10';
-    const n = imp.ko ? 46 : 34;
-    for (let i = 0; i < n; i++) {
-      const a = rng() * TAU, w = 0.006 + rng() * 0.022, r0 = Wc * (0.14 + rng() * 0.22) * (1 - p * 0.3);
+    const lineCol = phase === 1 ? '#ffffff' : '#0a0a0e';
+    ctx.fillStyle = lineCol;
+    const n = imp.ko ? 60 : big ? 44 : 26;
+    for (let k = 0; k < n; k++) {
+      const a = rng() * TAU, w = 0.004 + rng() * (big ? 0.03 : 0.018);
+      const r0 = Wc * (0.12 + rng() * 0.24) * (1 - p * 0.25);
       ctx.beginPath();
       ctx.moveTo(cx + Math.cos(a - w) * Wc * 1.6, cy + Math.sin(a - w) * Wc * 1.6);
-      ctx.lineTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0);
+      ctx.quadraticCurveTo(cx + Math.cos(a + w * 0.3) * r0 * 1.6, cy + Math.sin(a + w * 0.3) * r0 * 1.6, cx + Math.cos(a) * r0, cy + Math.sin(a) * r0);
       ctx.lineTo(cx + Math.cos(a + w) * Wc * 1.6, cy + Math.sin(a + w) * Wc * 1.6);
       ctx.fill();
     }
-    ctx.beginPath();
-    const spikes = 14, R0 = Wc * 0.05 * (1 + p), R1 = Wc * 0.13 * (1 + p);
-    for (let i = 0; i < spikes * 2; i++) { const a = (i * Math.PI) / spikes + imp.seed, rr = i % 2 ? R0 : R1 * (0.7 + rng() * 0.5); ctx.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); }
-    ctx.closePath();
-    ctx.fillStyle = phase === 1 ? '#0c0c10' : '#ffffff'; ctx.fill();
-    ctx.lineWidth = Wc * 0.006; ctx.strokeStyle = phase === 1 ? '#ffffff' : '#0c0c10'; ctx.stroke();
+    // jagged impact star with chromatic split
+    const star = (ox, oy, col, sc) => {
+      ctx.beginPath();
+      const sp = 16, R0 = Wc * 0.045 * (1 + p) * sc, R1 = Wc * (big ? 0.15 : 0.09) * (1 + p * 0.8) * sc;
+      const r2 = BB.RNG(imp.seed);
+      for (let k = 0; k < sp * 2; k++) { const a = (k * Math.PI) / sp + imp.seed, rr = k % 2 ? R0 : R1 * (0.6 + r2() * 0.6); ctx.lineTo(cx + ox + Math.cos(a) * rr, cy + oy + Math.sin(a) * rr); }
+      ctx.closePath(); ctx.fillStyle = col; ctx.fill();
+    };
+    const off = Wc * 0.006;
+    if (big) { star(-off, 0, 'rgba(255,40,80,0.85)', 1.04); star(off, 0, 'rgba(40,200,255,0.85)', 1.04); }
+    star(0, 0, phase === 1 ? '#0a0a0e' : '#ffffff', 1);
+    ctx.lineWidth = Wc * 0.006; ctx.strokeStyle = lineCol; ctx.stroke();
+    // comic SFX lettering on big hits
+    if (big) {
+      const word = imp.ko ? 'K.O.!' : SFX[imp.seed % SFX.length];
+      const fs = Wc * (imp.ko ? 0.2 : 0.13) * (0.85 + ease * 0.25);
+      const tx = BB.clamp(cx + (cx < Wc / 2 ? 1 : -1) * Wc * 0.2, fs * 1.4, Wc - fs * 1.4);
+      const ty = BB.clamp(cy - Wc * 0.18, fs, Wc - fs * 0.3);
+      ctx.save(); ctx.translate(tx, ty); ctx.rotate(-0.12 + tilt * 2);
+      ctx.font = fs + 'px Anton, Impact, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+      ctx.lineWidth = fs * 0.22; ctx.strokeStyle = phase === 1 ? '#ffffff' : '#0a0a0e'; ctx.strokeText(word, fs * 0.05, fs * 0.08);
+      ctx.strokeText(word, 0, 0);
+      ctx.fillStyle = phase === 2 ? '#ffffff' : '#ffd23f'; ctx.fillText(word, 0, 0);
+      ctx.restore();
+    }
+    // manga panel border
+    ctx.lineWidth = Wc * 0.02; ctx.strokeStyle = '#000'; ctx.strokeRect(0, 0, Wc, Wc);
     ctx.restore();
   };
 })();

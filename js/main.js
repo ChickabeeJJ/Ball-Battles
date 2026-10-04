@@ -18,8 +18,27 @@
     last: 0,
     capture: /[?&]capture\b/.test(location.search),
 
+    // Cinematic loader: ~2s intro (tap/key skips), then fades to the menu.
+    loader: {
+      t0: performance.now(),
+      set(p, tip) { const f = document.getElementById('ldFill'); if (f) f.style.width = Math.round(p * 100) + '%'; if (tip) { const t = document.getElementById('ldTip'); if (t) t.textContent = tip; } },
+      async done() {
+        const el = document.getElementById('loader');
+        if (!el) return;
+        this.set(1, 'Ready!');
+        const wait = App.capture ? 0 : Math.max(0, 2300 - (performance.now() - this.t0));
+        await new Promise((r) => { const tm = setTimeout(r, wait); const skip = () => { clearTimeout(tm); r(); }; el.addEventListener('pointerdown', skip, { once: true }); window.addEventListener('keydown', skip, { once: true }); });
+        el.classList.add('out');
+        setTimeout(() => el.remove(), 500);
+      },
+    },
+
     async boot() {
+      const ld = document.getElementById('loader');
+      if (ld) ld.classList.add('shake');
+      App.loader.set(0.15, 'Contacting the arena...');
       await BB.sdk.init();
+      App.loader.set(0.4, 'Sharpening blades...');
       BB.sdk.loadingStart();
       BB.save.load();
 
@@ -38,9 +57,12 @@
       BB.sdk.on('adEnd', () => { App.applyAudio(); App.last = performance.now(); });
       BB.sdk.on('settings', () => App.applyAudio());
 
+      App.loader.set(0.9, 'Polishing balls...');
       BB.sdk.loadingStop();
       if (!App.capture) requestAnimationFrame(App.frame);
+      await App.loader.done();
       BB.meta.refreshBadges();
+      document.querySelectorAll('[data-ico]').forEach((e) => { e.innerHTML = BB.ICON[e.dataset.ico]; });
       $('optPvp').classList.toggle('hidden', !App.pvpAvailable());
       $('menuPanel').classList.toggle('has-pvp', App.pvpAvailable());
       // A friend's challenge link takes priority; otherwise first-time players get the tutorial.
@@ -228,6 +250,7 @@
     // Battles are deterministic from (seed, map, loadouts), so a challenge link carries the
     // challenger's ball; the friend picks a counter and both see the exact same fight.
     pvpAvailable() { return BB.sdk.env === 'crazygames'; },
+    adsAvailable() { return BB.sdk.env === 'crazygames'; },
     encodeChallenge(slot, map, name) {
       const ov = slot.ov || {};
       return [slot.id, slot.hp, slot.scale, ov.damage || 0, ov.spin || 0, ov.speed || 0, map, (Math.random() * 2147483647) | 0, (name || 'Friend').replace(/[^\w ]/g, '').slice(0, 14)].join('~');
@@ -370,10 +393,15 @@
           case 'pass': BB.audio.play('pass'); break;
           case 'overtime': BB.audio.play('overtime'); BB.ui.banner('OVERTIME x' + e.mul, 1000); break;
           case 'impact':
-            // cooldown keeps it dramatic instead of strobing; knockouts always get one
-            if (BB.save.data.settings.impact && (e.amt >= 99 || !(App.impactCd > 0)) && !App.impact) {
-              App.impact = { t: 0, dur: e.amt >= 99 ? 0.5 : 0.32, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0, ko: e.amt >= 99 };
-              App.impactCd = 1.4;
+            // With the setting on, every hit gets an impact frame: big hits/crits/K.O.s get the full
+            // sequence, small hits a short ink flash (throttled so rapid hits stay readable).
+            if (BB.save.data.settings.impact) {
+              const big = e.amt >= 4 || e.crit || e.amt >= 99;
+              const ko = e.amt >= 99;
+              if (ko || (big && !(App.impact && !App.impact.mini)) || (!App.impact && !(App.impactCd > 0))) {
+                App.impact = { t: 0, dur: ko ? 0.55 : big ? 0.34 : 0.13, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0, ko, mini: !big };
+                App.impactCd = big ? 0.2 : 0.3;
+              }
             }
             break;
           case 'ko': App.slowmo = 1.1; App.shake = 14; BB.ui.banner(e.winner < 0 ? 'DRAW!' : 'K.O.!', 1000); break;
