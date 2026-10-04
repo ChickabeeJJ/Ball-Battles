@@ -320,3 +320,7 @@ body.dark .big-btn { color: #fff; }
 .joystick { background: #9c9a98; border-color: #6d6b69; }
 .joystick .knob { background: #2f2f33; border-color: #111; border-radius: 50% !important; }
 .toast { background: #2f2f33; color: #fff; border: 3px solid #111; border-radius: 4px; }
+
+/* Control mode removed: pure spectator battles */
+#optControl, #battlePanel { display: none !important; }
+.opts { grid-template-columns: repeat(3, 1fr); }

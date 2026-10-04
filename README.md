@@ -1,6 +1,6 @@
 # Ball Battles
 
-A weapon-ball battle simulator for the web. Pick a weapon or special ball for each side, drop them into the arena and watch them bounce, parry and scale up until one is left standing. You can also steer your ball yourself in Control mode.
+A weapon-ball battle simulator for the web. Pick a weapon or special ball for each side, drop them into the arena and watch them bounce, parry and scale up until one is left standing.
 
 This is plain HTML5 canvas and JavaScript with no build step and no runtime dependencies. It is integrated with the **CrazyGames HTML5 SDK v3**.
 
@@ -79,9 +79,9 @@ node tools/seeds.js       # finds seeds whose battles end with a K.O. inside a c
 
 **Title:** Ball Battles
 
-**Description:** Pick a weapon, drop two balls into the arena and watch them fight! Every weapon gets stronger with each hit. Swords hit harder, daggers spin faster, bows fire more arrows. A ball whose hits follow the Fibonacci sequence can turn a fight around in one slam. Mix 28 weapons and special balls across 1v1, 2v2, 3v3 and Free For All on 8 maps with saws, meteors, gravity and a hot potato bomb. Turn on Control mode to steer your own ball, earn coins and unlock legendary gear.
+**Description:** Pick a weapon, drop two balls into the arena and watch them fight! Every weapon gets stronger with each hit. Swords hit harder, daggers spin faster, bows fire more arrows. A ball whose hits follow the Fibonacci sequence can turn a fight around in one slam. Mix 28 weapons and special balls across 1v1, 2v2, 3v3 and Free For All on 8 maps with saws, meteors, gravity and a hot potato bomb. Earn coins and unlock legendary gear.
 
-**Controls:** Mouse / touch for menus. Control mode: drag the joystick, hold on the arena to steer toward the pointer, or use WASD / arrow keys. P or Esc pauses.
+**Controls:** Mouse / touch for menus. Space or Enter starts a battle. P or Esc pauses.
 
 **Tags:** Physics, Simulation, Ball, Weapon, Battle, Casual, 2 Player, Sandbox
 

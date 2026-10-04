@@ -182,7 +182,11 @@
       let dx = target.x - fx, dy = target.y - fy;
       const d = Math.hypot(dx, dy) || 1;
       dx /= d; dy /= d;
-      target.vx += dx * power; target.vy += dy * power;
+      const m = (BALL_R * target.scale) / target.r; // bigger balls are heavier
+      // Cancel velocity heading into the hit, then add the impulse: a real bounce-off.
+      const vn = target.vx * dx + target.vy * dy;
+      if (vn < 0) { target.vx -= vn * dx; target.vy -= vn * dy; }
+      target.vx += dx * power * m * m; target.vy += dy * power * m * m;
     }
 
     onHit(attacker, target, dealt) {
@@ -317,7 +321,7 @@
 
         const tgt = b.speed * b.speedMul;
         // Gentle homing keeps fights busy without losing the bouncy billiard feel.
-        if (!b.controlled && !this.gravity) {
+        if (false) {
           const e = this.nearestEnemy(b.team, b.x, b.y);
           if (e) {
             const want = Math.atan2(e.y - b.y, e.x - b.x), cur = Math.atan2(b.vy, b.vx);
@@ -344,7 +348,7 @@
         } else {
           const s = Math.hypot(b.vx, b.vy);
           if (s < 1) { const a = this.rng() * TAU; b.vx = Math.cos(a) * tgt; b.vy = Math.sin(a) * tgt; }
-          else { const ns = s + (tgt - s) * Math.min(1, 2.5 * dt); b.vx *= ns / s; b.vy *= ns / s; }
+          else { const ns = s + (tgt - s) * Math.min(1, 1.2 * dt); b.vx *= ns / s; b.vy *= ns / s; }
         }
         const sp = Math.hypot(b.vx, b.vy);
         if (sp > 1400) { b.vx *= 1400 / sp; b.vy *= 1400 / sp; }
@@ -490,15 +494,15 @@
       const [px, py] = geo.segClosest(cap.ax, cap.ay, cap.bx, cap.by, c.x, c.y);
       c.cd[a.id] = def.hitCd || 0.25;
       const dealt = this.damage(c, dmg, a, { x: px, y: py, crit, lag: true });
-      this.knock(c, a.x, a.y, def.knock || 170);
-      this.knock(a, c.x, c.y, 50);
+      this.knock(c, px, py, def.knock || 220);
+      this.knock(a, c.x, c.y, 60);
       this.onHit(a, c, dealt);
     }
 
     parry(a, c, ca, cc) {
       a.w.dir *= -1; c.w.dir *= -1;
       const [px, py] = geo.segClosest(ca.ax, ca.ay, ca.bx, ca.by, (cc.ax + cc.bx) / 2, (cc.ay + cc.by) / 2);
-      this.knock(a, c.x, c.y, 70); this.knock(c, a.x, a.y, 70);
+      this.knock(a, px, py, 160); this.knock(c, px, py, 160);
       this.burst(px, py, 8, ['#ffffff', '#ffe36e', '#ffd23f'], 260, 2.5);
       this.emit({ type: 'parry', x: px, y: py });
       if (this.settings.parrylag !== false) this.freeze = Math.max(this.freeze, 0.04);

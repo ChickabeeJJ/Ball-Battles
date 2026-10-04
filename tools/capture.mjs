@@ -18,15 +18,15 @@ const VIDEOS = [
   {
     name: 'preview-landscape-1920x1080.mp4', w: 1920, h: 1080, cover: '_frame-landscape-1920x1080.png',
     clips: [
-      { setup: { mode: '1v1', map: 'classic', control: true, slots: slots(['fibonacci', 'sword', 'dagger', 'spear', 'axe', 'unarmed'], 45) }, seed: 43, secs: 9.6 },
-      { setup: { mode: 'ffa', map: 'saws', control: true, slots: slots(['bow', 'wrench', 'grimoire', 'spiky', 'axe', 'unarmed'], 60) }, seed: 7, secs: 7.6 },
+      { setup: { mode: '1v1', map: 'classic', control: false, slots: slots(['fibonacci', 'sword', 'dagger', 'spear', 'axe', 'unarmed'], 45) }, seed: 43, secs: 9.6 },
+      { setup: { mode: 'ffa', map: 'saws', control: false, slots: slots(['bow', 'wrench', 'grimoire', 'spiky', 'axe', 'unarmed'], 60) }, seed: 7, secs: 7.6 },
     ],
   },
   {
     name: 'preview-portrait-1080x1620.mp4', w: 1080, h: 1620, cover: '_frame-portrait-1080x1620.png',
     clips: [
-      { setup: { mode: '2v2', map: 'meteor', control: true, slots: slots(['katana', 'hammer', 'orbital', 'cannon', 'axe', 'unarmed'], 50) }, seed: 11, secs: 7.6 },
-      { setup: { mode: '1v1', map: 'pillars', control: true, slots: slots(['torch', 'scythe', 'dagger', 'spear', 'axe', 'unarmed'], 30) }, seed: 52, secs: 9.0 },
+      { setup: { mode: '2v2', map: 'meteor', control: false, slots: slots(['katana', 'hammer', 'orbital', 'cannon', 'axe', 'unarmed'], 50) }, seed: 11, secs: 7.6 },
+      { setup: { mode: '1v1', map: 'pillars', control: false, slots: slots(['torch', 'scythe', 'dagger', 'spear', 'axe', 'unarmed'], 30) }, seed: 52, secs: 9.0 },
     ],
   },
 ];

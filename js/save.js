@@ -34,7 +34,7 @@
           if (s.setup) {
             if (BB.MODE[s.setup.mode]) d.setup.mode = s.setup.mode;
             if (BB.MAP[s.setup.map]) d.setup.map = s.setup.map;
-            d.setup.control = !!s.setup.control;
+            d.setup.control = false;
             (s.setup.slots || []).forEach((sl, i) => {
               if (i < d.setup.slots.length && sl && BB.ITEM[sl.id] && BB.ITEM[sl.id].cat !== 'hidden') {
                 d.setup.slots[i] = {
