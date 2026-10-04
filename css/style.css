@@ -351,3 +351,73 @@ body.dark .big-btn { color: #fff; }
 .big-btn { animation: pulse 1.6s ease-in-out infinite; }
 @keyframes pulse { 0%, 100% { color: var(--ink); } 50% { color: #e0a400; } }
 .map-tile:hover, .tile:hover, .slot:hover, .opt:hover { filter: brightness(1.12); }
+
+/* ================================================================ v3 page design */
+body {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.7), rgba(255,255,255,0) 60%),
+    repeating-linear-gradient(45deg, rgba(0,0,0,0.018) 0 14px, rgba(0,0,0,0) 14px 28px),
+    var(--bg);
+}
+body.dark { background: radial-gradient(ellipse at 50% 0%, #2a2b33, #17181c 70%); }
+#topbar { padding: 0 14px; }
+.brand { font-size: 30px; letter-spacing: 0.04em; }
+#arenaWrap { filter: drop-shadow(0 6px 0 rgba(0,0,0,0.18)); }
+#arena { border-radius: 6px; }
+.menu-card, #menuPanel {
+  background: rgba(47,47,51,0.96); border: 3px solid #111; border-radius: 8px; box-shadow: 0 5px 0 #111;
+  padding: 12px; gap: 12px;
+}
+#menuPanel::before { content: 'FIGHTERS'; font-size: 12px; letter-spacing: .14em; color: #b9b4ac; margin-bottom: -6px; }
+#menuPanel .slots .vs-mid { color: #fff; font-family: var(--display); font-size: 22px; opacity: 1; }
+.slot { background: #3c3c42; border-left-width: 8px; }
+.opt { background: #3c3c42; }
+.opts { grid-template-columns: repeat(3, 1fr); }
+#menuPanel.has-pvp .opts { grid-template-columns: repeat(4, 1fr); }
+.opt-pvp { background: #a259ff !important; color: #fff; }
+.opt-pvp .opt-k { color: rgba(255,255,255,0.85); }
+#menuPanel .big-btn { color: #ffd23f; text-shadow: 3px 3px 0 #111, -3px 3px 0 #111, 3px -3px 0 #111, -3px -3px 0 #111, 0 5px 0 #111; animation: none; }
+#menuPanel .big-btn::after { color: #b9b4ac; text-shadow: none; }
+#menuPanel .big-btn:hover { filter: brightness(1.1); }
+.stat-row { gap: 4px 14px; }
+@media (min-aspect-ratio: 6/5) {
+  #panel { justify-content: center; }
+}
+@media (max-aspect-ratio: 6/5) {
+  #menuPanel { padding: 10px; }
+}
+
+/* pause menu */
+.pause-sheet { max-width: 440px; }
+.pz-head { background: linear-gradient(#3c3c42, #2f2f33); border-bottom: 3px solid #111; padding: 14px; text-align: center; }
+.pz-title { font-family: var(--display); font-size: 46px; line-height: 1; color: #ffd23f; text-shadow: 3px 3px 0 #111, -3px 3px 0 #111, 3px -3px 0 #111, -3px -3px 0 #111; letter-spacing: .06em; }
+.pz-sub { color: #b9b4ac; font-size: 13px; margin-top: 4px; }
+.pz-fighters { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; }
+.pz-f { display: flex; gap: 8px; align-items: center; background: #3c3c42; border: 3px solid #111; border-radius: 4px; padding: 6px; }
+.pz-f.out { opacity: .4; }
+.pz-f img { width: 40px; height: 40px; }
+.pz-fi { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.pz-fn { font-family: var(--display); font-size: 18px; text-shadow: 1.5px 1.5px 0 #111, -1.5px 1.5px 0 #111, 1.5px -1.5px 0 #111, -1.5px -1.5px 0 #111; }
+.pz-f .hpbar { width: 100%; }
+.pz-fs { font-size: 11px; color: #b9b4ac; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pz-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pz-btn { justify-content: flex-start; font-size: 18px; min-height: 54px; }
+.pz-main { grid-column: 1 / -1; justify-content: center; font-size: 24px; min-height: 64px; }
+.pz-ic { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 4px; background: rgba(0,0,0,0.25); font-size: 18px; }
+.pz-quick { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.chip { padding: 6px 12px; border: 2.5px solid #111; border-radius: 999px; background: #44444a; color: #ddd; font-size: 13px; }
+.chip.on { background: var(--green); color: #fff; }
+.pz-hint { text-align: center; }
+
+/* tutorial */
+.tut { position: fixed; inset: 0; z-index: 30; }
+.tut-spot { position: fixed; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(10,10,14,0.68); border: 3px solid #ffd23f; transition: all .25s ease; pointer-events: none; }
+.tut-card { position: fixed; background: #2f2f33; color: #fff; border: 3px solid #111; border-radius: 8px; box-shadow: 0 6px 0 #111; padding: 14px; transition: top .25s, left .25s; }
+.tut-step { font-size: 11px; color: #b9b4ac; letter-spacing: .1em; }
+.tut-t { font-family: var(--display); font-size: 28px; color: #ffd23f; line-height: 1.1; margin: 4px 0 6px; text-shadow: 2px 2px 0 #111, -2px 2px 0 #111, 2px -2px 0 #111, -2px -2px 0 #111; }
+.tut-x { font-size: 14px; line-height: 1.35; color: #e8e4dc; }
+.tut-row { display: flex; gap: 8px; margin-top: 12px; }
+.tut-row .btn { flex: 1; min-height: 42px; font-size: 16px; }
+
+/* pvp */
+.pvp-link { width: 100%; height: 42px; border: 3px solid #111; border-radius: 4px; background: #1e1e21; color: #ffd23f; font-family: var(--font); padding: 0 10px; font-size: 13px; }

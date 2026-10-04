@@ -41,6 +41,12 @@
 
       BB.sdk.loadingStop();
       if (!App.capture) requestAnimationFrame(App.frame);
+      $('optPvp').classList.toggle('hidden', !App.pvpAvailable());
+      $('menuPanel').classList.toggle('has-pvp', App.pvpAvailable());
+      // A friend's challenge link takes priority; otherwise first-time players get the tutorial.
+      const ch = App.pvpAvailable() ? App.decodeChallenge(BB.sdk.getInviteParam('pvp')) : null;
+      if (ch) BB.ui.pvpReceive(ch);
+      else if (!BB.save.data.tutorialDone && !App.capture) setTimeout(() => BB.ui.tutorial(), 400);
     },
 
     // ------------------------------------------------------------- helpers
@@ -105,7 +111,7 @@
     refreshMenu() {
       const setup = BB.save.data.setup;
       // Slots on your team must be owned; trials expire after a battle.
-      for (const i of App.mode().teams[0]) if (!App.isOwned(setup.slots[i].id)) setup.slots[i].id = 'sword';
+      for (const t of App.mode().teams) for (const i of t) if (!App.isOwned(setup.slots[i].id)) setup.slots[i].id = i % 2 ? 'sword' : 'unarmed';
       App.preview = new BB.Sim({ seed: 7, map: setup.map, teams: App.buildTeams(), settings: BB.save.data.settings });
       App.preview.preview = true;
       for (const b of App.preview.balls) { b.w.angle = [-2.3, -0.85, -0.85, -2.3][b.team] + (b.slot % 3) * 0.25; App.preview.computeCaps(b); }
@@ -129,6 +135,7 @@
         const s = setup.slots[i], it = BB.ITEM[s.id];
         const b = document.createElement('button');
         b.className = 'slot';
+        b.style.borderLeftColor = BB.itemColor(s.id);
         b.setAttribute('aria-label', 'Edit ' + BB.TEAMS[team].name + ' ' + it.name);
         b.innerHTML = `<img src="${BB.icon(s.id)}" alt=""><span class="sl-t"><span class="sl-n">${it.name}</span><span class="sl-s">HP ${s.hp}${s.scale !== 1 ? ' · x' + s.scale : ''} · Edit</span></span><span class="dot" style="background:${BB.TEAMS[team].fill}"></span>`;
         b.onclick = () => { BB.audio.unlock(); BB.audio.play('click'); BB.ui.editSlot(i); };
@@ -153,9 +160,9 @@
     renderMatchup(sim) {
       const m = $('matchup');
       const mode = App.mode();
-      const name = (b) => `<img src="${BB.icon(b.def.id)}" alt=""><span class="nm" style="color:${BB.TEAMS[b.team].fill}">${b.def.name}</span>`;
+      const name = (b) => `<img src="${BB.icon(b.def.id)}" alt=""><span class="nm" style="color:${BB.itemColor(b.def.id)}">${b.def.name}</span>`;
       const mains = sim.balls.filter((b) => b.main);
-      if (mode.id === '1v1') m.innerHTML = name(mains[0]) + '<span class="vs">VS</span>' + name(mains[1]);
+      if (mode.id === '1v1' || mains.length === 2) m.innerHTML = name(mains[0]) + '<span class="vs">VS</span>' + name(mains[1]);
       else if (mode.id === 'ffa') m.innerHTML = '<span class="nm" style="color:#fff">Free For All</span>';
       else m.innerHTML = `<span class="nm" style="color:${BB.TEAMS[0].fill}">Green Team</span><span class="vs">VS</span><span class="nm" style="color:${BB.TEAMS[1].fill}">Red Team</span>`;
       App.fitMatchup();
@@ -183,7 +190,8 @@
         const lines = sim.stats(b);
         const txt = (one ? '' : b.def.name + ': ') + (lines.join(' · ') || '');
         const pct = Math.max(0, Math.min(100, (b.hp / b.maxHp) * 100)).toFixed(1);
-        html += `<span class="st" style="color:${BB.TEAMS[b.team].fill};${b.alive ? '' : 'opacity:.35'}"><span class="hpbar"><i style="width:${pct}%;background:${BB.TEAMS[b.team].fill}"></i><b>${Math.ceil(b.hp)}</b></span>${txt}</span>`;
+        const c = one ? BB.itemColor(b.def.id) : BB.TEAMS[b.team].fill;
+        html += `<span class="st" style="color:${c};${b.alive ? '' : 'opacity:.35'}"><span class="hpbar"><i style="width:${pct}%;background:${c}"></i><b>${Math.ceil(b.hp)}</b></span>${txt}</span>`;
       }
       if (force || html !== App._lastStats) {
         App._lastStats = html;
@@ -215,29 +223,49 @@
     },
 
     // ------------------------------------------------------------- battle
-    // Engagement hook: guess the winner for bonus coins and a streak.
-    predictThenStart() {
-      App.prediction = null;
-      BB.ui.predict(App.mode(), BB.save.data.setup, (team) => { App.prediction = team; App.startBattle(true); });
+    // ------------------------------------------------------------- PvP (CrazyGames invite links)
+    // Battles are deterministic from (seed, map, loadouts), so a challenge link carries the
+    // challenger's ball; the friend picks a counter and both see the exact same fight.
+    pvpAvailable() { return BB.sdk.env === 'crazygames'; },
+    encodeChallenge(slot, map, name) {
+      const ov = slot.ov || {};
+      return [slot.id, slot.hp, slot.scale, ov.damage || 0, ov.spin || 0, ov.speed || 0, map, (Math.random() * 2147483647) | 0, (name || 'Friend').replace(/[^\w ]/g, '').slice(0, 14)].join('~');
+    },
+    decodeChallenge(code) {
+      const p = String(code || '').split('~');
+      if (p.length < 9 || !BB.ITEM[p[0]] || BB.ITEM[p[0]].cat === 'hidden' || !BB.MAP[p[6]]) return null;
+      const n = (v, a, b, d) => { v = Number(v); return isFinite(v) ? BB.clamp(v, a, b) : d; };
+      return {
+        slot: { id: p[0], hp: n(p[1], 1, 9999, 100), scale: n(p[2], 0.5, 2.5, 1), ov: { damage: n(p[3], 0, 999, 0), spin: n(p[4], 0, 3000, 0), speed: n(p[5], 0, 2000, 0) } },
+        map: p[6], seed: n(p[7], 0, 2147483647, 1) | 0, name: p[8] || 'Friend',
+      };
+    },
+    startPvp(ch, mySlot) {
+      App.pvp = {
+        seed: ch.seed, map: ch.map, foeName: ch.name,
+        teams: [[Object.assign({}, mySlot, { ov: Object.assign({}, mySlot.ov), slot: 0 })], [Object.assign({}, ch.slot, { slot: 1 })]],
+      };
+      App.startBattle();
     },
 
-    startBattle(keepPrediction) {
-      if (!keepPrediction) App.prediction = null;
-      App.slowmo = 0; App.shake = 0;
+    startBattle() {
+      App.slowmo = 0; App.shake = 0; App.impact = null;
       BB.audio.unlock();
       const setup = BB.save.data.setup;
       const mode = App.mode();
-      App.seed = (Math.random() * 2147483647) | 0;
+      App.seed = App.pvp ? App.pvp.seed : (Math.random() * 2147483647) | 0;
       App.sim = new BB.Sim({
-        seed: App.seed, map: setup.map, teams: App.buildTeams(), settings: BB.save.data.settings,
-        controlSlot: setup.control ? mode.teams[0][0] : null,
+        seed: App.seed, map: App.pvp ? App.pvp.map : setup.map, teams: App.pvp ? App.pvp.teams : App.buildTeams(),
+        settings: BB.save.data.settings, controlSlot: null,
       });
+      void mode;
       App.maxHit = 0;
       App.state = 'battle';
       App.paused = false;
       App.acc = 0;
       App.resultsShown = false;
-      $('app').className = 'is-battle' + (setup.control ? ' controlled' : '');
+      $('app').className = 'is-battle';
+      BB.sdk.hideInvite();
       App.layout();
       App.renderMatchup(App.sim);
       App.renderStats(App.sim, true);
@@ -264,7 +292,8 @@
 
     onSettingsClosed() {
       App.applySettings();
-      if (App.pausedSettings) { App.pausedSettings = false; BB.ui.pause(); }
+      App.pausedSettings = false;
+      if (App.state === 'battle' && App.paused && !App.resultsShown) App.resume();
     },
 
     onOver() {
@@ -279,7 +308,7 @@
         BB.audio.play('lose');
       } else {
         const winners = sim.balls.filter((b) => b.main && b.team === w);
-        if (mode.teams[0].length === 1) { title = winners[0].def.name + ' Wins!'; icon = winners[0].def.id; }
+        if (App.pvp || mode.teams[0].length === 1) { title = winners[0].def.name + ' Wins!'; icon = winners[0].def.id; }
         else { title = BB.TEAMS[w].name + ' Team Wins!'; icon = winners[0].def.id; }
         if (w === 0) {
           coins = Math.round(50 * (save.setup.control ? 1.5 : 1));
@@ -296,28 +325,20 @@
       App.trials = {};
       BB.save.write();
       App.refreshCoins();
-      let predict = null;
-      if (App.prediction != null) {
-        save.stats.streak = save.stats.streak || 0;
-        if (App.prediction === w) {
-          save.stats.streak++;
-          const bonus = 30 + Math.min(save.stats.streak - 1, 5) * 10;
-          save.coins += bonus; coins += bonus;
-          predict = { ok: true, text: 'Prediction correct! +' + bonus + (save.stats.streak > 1 ? ' · Streak x' + save.stats.streak : '') };
-        } else {
-          save.stats.streak = 0;
-          predict = { ok: false, text: 'Prediction missed · streak reset' };
-        }
-        save.stats.bestStreak = Math.max(save.stats.bestStreak || 0, save.stats.streak);
-        BB.save.write(); App.refreshCoins();
+      let pvp = null;
+      if (App.pvp) {
+        pvp = App.pvp;
+        sub = w === 0 ? 'You beat ' + pvp.foeName + '\'s challenge!' : w < 0 ? 'A perfect tie!' : pvp.foeName + '\'s ball won this time.';
+        if (w === 0) BB.sdk.happytime();
       }
       const stats = 'Battle time ' + Math.round(sim.t) + 's · Biggest hit ' + BB.fmt(App.maxHit);
-      setTimeout(() => BB.ui.results({ winner: w, title, sub, icon, coins, stats, predict }), 300);
+      setTimeout(() => BB.ui.results({ winner: w, title, sub, icon, coins, stats, pvp }), 300);
     },
 
     async afterResults(rematch) {
       await BB.sdk.maybeMidgame();
-      if (rematch) { App.refreshMenu(); App.predictThenStart(); }
+      if (App.pvp && !rematch) App.pvp = null;
+      if (rematch) { App.refreshMenu(); App.startBattle(); }
       else App.toMenu();
     },
 
@@ -341,6 +362,9 @@
           case 'break': BB.audio.play('break'); break;
           case 'pass': BB.audio.play('pass'); break;
           case 'overtime': BB.audio.play('overtime'); BB.ui.banner('OVERTIME x' + e.mul, 1000); break;
+          case 'impact':
+            if (BB.save.data.settings.impact) App.impact = { t: 0.12, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0, invert: e.amt >= 99 };
+            break;
           case 'ko': App.slowmo = 1.1; App.shake = 14; BB.ui.banner(e.winner < 0 ? 'DRAW!' : 'K.O.!', 1000); break;
         }
       }
@@ -382,7 +406,13 @@
     draw() {
       const s = App.state === 'battle' ? App.sim : App.preview;
       if (App.shake > 0) App.shake = Math.max(0, App.shake - 0.8);
-      if (s && App.renderer) App.renderer.draw(s, { shake: App.state === 'battle' && !App.paused ? App.shake : 0 });
+      let imp = null;
+      if (App.impact && App.state === 'battle') {
+        App.impact.t -= 1 / 60;
+        if (App.impact.t <= 0) App.impact = null;
+        else { imp = App.impact; imp.invert = imp.invert !== (imp.t < 0.06); }
+      }
+      if (s && App.renderer) App.renderer.draw(s, { shake: App.state === 'battle' && !App.paused ? App.shake : 0, impact: imp });
     },
 
     readInput() {
@@ -405,10 +435,14 @@
     // ------------------------------------------------------------- binding
     bindUI() {
       const click = (id, fn) => $(id).addEventListener('click', () => { BB.audio.unlock(); BB.audio.play('click'); fn(); });
-      click('btnStart', () => App.predictThenStart());
-      click('btnSettings', () => { if (App.state === 'battle' && !App.paused) { App.pausedSettings = true; App.paused = true; BB.sdk.gameplayStop(); } BB.ui.settings(); });
+      click('btnStart', () => App.startBattle());
+      click('btnSettings', () => {
+        if (App.state === 'battle' && !App.resultsShown) { if (!App.paused) { App.paused = true; BB.sdk.gameplayStop(); } BB.ui.onClose = null; BB.ui.settings(); }
+        else BB.ui.settings();
+      });
       click('btnPause', () => App.pause());
       click('optMode', () => BB.ui.pickMode());
+      click('optPvp', () => BB.ui.pvpCreate());
       click('optMap', () => BB.ui.pickMap());
       click('optControl', () => {
         const s = BB.save.data.setup;
@@ -418,7 +452,7 @@
         BB.ui.toast(s.control ? 'You steer the Green ball! Wins pay x1.5' : 'Spectator mode');
       });
       click('optRandom', () => {
-        const pool = BB.ITEMS.filter((i) => i.cat !== 'hidden' && i.id !== 'dummy');
+        const pool = BB.ITEMS.filter((i) => i.cat !== 'hidden' && i.id !== 'dummy' && App.isOwned(i.id));
         const mode = App.mode();
         for (let t = 1; t < mode.teams.length; t++) for (const i of mode.teams[t]) BB.save.data.setup.slots[i].id = pool[Math.floor(Math.random() * pool.length)].id;
         BB.save.write();
@@ -426,7 +460,7 @@
       });
       $('modal').addEventListener('pointerdown', (e) => {
         if (e.target === $('modal') && !App.resultsShown) {
-          if (App.paused && App.state === 'battle' && !App.pausedSettings) App.resume();
+          if (App.paused && App.state === 'battle') App.resume();
           else BB.ui.close();
         }
       });
@@ -441,9 +475,9 @@
         if (typing) return;
         App.keys[e.code] = true;
         if ((e.code === 'Escape' || e.code === 'KeyP') && App.state === 'battle' && !App.resultsShown) {
-          if (App.paused && !App.pausedSettings) App.resume(); else App.pause();
+          if (App.paused) App.resume(); else App.pause();
         }
-        if ((e.code === 'Enter' || e.code === 'Space') && App.state === 'menu' && !BB.ui.isOpen()) { BB.audio.unlock(); App.predictThenStart(); }
+        if ((e.code === 'Enter' || e.code === 'Space') && App.state === 'menu' && !BB.ui.isOpen()) { BB.audio.unlock(); App.startBattle(); }
       });
       window.addEventListener('keyup', (e) => { App.keys[e.code] = false; });
       window.addEventListener('blur', () => { App.keys = {}; });

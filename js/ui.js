@@ -124,12 +124,12 @@
     pickItem(slotIdx, tab) {
       const app = BB.app, save = BB.save.data;
       const s = save.setup.slots[slotIdx];
-      const mine = app.teamOfSlot(slotIdx) === 0;
+      const mine = true; // every slot uses only unlocked balls
       let sel = s.id;
       tab = tab || (BB.ITEM[s.id].cat === 'special' ? 'special' : 'weapon');
 
       UI.open((sheet) => {
-        const body = UI.head(sheet, mine ? 'Choose Your Ball' : 'Choose Opponent', { onX: () => UI.editSlot(slotIdx) });
+        const body = UI.head(sheet, app.teamOfSlot(slotIdx) === 0 ? 'Choose Your Ball' : 'Choose Opponent', { onX: () => UI.editSlot(slotIdx) });
         const tabs = el('div', 'tabs');
         for (const [k, n] of [['weapon', 'Weapons'], ['special', 'Specials']]) {
           const t = el('button', 'tab' + (tab === k ? ' on' : ''), n);
@@ -139,7 +139,6 @@
         body.appendChild(tabs);
         const detail = el('div', 'detail');
         body.appendChild(detail);
-        if (!mine) body.appendChild(el('div', 'f-s', 'Opponents can use any ball, even ones you have not unlocked yet.'));
         const grid = el('div', 'grid');
         body.appendChild(grid);
 
@@ -271,7 +270,8 @@
           ['hitlag', 'Hit Freeze', 'Tiny pause on big hits'],
           ['parrylag', 'Parry Freeze', 'Tiny pause when weapons clash'],
           ['dmgNumbers', 'Damage Numbers', ''],
-          ['reverseB', 'Reverse Team 2 Spin', 'Red team spins the other way'],
+          ['impact', 'Impact Frames', 'Dramatic black & white flash on huge hits'],
+          ['reverseB', 'Reverse Team 2 Spin', 'Team 2 spins the other way'],
           ['vibrate', 'Vibration', 'On supported phones'],
         ];
         for (const [k, n, sub] of toggles) {
@@ -283,51 +283,146 @@
           f.appendChild(t);
           body.appendChild(f);
         }
+        const tut = el('button', 'btn', 'Show Tutorial');
+        tut.onclick = () => { BB.audio.play('click'); UI.onClose = null; UI.close(); app.onSettingsClosed(); if (app.state === 'menu') UI.tutorial(); else UI.toast('Finish the battle to see the tutorial'); };
+        body.appendChild(tut);
         const credits = el('div', 'f-s', 'Fonts: Anton, Pixelify Sans, Lilita One (SIL Open Font License). Battles won: ' + BB.save.data.stats.wins + ' / ' + BB.save.data.stats.battles);
         credits.style.textAlign = 'center';
         body.appendChild(credits);
       }, { onClose: () => app.onSettingsClosed() });
     },
 
-    // ------------------------------------------------------------- prediction
-    predict(mode, setup, onPick) {
-      const streak = BB.save.data.stats.streak || 0;
-      UI.open((sheet) => {
-        const body = UI.head(sheet, 'Who Will Win?', { onX: () => { UI.onClose = null; UI.close(); onPick(null); } });
-        body.appendChild(el('div', 'f-s', 'Guess right for bonus coins.' + (streak ? ' Current streak: x' + streak + '!' : ' Build a streak for bigger rewards!')));
-        const row = el('div', 'pred-row');
-        mode.teams.forEach((members, team) => {
-          const tm = BB.TEAMS[team];
-          const b = el('button', 'pred-btn');
-          b.style.setProperty('--tc', tm.fill);
-          const icons = members.map((i) => `<img src="${BB.icon(setup.slots[i].id)}" alt="">`).join('');
-          const label = members.length === 1 ? BB.ITEM[setup.slots[members[0]].id].name : tm.name + ' Team';
-          b.innerHTML = `<span class="pred-ic">${icons}</span><span class="pred-n">${esc(label)}</span>`;
-          b.onclick = () => { BB.audio.play('click'); UI.onClose = null; UI.close(); onPick(team); };
-          row.appendChild(b);
-        });
-        body.appendChild(row);
-        const skip = el('button', 'btn', 'Just watch');
-        skip.onclick = () => { BB.audio.play('click'); UI.onClose = null; UI.close(); onPick(null); };
-        body.appendChild(skip);
-      }, { width: '460px' });
-    },
-
     // ------------------------------------------------------------- pause / results
     pause() {
-      const app = BB.app;
+      const app = BB.app, sim = app.sim, st = BB.save.data.settings;
       UI.open((sheet) => {
-        const body = UI.head(sheet, 'Paused', { onX: () => app.resume() });
-        const resume = el('button', 'btn green', 'Resume');
-        resume.onclick = () => { BB.audio.play('click'); app.resume(); };
-        const restart = el('button', 'btn primary', 'Restart');
-        restart.onclick = () => { BB.audio.play('click'); UI.onClose = null; UI.close(); app.startBattle(); };
-        const quit = el('button', 'btn red', 'Quit to Menu');
-        quit.onclick = () => { BB.audio.play('click'); UI.onClose = null; UI.close(); app.toMenu(); };
-        const opts = el('button', 'btn', 'Settings');
-        opts.onclick = () => { BB.audio.play('click'); UI.onClose = null; app.pausedSettings = true; UI.settings(); };
-        body.append(resume, restart, opts, quit);
-      }, { onClose: () => app.resume(), width: '360px' });
+        sheet.classList.add('pause-sheet');
+        const head = el('div', 'pz-head', '<div class="pz-title">PAUSED</div><div class="pz-sub">' + esc(BB.MAP[sim.map.id].name) + ' · ' + Math.floor(sim.t) + 's</div>');
+        sheet.appendChild(head);
+        const body = el('div', 'sh-body');
+        sheet.appendChild(body);
+        // live fighters overview
+        const list = el('div', 'pz-fighters');
+        for (const b of sim.balls.filter((x) => x.main)) {
+          const c = BB.itemColor(b.def.id), pct = Math.max(0, (b.hp / b.maxHp) * 100);
+          list.innerHTML += `<div class="pz-f${b.alive ? '' : ' out'}"><img src="${BB.icon(b.def.id)}" alt=""><div class="pz-fi"><div class="pz-fn" style="color:${c}">${esc(b.def.name)}</div>
+            <span class="hpbar"><i style="width:${pct}%;background:${c}"></i><b>${Math.ceil(b.hp)}</b></span><div class="pz-fs">${esc(sim.stats(b).join(' · '))}</div></div></div>`;
+        }
+        body.appendChild(list);
+        const big = (cls, icon, label, fn) => { const b = el('button', 'btn pz-btn ' + cls, `<span class="pz-ic">${icon}</span>${label}`); b.onclick = () => { BB.audio.play('click'); fn(); }; return b; };
+        const grid = el('div', 'pz-grid');
+        grid.append(
+          big('green pz-main', '▶', 'Resume', () => app.resume()),
+          big('primary', '↻', 'Restart', () => { UI.onClose = null; UI.close(); app.startBattle(); }),
+          big('', '⚙', 'Settings', () => { UI.onClose = null; UI.settings(); }),
+          big('red', '⌂', 'Quit', () => { UI.onClose = null; UI.close(); app.pvp = null; app.toMenu(); }),
+        );
+        body.appendChild(grid);
+        // quick toggles
+        const q = el('div', 'pz-quick');
+        for (const [k, n] of [['hitlag', 'Hit Freeze'], ['impact', 'Impact Frames'], ['dmgNumbers', 'Numbers']]) {
+          const t = el('button', 'chip' + (st[k] ? ' on' : ''), n);
+          t.onclick = () => { st[k] = !st[k]; t.classList.toggle('on', st[k]); BB.save.write(); app.applySettings(); BB.audio.play('click'); };
+          q.appendChild(t);
+        }
+        const snd = el('button', 'chip' + (st.sound > 0 ? ' on' : ''), 'Sound');
+        snd.onclick = () => { st.sound = st.sound > 0 ? 0 : 0.8; snd.classList.toggle('on', st.sound > 0); BB.save.write(); app.applySettings(); BB.audio.play('click'); };
+        q.appendChild(snd);
+        body.appendChild(q);
+        body.appendChild(el('div', 'f-s pz-hint', 'Press P or Esc to resume'));
+      }, { onClose: () => app.resume(), width: '440px' });
+    },
+
+    // ------------------------------------------------------------- PvP (CrazyGames)
+    pvpCreate() {
+      const app = BB.app, setup = BB.save.data.setup, slot = setup.slots[0], it = BB.ITEM[slot.id];
+      UI.open((sheet) => {
+        const body = UI.head(sheet, 'PvP Challenge');
+        body.appendChild(el('div', 'f-s', 'Send your ball to a friend. They pick a fighter to counter it, and the battle plays out exactly the same on both screens.'));
+        const card = el('div', 'detail');
+        card.innerHTML = `<img src="${BB.icon(slot.id)}" alt=""><div style="flex:1"><div class="d-n" style="color:${BB.itemColor(slot.id)}">${esc(it.name)}</div><div class="d-d">HP ${slot.hp} · Size x${slot.scale} · Map: ${esc(BB.MAP[setup.map].name)}</div></div>`;
+        const ch = el('button', 'btn primary', 'Change');
+        ch.onclick = () => { BB.audio.play('click'); UI.editSlot(0); };
+        card.appendChild(ch);
+        body.appendChild(card);
+        const out = el('input', 'pvp-link'); out.readOnly = true; out.placeholder = 'Your challenge link appears here';
+        const make = el('button', 'btn green', 'Create Challenge Link');
+        make.onclick = async () => {
+          BB.audio.play('click');
+          const code = app.encodeChallenge(slot, setup.map, 'Friend');
+          const link = BB.sdk.inviteLink({ pvp: code });
+          BB.sdk.showInvite({ pvp: code });
+          if (!link) { UI.toast('Invites only work on CrazyGames'); return; }
+          out.value = link;
+          try { await navigator.clipboard.writeText(link); UI.toast('Link copied! Send it to a friend'); } catch (e) { out.select(); UI.toast('Copy the link and send it to a friend'); }
+        };
+        body.append(make, out);
+      }, { width: '460px', onClose: () => BB.sdk.hideInvite() });
+    },
+
+    pvpReceive(ch) {
+      const app = BB.app;
+      const foe = BB.ITEM[ch.slot.id];
+      let sel = BB.save.data.setup.slots[0].id;
+      UI.open((sheet) => {
+        const body = UI.head(sheet, "You've Been Challenged!");
+        const card = el('div', 'detail');
+        card.innerHTML = `<img src="${BB.icon(ch.slot.id)}" alt=""><div style="flex:1"><div class="d-r">${esc(ch.name)} sends</div><div class="d-n" style="color:${BB.itemColor(ch.slot.id)}">${esc(foe.name)}</div><div class="d-d">HP ${ch.slot.hp} · Map: ${esc(BB.MAP[ch.map].name)}</div></div>`;
+        body.appendChild(card);
+        body.appendChild(el('div', 'section-t', 'Pick your counter'));
+        const grid = el('div', 'grid');
+        for (const it of BB.ITEMS.filter((i) => i.cat !== 'hidden' && app.isOwned(i.id))) {
+          const t = el('button', 'tile' + (it.id === sel ? ' sel' : ''));
+          t.innerHTML = `<img src="${BB.icon(it.id)}" alt=""><span class="t-n">${esc(it.name)}</span><span class="rar" style="background:${BB.RARITY[it.rarity].color}"></span>`;
+          t.onclick = () => { BB.audio.play('click'); sel = it.id; grid.querySelectorAll('.tile').forEach((x) => x.classList.toggle('sel', x === t)); };
+          grid.appendChild(t);
+        }
+        body.appendChild(grid);
+        const foot = el('div', 'sh-foot');
+        const go = el('button', 'btn green', 'Fight!');
+        go.onclick = () => { BB.audio.play('click'); UI.onClose = null; UI.close(); app.startPvp(ch, { id: sel, hp: ch.slot.hp, scale: 1, ov: { damage: 0, spin: 0, speed: 0 } }); };
+        foot.appendChild(go);
+        sheet.appendChild(foot);
+      }, { width: '560px' });
+    },
+
+    // ------------------------------------------------------------- tutorial
+    tutorial(done) {
+      const steps = [
+        { sel: '#arenaWrap', title: 'Welcome to Ball Battles!', text: 'Balls bounce around the arena with spinning weapons. Every hit makes a weapon stronger. Last ball standing wins!' },
+        { sel: '#slots', title: 'Pick your fighters', text: 'Tap a ball card to choose its weapon and set its health and size.' },
+        { sel: '.opts', title: 'Modes & maps', text: 'Switch between 1v1, team fights and Free For All, pick a map, or roll random foes.' },
+        { sel: '#btnStart', title: 'Start the battle', text: 'Press Start Battle and watch the chaos. Wins earn coins to unlock 36 different balls.' },
+      ];
+      let i = 0;
+      const ov = el('div', 'tut');
+      const spot = el('div', 'tut-spot');
+      const card = el('div', 'tut-card');
+      ov.append(spot, card);
+      document.body.appendChild(ov);
+      const finish = () => { ov.remove(); window.removeEventListener('resize', show); BB.save.data.tutorialDone = true; BB.save.write(); if (done) done(); };
+      const show = () => {
+        const s = steps[i], tgt = document.querySelector(s.sel);
+        const r = tgt ? tgt.getBoundingClientRect() : { left: innerWidth / 2, top: innerHeight / 2, width: 0, height: 0, bottom: innerHeight / 2 };
+        const pad = 8;
+        Object.assign(spot.style, { left: r.left - pad + 'px', top: r.top - pad + 'px', width: r.width + pad * 2 + 'px', height: r.height + pad * 2 + 'px' });
+        card.innerHTML = `<div class="tut-step">${i + 1} / ${steps.length}</div><div class="tut-t">${esc(s.title)}</div><div class="tut-x">${esc(s.text)}</div>`;
+        const row = el('div', 'tut-row');
+        const skip = el('button', 'btn', 'Skip'); skip.onclick = () => { BB.audio.play('click'); finish(); };
+        const next = el('button', 'btn primary', i === steps.length - 1 ? "Let's go!" : 'Next');
+        next.onclick = () => { BB.audio.unlock(); BB.audio.play('click'); i++; if (i >= steps.length) finish(); else show(); };
+        row.append(skip, next);
+        card.appendChild(row);
+        const ch = card.offsetHeight || 170, cw = Math.min(340, innerWidth - 24);
+        card.style.width = cw + 'px';
+        let top = r.bottom + 16;
+        if (top + ch > innerHeight - 10) top = Math.max(10, r.top - ch - 16);
+        if (top < 10 || r.height > innerHeight * 0.55) top = Math.min(innerHeight - ch - 10, Math.max(10, r.top + r.height / 2 - ch / 2));
+        card.style.top = top + 'px';
+        card.style.left = BB.clamp(r.left + r.width / 2 - cw / 2, 12, innerWidth - cw - 12) + 'px';
+      };
+      window.addEventListener('resize', show);
+      show();
     },
 
     results(res) {
@@ -341,7 +436,6 @@
           <div class="r-sub">${esc(res.sub)}</div>
           ${res.icon ? `<img src="${BB.icon(res.icon, 160)}" alt="">` : ''}
           <div class="r-coins" id="rCoins">+${coinHtml(res.coins)}</div>
-          ${res.predict ? `<div class="r-pred ${res.predict.ok ? 'ok' : 'bad'}">${esc(res.predict.text)}</div>` : ''}
           <div class="r-stats">${esc(res.stats)}</div>`;
         body.appendChild(wrap);
         const foot = el('div', 'sh-foot');
@@ -364,6 +458,18 @@
           }
         };
         if (res.coins > 0) foot.appendChild(dbl);
+        if (res.pvp) {
+          const back = el('button', 'btn primary', 'Send a challenge back');
+          back.onclick = () => {
+            BB.audio.play('click');
+            const me = res.pvp.teams[0][0];
+            const link = BB.sdk.inviteLink({ pvp: app.encodeChallenge(me, res.pvp.map, 'Friend') });
+            if (!link) { UI.toast('Invites only work on CrazyGames'); return; }
+            try { navigator.clipboard.writeText(link); } catch (e) { /* clipboard blocked */ }
+            UI.toast('Challenge link copied!');
+          };
+          foot.appendChild(back);
+        }
         const row = el('div', '');
         row.style.cssText = 'display:flex;gap:8px';
         const again = el('button', 'btn primary', 'Rematch');

@@ -13,8 +13,17 @@
     for (let i = 2; i < pts.length; i += 2) ctx.lineTo(pts[i], pts[i + 1]);
     ctx.closePath();
   }
+  let CUR_W = 10;
+  const MATS = {};
+  function material(ctx, fill) {
+    const m = MATS[fill];
+    if (!m) return fill;
+    const g = ctx.createLinearGradient(0, -CUR_W * 0.6, 0, CUR_W * 0.6);
+    m.forEach(([o, c]) => g.addColorStop(o, c));
+    return g;
+  }
   function fillStroke(ctx, fill, lw) {
-    ctx.fillStyle = fill; ctx.fill();
+    ctx.fillStyle = material(ctx, fill); ctx.fill();
     ctx.lineWidth = lw; ctx.strokeStyle = OUT; ctx.stroke();
   }
   function rect(ctx, x0, x1, h, fill, lw) {
@@ -200,7 +209,13 @@
     ctx.restore();
   }
 
+  MATS[METAL] = [[0, '#ffffff'], [0.45, '#e4eaf0'], [0.55, '#c3ced8'], [1, '#8d9aa6']];
+  MATS[GOLD] = [[0, '#fff1a8'], [0.5, '#f6c431'], [1, '#b8860b']];
+  MATS[WOOD] = [[0, '#c98a4f'], [0.5, '#a0612f'], [1, '#6e3d1c']];
+  BB.DRAW = DRAW;
+  BB.wpn = { path, fillStroke, rect, circle, METAL, METAL_D, WOOD, GOLD, GREY, OUT, setW: (w) => { CUR_W = w; } };
   BB.drawWeapon = function (ctx, id, s, L, W, lw, t, team) {
+    CUR_W = W;
     const d = DRAW[id];
     if (d) d(ctx, s, L, W, lw, t || 0, team);
   };
@@ -360,12 +375,8 @@
       ctx.fillStyle = this.dark ? '#26272d' : '#ffffff';
       ctx.fillRect(-hw, -hh, sim.W, sim.H);
       ctx.save(); ctx.beginPath(); ctx.rect(-hw, -hh, sim.W, sim.H); ctx.clip();
-      BB.drawFloor(ctx, sim, this.dark);
+      BB.drawFloor(ctx, sim, this.dark, this);
       ctx.restore();
-      if (sim.map.id === 'bouncy') {
-        ctx.fillStyle = this.dark ? 'rgba(61,139,242,0.12)' : 'rgba(61,139,242,0.08)';
-        ctx.fillRect(-hw, hh - 40, sim.W, 40);
-      }
 
       // meteor warnings
       for (const m of sim.meteors) {
@@ -377,7 +388,8 @@
       }
 
       // obstacles
-      for (const o of sim.obstacles) {
+      if (BB.drawObstacles) BB.drawObstacles(ctx, sim, lw);
+      else for (const o of sim.obstacles) {
         if (o.kind === 'pillar') {
           circle(ctx, o.x, o.y, o.r, this.dark ? '#4a4b55' : '#d8cfc2', lw * 1.4);
           circle(ctx, o.x, o.y, o.r * 0.6, this.dark ? '#3a3b44' : '#c7bdae', lw);
@@ -457,12 +469,14 @@
       ctx.globalAlpha = 1;
 
       // walls on top
-      ctx.lineWidth = 6; ctx.strokeStyle = this.dark ? '#0b0b0e' : OUT;
-      ctx.strokeRect(-hw - 3, -hh - 3, sim.W + 6, sim.H + 6);
+      if (BB.drawWalls) BB.drawWalls(ctx, sim, this.dark);
+      else { ctx.lineWidth = 6; ctx.strokeStyle = this.dark ? '#0b0b0e' : OUT; ctx.strokeRect(-hw - 3, -hh - 3, sim.W + 6, sim.H + 6); }
       if (opts.overlay) opts.overlay(ctx, S);
+      if (opts.impact && BB.impactFrame) BB.impactFrame(this, opts.impact, scale, sx, sy);
     }
 
     drawBall(ctx, sim, b, lw) {
+      if (BB.drawBallArt) return BB.drawBallArt(ctx, sim, b, lw, this);
       const tm = BB.TEAMS[b.team];
       const w = b.w, id = b.def.id;
       // weapon under the ball's outline but over others
@@ -528,6 +542,9 @@
       } else if (p.kind === 'cannonball') {
         circle(ctx, 0, 0, p.r, '#2d2d33', 2);
         ctx.beginPath(); ctx.arc(-p.r * 0.3, -p.r * 0.3, p.r * 0.25, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fill();
+      } else if (p.kind === 'bolt2') {
+        rect(ctx, -26, 6, 3.5, '#4a3424', 1.4); path(ctx, [6, -6, 18, 0, 6, 6]); fillStroke(ctx, METAL, 1.5);
+        path(ctx, [-26, -6, -18, 0, -26, 6]); fillStroke(ctx, '#d94141', 1.2);
       } else if (p.kind === 'bolt') {
         rect(ctx, -8, 8, p.r * 1.2, tm.fill, 1.5);
       }

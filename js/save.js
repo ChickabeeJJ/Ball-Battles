@@ -10,7 +10,8 @@
       v: 1,
       coins: 0,
       unlocked,
-      settings: { sound: 0.8, dark: false, hitlag: true, parrylag: true, reverseB: false, vibrate: true, dmgNumbers: true },
+      settings: { sound: 0.8, dark: false, hitlag: true, parrylag: true, reverseB: false, vibrate: true, dmgNumbers: true, impact: false },
+      tutorialDone: false,
       setup: {
         mode: '1v1', map: 'classic', control: false,
         slots: BB.DEFAULT_SLOTS.map((id) => ({ id, hp: 100, scale: 1, ov: { damage: 0, spin: 0, speed: 0 } })),
@@ -47,6 +48,7 @@
             });
           }
           Object.assign(d.stats, s.stats || {});
+          d.tutorialDone = !!s.tutorialDone;
         } catch (e) {
           console.warn('save corrupt, starting fresh', e);
         }

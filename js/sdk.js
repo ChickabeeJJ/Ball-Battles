@@ -100,5 +100,17 @@
     },
 
     rewarded() { return S.requestAd('rewarded'); },
+
+    // Multiplayer invite links (CrazyGames only).
+    inviteLink(params) {
+      if (!S.ready) return null;
+      try { return S.sdk.game.inviteLink(params); } catch (e) { console.warn('[sdk] inviteLink', e); return null; }
+    },
+    getInviteParam(name) {
+      if (!S.ready) return null;
+      try { return S.sdk.game.getInviteParam(name); } catch (e) { return null; }
+    },
+    showInvite(params) { S.call((c) => c.game.showInviteButton(params)); },
+    hideInvite() { S.call((c) => c.game.hideInviteButton()); },
   });
 })();

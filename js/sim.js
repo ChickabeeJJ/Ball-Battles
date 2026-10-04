@@ -79,6 +79,7 @@
         hp: o.hp, maxHp: o.hp, alive: true, main: o.main !== false,
         flash: 0, cd: {}, burnLvl: 0, burnT: 0, burnTick: 1, poison: 0, poisonTick: 1,
         controlled: !!o.controlled, slot: o.slot, caps: [], owner: o.owner || null, kills: 0,
+        slowT: 0, stunT: 0, phase: 0, sq: 0, sqA: 0,
       };
       const a = this.rng() * TAU;
       b.vx = Math.cos(a) * b.speed; b.vy = Math.sin(a) * b.speed;
@@ -198,6 +199,7 @@
     // Applies damage, returns the amount actually dealt.
     damage(target, amt, src, info) {
       if (!target.alive || amt <= 0) return 0;
+      if (target.phase > 0 && !(info && info.dot)) { this.fxNum(target.x, target.y - target.r - 4, 'MISS', '#8da2c0'); return 0; }
       const a = amt * this.dmgMul;
       target.hp -= a;
       target.flash = 0.12;
@@ -209,7 +211,8 @@
       }
       if (this.settings.dmgNumbers !== false) this.fxNum(target.x, target.y - target.r - 4, (info && info.crit ? 'CRIT ' : '') + BB.fmt(a), info && info.dot ? (info.color || '#ff8a1f') : '#1d1d22');
       this.emit({ type: info && info.dot ? 'dot' : 'hit', amt: a, x, y, team: target.team, crit: info && info.crit });
-      if (target.hp <= 0.0001) { target.hp = 0; this.kill(target, src); }
+      if (!(info && info.dot) && (a >= 6 || (info && info.crit))) this.emit({ type: 'impact', x, y, amt: a });
+      if (target.hp <= 0.0001) { target.hp = 0; this.kill(target, src); this.emit({ type: 'impact', x: target.x, y: target.y, amt: 99 }); }
       return a;
     }
 
@@ -259,6 +262,13 @@
       }
       if (!w.len) return;
       if (def.id === 'boomerang' && w.thrown) return;
+      if (def.flail) {
+        const s0 = b.r + w.gap, e = s0 + w.len, ha = w.head;
+        const hx = b.x + Math.cos(ha) * e, hy = b.y + Math.sin(ha) * e;
+        b.caps.push({ ax: b.x + Math.cos(w.angle) * s0, ay: b.y + Math.sin(w.angle) * s0, bx: hx, by: hy, hw: 3, hit: false, block: true });
+        b.caps.push({ ax: hx, ay: hy, bx: hx, by: hy, hw: w.width / 2, hit: true, block: true });
+        return;
+      }
       const ca = Math.cos(w.angle), sa = Math.sin(w.angle);
       if (def.perp) {
         const c = b.r + w.gap + w.len / 2;
@@ -316,10 +326,20 @@
         if (!b.alive) continue;
 
         const w = b.w;
-        w.angle += w.dir * w.spin * D2R * dt;
+        if (b.slowT > 0) b.slowT -= dt;
+        if (b.stunT > 0) b.stunT -= dt;
+        if (b.sq > 0) b.sq = Math.max(0, b.sq - dt * 5);
+        w.prevAngle = w.angle;
+        w.angle += w.dir * w.spin * D2R * dt * (b.stunT > 0 ? 0 : b.slowT > 0 ? 0.45 : 1);
+        if (b.def.flail) {
+          // the head trails behind the handle like a weight on a chain
+          let lag = w.angle - w.dir * 0.55 - (w.head || w.angle);
+          while (lag > Math.PI) lag -= TAU; while (lag < -Math.PI) lag += TAU;
+          w.head = (w.head || w.angle) + lag * Math.min(1, 9 * dt);
+        }
         if (b.def.update) b.def.update(this, b, w, dt);
 
-        const tgt = b.speed * b.speedMul;
+        const tgt = b.speed * b.speedMul * (b.slowT > 0 ? 0.55 : 1);
         // Gentle homing keeps fights busy without losing the bouncy billiard feel.
         if (false) {
           const e = this.nearestEnemy(b.team, b.x, b.y);
@@ -377,6 +397,7 @@
             const jj = (-2 * vn) / (1 / m1 + 1 / m2);
             a.vx -= (jj / m1) * nx; a.vy -= (jj / m1) * ny;
             c.vx += (jj / m2) * nx; c.vy += (jj / m2) * ny;
+            this.squash(a, Math.atan2(ny, nx), 0.8); this.squash(c, Math.atan2(ny, nx), 0.8);
             this.emit({ type: 'bump', x: a.x + nx * a.r, y: a.y + ny * a.r });
           }
           if (a.team !== c.team) {
@@ -421,11 +442,14 @@
         for (const c of balls) {
           if (!c.alive || c.team === a.team || c.cd[a.id] > 0) continue;
           if (parried[Math.min(a.id, c.id) + ':' + Math.max(a.id, c.id)]) continue;
+          let hitCap = null;
           for (const cap of a.caps) {
             if (!cap.hit) continue;
             const r = c.r + cap.hw;
-            if (geo.segPoint2(cap.ax, cap.ay, cap.bx, cap.by, c.x, c.y) < r * r) { this.weaponHit(a, c, cap); break; }
+            if (geo.segPoint2(cap.ax, cap.ay, cap.bx, cap.by, c.x, c.y) < r * r) { hitCap = cap; break; }
           }
+          if (!hitCap) hitCap = this.sweptHit(a, c);
+          if (hitCap) this.weaponHit(a, c, hitCap);
         }
         // Weapons smash enemy turrets
         for (const t of this.turrets) {
@@ -460,8 +484,16 @@
       if (b.x + b.r > hw) { b.x = hw - b.r; if (b.vx > 0) { b.vx = -b.vx; hit = true; } }
       if (b.y - b.r < -hh) { b.y = -hh + b.r; if (b.vy < 0) { b.vy = -b.vy; hit = true; } }
       if (b.y + b.r > hh) { b.y = hh - b.r; if (b.vy > 0) { b.vy = -b.vy; hit = true; } }
-      if (hit) this.emit({ type: 'wall', x: b.x, y: b.y });
+      if (hit) {
+        const j = (this.rng() - 0.5) * 0.06, c = Math.cos(j), s = Math.sin(j);
+        const vx = b.vx * c - b.vy * s; b.vy = b.vx * s + b.vy * c; b.vx = vx;
+        this.squash(b, Math.atan2(b.vy, b.vx), 0.9);
+        if (b.def.onWall) b.def.onWall(this, b, b.w);
+        this.emit({ type: 'wall', x: b.x, y: b.y });
+      }
     }
+
+    squash(b, ang, k) { b.sq = Math.max(b.sq, Math.min(1, k)); b.sqA = ang; }
 
     obstacleHit(b, o) {
       const dx = b.x - o.x, dy = b.y - o.y, rs = b.r + o.r, d2 = dx * dx + dy * dy;
@@ -487,6 +519,23 @@
       if (dealt && a.def.id !== 'splodey') this.onHit(a, c, dealt);
     }
 
+    // Fast spinners can rotate past a ball between steps: test the arc they swept.
+    sweptHit(a, c) {
+      const w = a.w, def = a.def;
+      if (!def.melee || def.perp || def.flail || def.moons || !w.len || w.prevAngle == null) return null;
+      let d = w.angle - w.prevAngle;
+      const reach = a.r + w.gap + w.len;
+      const n = Math.ceil((Math.abs(d) * reach) / Math.max(8, c.r * 0.6));
+      if (n <= 1) return null;
+      const s0 = a.r + w.gap, hw = w.width / 2, rr = (c.r + hw) ** 2;
+      for (let k = 1; k < n; k++) {
+        const ang = w.prevAngle + (d * k) / n, ca = Math.cos(ang), sa = Math.sin(ang);
+        const cap = { ax: a.x + ca * s0, ay: a.y + sa * s0, bx: a.x + ca * reach, by: a.y + sa * reach, hw, hit: true };
+        if (geo.segPoint2(cap.ax, cap.ay, cap.bx, cap.by, c.x, c.y) < rr) return cap;
+      }
+      return null;
+    }
+
     weaponHit(a, c, cap) {
       const def = a.def, w = a.w;
       let dmg = w.damage, crit = false;
@@ -494,8 +543,13 @@
       const [px, py] = geo.segClosest(cap.ax, cap.ay, cap.bx, cap.by, c.x, c.y);
       c.cd[a.id] = def.hitCd || 0.25;
       const dealt = this.damage(c, dmg, a, { x: px, y: py, crit, lag: true });
-      this.knock(c, px, py, def.knock || 220);
+      const ang = Math.atan2(py - a.y, px - a.x);
+      const tx = -Math.sin(ang) * a.w.dir, ty = Math.cos(ang) * a.w.dir;
+      let nx = c.x - px, ny = c.y - py; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl;
+      const kx = nx + tx * 0.7, ky = ny + ty * 0.7, kl = Math.hypot(kx, ky) || 1;
+      this.knock(c, c.x - kx / kl, c.y - ky / kl, def.knock || 220);
       this.knock(a, c.x, c.y, 60);
+      this.squash(c, Math.atan2(ky, kx), 1);
       this.onHit(a, c, dealt);
     }
 

@@ -16,6 +16,9 @@ window.CrazyGames = { SDK: {
     loadingStart: () => L('loadingStart'), loadingStop: () => L('loadingStop'),
     gameplayStart: () => L('gameplayStart'), gameplayStop: () => L('gameplayStop'),
     happytime: () => L('happytime'),
+    inviteLink: (p) => { L('inviteLink'); return 'https://www.crazygames.com/game/ball-battles?pvp=' + encodeURIComponent(p.pvp); },
+    getInviteParam: (k) => (k === 'pvp' ? window.__invite || null : null),
+    showInviteButton: () => L('showInviteButton'), hideInviteButton: () => L('hideInviteButton'),
   },
   ad: { requestAd: (type, cb) => { L('requestAd:' + type); setTimeout(() => { cb.adStarted(); L('adStarted'); setTimeout(() => { L('adFinished'); cb.adFinished(); }, 300); }, 100); } },
   data: { getItem: (k) => (k in window.__data ? window.__data[k] : null), setItem: (k, v) => { window.__data[k] = v; L('data.setItem'); }, removeItem: () => {}, clear: () => {} },
@@ -27,12 +30,14 @@ page.on('pageerror', (e) => errs.push(e.message));
 await page.route('**/crazygames-sdk-v3.js', (r) => r.fulfill({ contentType: 'text/javascript', body: MOCK }));
 await page.goto(BASE + '/index.html');
 await page.waitForFunction(() => BB.app.state === 'menu');
+await page.waitForSelector('.tut', { timeout: 5000 });
+await page.click('.tut-row .btn:has-text("Skip")');
 const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (!ok) process.exitCode = 1; };
 let log = await page.evaluate(() => __log.slice());
 check('init -> loadingStart -> loadingStop', log.join(',').startsWith('init,loadingStart') && log.includes('loadingStop'));
 check('no gameplayStart on menu', !log.includes('gameplayStart'));
 
-await page.click('#btnStart'); await page.click('text=Just watch');
+await page.click('#btnStart');
 await page.waitForTimeout(300);
 log = await page.evaluate(() => __log.slice());
 check('gameplayStart on battle start', log[log.length - 1] === 'gameplayStart');
@@ -75,7 +80,7 @@ await page.click('text=Continue');
 await page.waitForTimeout(300);
 log = await page.evaluate(() => __log.slice());
 check('no midgame within 3 minutes of start', !log.includes('requestAd:midgame'));
-await page.click('#btnStart'); await page.click('text=Just watch');
+await page.click('#btnStart');
 await page.evaluate(() => { BB.sdk.lastMidgame = Date.now() - 200000; BB.app.sim.balls.filter((b) => b.team === 1).forEach((b) => (b.hp = 0.5)); });
 await page.waitForSelector('.result', { timeout: 30000 });
 await page.click('text=Continue');
@@ -88,12 +93,33 @@ check('back on menu, gameplay stopped', (await page.evaluate(() => BB.app.state)
 const prevented = await page.evaluate(() => { const e = new KeyboardEvent('keydown', { code: 'ArrowDown', key: 'ArrowDown', cancelable: true, bubbles: true }); window.dispatchEvent(e); return e.defaultPrevented; });
 check('arrow keys do not scroll the page', prevented);
 
+// PvP: button only on CrazyGames; link round-trips into a challenge
+check('PvP button visible on CrazyGames', await page.isVisible('#optPvp'));
+await page.click('#optPvp');
+await page.click('text=Create Challenge Link');
+await page.waitForTimeout(200);
+const link = await page.inputValue('.pvp-link');
+check('PvP invite link created', /pvp=/.test(link));
+const code = decodeURIComponent(link.split('pvp=')[1]);
+await page.click('.x-btn');
+const pv = await browser.newPage({ viewport: { width: 1000, height: 560 } });
+pv.on('pageerror', (e) => errs.push('pvp: ' + e.message));
+await pv.route('**/crazygames-sdk-v3.js', (r) => r.fulfill({ contentType: 'text/javascript', body: MOCK + 'window.__invite = ' + JSON.stringify(code) + ';' }));
+await pv.goto(BASE + '/index.html');
+await pv.waitForSelector('text=Challenged', { timeout: 8000 });
+await pv.click('text=Fight!');
+await pv.waitForTimeout(400);
+check('challenge link opens PvP battle', await pv.evaluate(() => BB.app.state === 'battle' && !!BB.app.pvp));
+const seedA = await pv.evaluate(() => BB.app.sim.cfg.seed);
+check('PvP battle uses the challenge seed', String(seedA) === code.split('~')[7]);
+
 // Standalone (SDK missing) still works
 const p2 = await browser.newPage();
 await p2.route('**/crazygames-sdk-v3.js', (r) => r.fulfill({ status: 404, body: '' }));
 await p2.goto(BASE + '/index.html');
 await p2.waitForFunction(() => BB.app.state === 'menu', null, { timeout: 10000 });
 check('runs without the SDK', true);
+check('PvP hidden off CrazyGames', !(await p2.isVisible('#optPvp')));
 check('no page errors', errs.length === 0);
 if (errs.length) console.log(errs);
 await browser.close();
