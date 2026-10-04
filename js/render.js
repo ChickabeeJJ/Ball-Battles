@@ -458,6 +458,11 @@
           ctx.globalAlpha = a;
           ctx.beginPath(); ctx.arc(f.x, f.y, BB.lerp(f.r1, f.r0, a), 0, TAU);
           ctx.lineWidth = 5 * a + 1; ctx.strokeStyle = f.c; ctx.stroke();
+        } else if (f.k === 'z') {
+          ctx.globalAlpha = a;
+          ctx.beginPath(); ctx.moveTo(f.x, f.y);
+          const segs = 7; for (let k = 1; k <= segs; k++) { const t = k / segs; ctx.lineTo(f.x + (f.x2 - f.x) * t + (k < segs ? (Math.sin(k * 12.9 + f.life * 40) * 14) : 0), f.y + (f.y2 - f.y) * t + (k < segs ? (Math.cos(k * 7.3 + f.life * 40) * 14) : 0)); }
+          ctx.strokeStyle = '#7fd3ff'; ctx.lineWidth = 10; ctx.stroke(); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3.5; ctx.stroke();
         } else if (f.k === 'n') {
           ctx.globalAlpha = Math.min(1, a * 2);
           ctx.font = '22px ' + FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -526,6 +531,7 @@
     }
 
     drawProj(ctx, p, lw) {
+      if (BB.drawProjArt && BB.drawProjArt(ctx, p, lw)) return;
       const tm = BB.TEAMS[p.team];
       ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle || 0);
       if (p.kind === 'arrow') {

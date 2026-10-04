@@ -1,7 +1,7 @@
 // Finds seeds whose battle ends inside a time window, for the preview videos.
 // node tools/seeds.js
 global.window = globalThis;
-for (const f of ['core', 'data', 'sim']) require('../js/' + f + '.js');
+for (const f of ['core', 'data', 'data2', 'balance', 'sim']) require('../js/' + f + '.js');
 const BB = globalThis.BB;
 const SETTINGS = { sound: 0.8, dark: false, hitlag: true, parrylag: true, reverseB: false, vibrate: true, dmgNumbers: true };
 function teamsFor(mode, ids, hp) {

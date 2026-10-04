@@ -375,25 +375,55 @@
   };
 
   // ------------------------------------------------------------ impact frames
-  // A few frames of high-contrast inverted silhouette with radial speed lines (setting, off by default).
+  // Anime-style impact: the action freezes and the arena becomes a stark two-tone
+  // silhouette that punches in toward the hit, flips negative, then flashes red,
+  // with radial speed lines throughout. imp.p goes 0 -> 1 over the hold.
+  let tmp = null;
   BB.impactFrame = function (R, imp, scale, sx, sy) {
-    const ctx = R.ctx, Wc = R.c.width;
+    const ctx = R.ctx, c = R.c, Wc = c.width;
+    const cx = Wc / 2 + (imp.x + sx) * scale, cy = Wc / 2 + (imp.y + sy) * scale;
+    const p = imp.p;
+    // 1) punch-in zoom around the impact point
+    if (!tmp) tmp = document.createElement('canvas');
+    if (tmp.width !== Wc) { tmp.width = Wc; tmp.height = Wc; }
+    const tctx = tmp.getContext('2d');
+    tctx.setTransform(1, 0, 0, 1, 0, 0);
+    tctx.drawImage(c, 0, 0);
+    const z = 1 + 0.14 * Math.sin(Math.min(1, p * 2.2) * Math.PI * 0.5) + (imp.ko ? 0.06 : 0);
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.globalCompositeOperation = 'saturation'; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, Wc, Wc);
-    if (imp.invert) { ctx.globalCompositeOperation = 'difference'; ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, Wc, Wc); }
-    ctx.globalCompositeOperation = 'source-over';
-    const cx = Wc / 2 + (imp.x + sx) * scale, cy = Wc / 2 + (imp.y + sy) * scale;
-    const rng = BB.RNG(imp.seed || 7);
-    ctx.fillStyle = imp.invert ? '#ffffff' : '#000000';
-    for (let i = 0; i < 26; i++) {
-      const a = rng() * TAU, w = 0.012 + rng() * 0.03, r0 = Wc * (0.12 + rng() * 0.15);
+    ctx.translate(cx, cy); ctx.scale(z, z); ctx.translate(-cx, -cy);
+    ctx.drawImage(tmp, 0, 0);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    // 2) two-tone posterize: ink silhouettes on paper, then negative, then red
+    const phase = p < 0.38 ? 0 : p < 0.72 ? 1 : 2;
+    const img = ctx.getImageData(0, 0, Wc, Wc), d = img.data;
+    const ink = phase === 0 ? [12, 12, 16] : phase === 1 ? [250, 250, 250] : [20, 0, 4];
+    const paper = phase === 0 ? [250, 248, 240] : phase === 1 ? [10, 10, 14] : [226, 30, 40];
+    for (let i = 0; i < d.length; i += 4) {
+      const l = d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11;
+      const k = l < 150 ? ink : paper;
+      d[i] = k[0]; d[i + 1] = k[1]; d[i + 2] = k[2];
+    }
+    ctx.putImageData(img, 0, 0);
+    // 3) radial speed lines converging on the hit, plus a focus burst
+    const rng = BB.RNG(imp.seed + phase * 31);
+    ctx.fillStyle = phase === 1 ? '#ffffff' : '#0c0c10';
+    const n = imp.ko ? 46 : 34;
+    for (let i = 0; i < n; i++) {
+      const a = rng() * TAU, w = 0.006 + rng() * 0.022, r0 = Wc * (0.14 + rng() * 0.22) * (1 - p * 0.3);
       ctx.beginPath();
-      ctx.moveTo(cx + Math.cos(a - w) * Wc * 1.5, cy + Math.sin(a - w) * Wc * 1.5);
+      ctx.moveTo(cx + Math.cos(a - w) * Wc * 1.6, cy + Math.sin(a - w) * Wc * 1.6);
       ctx.lineTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0);
-      ctx.lineTo(cx + Math.cos(a + w) * Wc * 1.5, cy + Math.sin(a + w) * Wc * 1.5);
+      ctx.lineTo(cx + Math.cos(a + w) * Wc * 1.6, cy + Math.sin(a + w) * Wc * 1.6);
       ctx.fill();
     }
+    ctx.beginPath();
+    const spikes = 14, R0 = Wc * 0.05 * (1 + p), R1 = Wc * 0.13 * (1 + p);
+    for (let i = 0; i < spikes * 2; i++) { const a = (i * Math.PI) / spikes + imp.seed, rr = i % 2 ? R0 : R1 * (0.7 + rng() * 0.5); ctx.lineTo(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr); }
+    ctx.closePath();
+    ctx.fillStyle = phase === 1 ? '#0c0c10' : '#ffffff'; ctx.fill();
+    ctx.lineWidth = Wc * 0.006; ctx.strokeStyle = phase === 1 ? '#ffffff' : '#0c0c10'; ctx.stroke();
     ctx.restore();
   };
 })();

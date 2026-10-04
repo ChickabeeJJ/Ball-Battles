@@ -226,10 +226,10 @@
   // ---------------------------------------------------------------- special balls
   add({
     id: 'fibonacci', name: 'Fibonacci', cat: 'special', rarity: 'common', color: '#f2c230',
-    desc: 'Body slams follow the Fibonacci sequence: 1, 1, 2, 3, 5, 8, 13…',
+    desc: 'Every 2 slams, damage climbs the Fibonacci sequence: 1, 1, 2, 3, 5, 8, 13…',
     base: { damage: 1 }, contact: true,
     init(w) { w.fa = 1; w.fb = 1; w.damage = 1; },
-    onHit(sim, b, w) { const n = w.fa + w.fb; w.fa = w.fb; w.fb = n; w.damage = w.fa; },
+    onHit(sim, b, w) { w.step = (w.step || 0) + 1; if (w.step % 2) return; const n = w.fa + w.fb; w.fa = w.fb; w.fb = n; w.damage = w.fa; },
     stats: (w) => ['Damage: ' + fmt(w.damage)],
   });
   add({

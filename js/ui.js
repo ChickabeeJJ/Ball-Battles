@@ -198,7 +198,7 @@
           const owned = app.isOwned(it.id);
           const t = el('button', 'tile' + (mine && !owned ? ' locked' : ''));
           t.dataset.id = it.id;
-          t.innerHTML = `<img src="${BB.icon(it.id)}" alt=""><span class="t-n">${esc(it.name)}</span><span class="rar" style="background:${BB.RARITY[it.rarity].color}"></span>`;
+          t.innerHTML = `<img src="${BB.icon(it.id)}" alt=""><span class="t-n">${esc(it.name)}</span>${BB.meta.starHtml(it.id)}<span class="rar" style="background:${BB.RARITY[it.rarity].color}"></span>`;
           if (!owned) t.innerHTML += `<span class="price">${coinHtml(it.price)}</span>`;
           else if (app.trials[it.id] && !save.unlocked[it.id]) t.innerHTML += '<span class="badge">TRIAL</span>';
           t.onclick = () => { BB.audio.play('click'); sel = it.id; renderDetail(); };
@@ -315,7 +315,7 @@
           big('green pz-main', '▶', 'Resume', () => app.resume()),
           big('primary', '↻', 'Restart', () => { UI.onClose = null; UI.close(); app.startBattle(); }),
           big('', '⚙', 'Settings', () => { UI.onClose = null; UI.settings(); }),
-          big('red', '⌂', 'Quit', () => { UI.onClose = null; UI.close(); app.pvp = null; app.toMenu(); }),
+          big('red', '⌂', 'Quit', () => { UI.onClose = null; UI.close(); app.pvp = null; app.event = null; BB.meta.cup = null; BB.meta.gaunt = null; app.toMenu(); }),
         );
         body.appendChild(grid);
         // quick toggles

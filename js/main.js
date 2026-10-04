@@ -24,7 +24,7 @@
       BB.save.load();
 
       try {
-        await Promise.race([Promise.all([document.fonts.load('20px Anton'), document.fonts.load('20px "Pixelify Sans"')]), new Promise((r) => setTimeout(r, 2500))]);
+        await Promise.race([Promise.all([document.fonts.load('20px Anton'), document.fonts.load('20px "Pixelify Sans"')]), new Promise((r) => setTimeout(r, 700))]);
       } catch (e) { /* fall back to system font */ }
 
       App.renderer = new BB.Renderer($('arena'));
@@ -32,7 +32,6 @@
       App.bindUI();
       App.bindInput();
       App.layout();
-      for (const it of BB.ITEMS) BB.icon(it.id);
       App.toMenu();
 
       BB.sdk.on('adStart', () => { App.applyAudio(); });
@@ -41,6 +40,7 @@
 
       BB.sdk.loadingStop();
       if (!App.capture) requestAnimationFrame(App.frame);
+      BB.meta.refreshBadges();
       $('optPvp').classList.toggle('hidden', !App.pvpAvailable());
       $('menuPanel').classList.toggle('has-pvp', App.pvpAvailable());
       // A friend's challenge link takes priority; otherwise first-time players get the tutorial.
@@ -64,7 +64,8 @@
       BB.audio.volume = BB.save.data.settings.sound;
       BB.audio.setBlocked(BB.sdk.muteAudio || BB.sdk.adPlaying || document.hidden);
     },
-    refreshCoins() { $('coinCount').textContent = BB.save.data.coins; },
+    refreshCoins() { $('coinCount').textContent = BB.save.data.coins; if (BB.meta) BB.meta.refreshBadges(); },
+    refreshSpeed() { $('btnSpeed').textContent = (BB.save.data.settings.speed || 1) + 'x'; },
 
     vibrate(ms) {
       if (!BB.save.data.settings.vibrate || !navigator.vibrate) return;
@@ -92,7 +93,7 @@
         document.documentElement.style.setProperty('--panelw', pw + 'px');
         S = Math.min(vh - top - header - stats - 14, vw - pw * ui - 28 - 40);
       } else {
-        const panel = (teamMode ? 300 : 236) * ui;
+        const panel = (teamMode ? 330 : 270) * ui;
         S = Math.min(vw - 24, vh - top - header - stats - 12 - panel);
       }
       S = Math.max(150, Math.floor(S));
@@ -137,7 +138,7 @@
         b.className = 'slot';
         b.style.borderLeftColor = BB.itemColor(s.id);
         b.setAttribute('aria-label', 'Edit ' + BB.TEAMS[team].name + ' ' + it.name);
-        b.innerHTML = `<img src="${BB.icon(s.id)}" alt=""><span class="sl-t"><span class="sl-n">${it.name}</span><span class="sl-s">HP ${s.hp}${s.scale !== 1 ? ' · x' + s.scale : ''} · Edit</span></span><span class="dot" style="background:${BB.TEAMS[team].fill}"></span>`;
+        b.innerHTML = `<img src="${BB.icon(s.id)}" alt=""><span class="sl-t"><span class="sl-n">${it.name}${BB.meta.starHtml(s.id)}</span><span class="sl-s">HP ${s.hp}${s.scale !== 1 ? ' · x' + s.scale : ''} · Edit</span></span><span class="dot" style="background:${BB.TEAMS[team].fill}"></span>`;
         b.onclick = () => { BB.audio.unlock(); BB.audio.play('click'); BB.ui.editSlot(i); };
         return b;
       };
@@ -253,9 +254,10 @@
       BB.audio.unlock();
       const setup = BB.save.data.setup;
       const mode = App.mode();
-      App.seed = App.pvp ? App.pvp.seed : (Math.random() * 2147483647) | 0;
+      const cu = App.pvp || App.event;
+      App.seed = cu ? cu.seed : (Math.random() * 2147483647) | 0;
       App.sim = new BB.Sim({
-        seed: App.seed, map: App.pvp ? App.pvp.map : setup.map, teams: App.pvp ? App.pvp.teams : App.buildTeams(),
+        seed: App.seed, map: cu ? cu.map : setup.map, teams: cu ? cu.teams : App.buildTeams(),
         settings: BB.save.data.settings, controlSlot: null,
       });
       void mode;
@@ -269,6 +271,7 @@
       App.layout();
       App.renderMatchup(App.sim);
       App.renderStats(App.sim, true);
+      App.refreshSpeed();
       BB.audio.play('start');
       BB.ui.banner('FIGHT!', 700);
       BB.sdk.gameplayStart();
@@ -302,13 +305,15 @@
       const sim = App.sim, save = BB.save.data, mode = App.mode();
       const w = sim.over.winner;
       save.stats.battles++;
+      BB.meta.afterBattle(sim, w);
+      if (App.event) { App.event.onOver(w, sim); BB.save.write(); return; }
       let title, sub, icon = null, coins;
       if (w < 0) {
         title = 'Draw!'; sub = 'Everyone got knocked out'; coins = 20;
         BB.audio.play('lose');
       } else {
         const winners = sim.balls.filter((b) => b.main && b.team === w);
-        if (App.pvp || mode.teams[0].length === 1) { title = winners[0].def.name + ' Wins!'; icon = winners[0].def.id; }
+        if (App.pvp || App.event || mode.teams[0].length === 1) { title = winners[0].def.name + ' Wins!'; icon = winners[0].def.id; }
         else { title = BB.TEAMS[w].name + ' Team Wins!'; icon = winners[0].def.id; }
         if (w === 0) {
           coins = Math.round(50 * (save.setup.control ? 1.5 : 1));
@@ -346,6 +351,8 @@
       for (const e of sim.events) {
         switch (e.type) {
           case 'hit':
+            BB.meta.track('damage', e.amt);
+            if (e.amt >= 15) BB.meta.track('bighit', 1);
             App.shake = Math.min(14, (App.shake || 0) + Math.min(10, 1.5 + e.amt * 0.5));
             BB.audio.play('hit', e);
             if (e.amt > App.maxHit) App.maxHit = e.amt;
@@ -363,7 +370,11 @@
           case 'pass': BB.audio.play('pass'); break;
           case 'overtime': BB.audio.play('overtime'); BB.ui.banner('OVERTIME x' + e.mul, 1000); break;
           case 'impact':
-            if (BB.save.data.settings.impact) App.impact = { t: 0.12, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0, invert: e.amt >= 99 };
+            // cooldown keeps it dramatic instead of strobing; knockouts always get one
+            if (BB.save.data.settings.impact && (e.amt >= 99 || !(App.impactCd > 0)) && !App.impact) {
+              App.impact = { t: 0, dur: e.amt >= 99 ? 0.5 : 0.32, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0, ko: e.amt >= 99 };
+              App.impactCd = 1.4;
+            }
             break;
           case 'ko': App.slowmo = 1.1; App.shake = 14; BB.ui.banner(e.winner < 0 ? 'DRAW!' : 'K.O.!', 1000); break;
         }
@@ -382,9 +393,14 @@
     tick(dt) {
       if (App.state === 'battle' && App.sim) {
         const running = !App.paused && !BB.sdk.adPlaying && !document.hidden;
-        if (running) {
+        if (App.impactCd > 0) App.impactCd -= dt;
+        if (running && App.impact) {
+          App.impact.t += dt;
+          if (App.impact.t >= App.impact.dur) App.impact = null;
+          App.handleEvents(App.sim);
+        } else if (running) {
           App.sim.input = App.readInput();
-          App.acc += dt;
+          App.acc += dt * (BB.save.data.settings.speed || 1);
           let n = 0;
           if (App.slowmo > 0) { App.slowmo -= dt; App.acc -= dt * 0.65; } // slow-motion knockout
           while (App.acc >= STEP - 1e-9 && n < 12) { App.sim.step(STEP); App.acc -= STEP; n++; }
@@ -407,11 +423,7 @@
       const s = App.state === 'battle' ? App.sim : App.preview;
       if (App.shake > 0) App.shake = Math.max(0, App.shake - 0.8);
       let imp = null;
-      if (App.impact && App.state === 'battle') {
-        App.impact.t -= 1 / 60;
-        if (App.impact.t <= 0) App.impact = null;
-        else { imp = App.impact; imp.invert = imp.invert !== (imp.t < 0.06); }
-      }
+      if (App.impact && App.state === 'battle') { imp = App.impact; imp.p = Math.min(0.999, imp.t / imp.dur); }
       if (s && App.renderer) App.renderer.draw(s, { shake: App.state === 'battle' && !App.paused ? App.shake : 0, impact: imp });
     },
 
@@ -443,6 +455,15 @@
       click('btnPause', () => App.pause());
       click('optMode', () => BB.ui.pickMode());
       click('optPvp', () => BB.ui.pvpCreate());
+      click('btnCup', () => BB.meta.openCup());
+      click('btnGauntlet', () => BB.meta.openGauntlet());
+      click('btnQuests', () => BB.meta.openQuests());
+      click('btnGift', () => BB.meta.claimGift());
+      click('btnSpeed', () => {
+        const st = BB.save.data.settings;
+        st.speed = st.speed === 1 || !st.speed ? 2 : st.speed === 2 ? 3 : 1;
+        BB.save.write(); App.refreshSpeed();
+      });
       click('optMap', () => BB.ui.pickMap());
       click('optControl', () => {
         const s = BB.save.data.setup;

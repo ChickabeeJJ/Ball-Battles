@@ -49,6 +49,7 @@
           }
           Object.assign(d.stats, s.stats || {});
           d.tutorialDone = !!s.tutorialDone;
+          if (s.meta && typeof s.meta === 'object') d.meta = s.meta;
         } catch (e) {
           console.warn('save corrupt, starting fresh', e);
         }

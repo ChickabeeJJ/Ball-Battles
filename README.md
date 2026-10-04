@@ -16,8 +16,8 @@ The game also runs without the SDK (opened from disk, other hosts, ad blockers).
 
 | | |
 |---|---|
-| Weapons (25) | Sword, Dagger, Spear, Axe, Unarmed, Bow, Shuriken, Katana, Hammer, Torch, Scythe, Poison Flask, Wrench, Boomerang, Shield, Grimoire, Cannon, Lance, Dummy |
-| Specials (9) | Fibonacci, Speedy, Grower, Spiky, Gravitron, Splodey, Orbital, Duplicator, Vampire |
+| Weapons (45) | Sword, Dagger, Spear, Axe, Unarmed, Bow, Shuriken, Katana, Hammer, Torch, Scythe, Poison Flask, Wrench, Boomerang, Shield, Grimoire, Cannon, Lance, Dummy |
+| Specials (21) | Fibonacci, Speedy, Grower, Spiky, Gravitron, Splodey, Orbital, Duplicator, Vampire |
 | Modes | 1v1, 2v2, 3v3, Free For All |
 | Maps | Classic, Large, Bouncy (gravity), Pillars, Saws, Shrinking, Hot Potato, Meteors |
 | Per ball | Health, size, and overrides for damage, spin and speed |
@@ -79,7 +79,7 @@ node tools/seeds.js       # finds seeds whose battles end with a K.O. inside a c
 
 **Title:** Ball Battles
 
-**Description:** Pick a weapon, drop two balls into the arena and watch them fight! Every weapon gets stronger with each hit. Swords hit harder, daggers spin faster, bows fire more arrows. A ball whose hits follow the Fibonacci sequence can turn a fight around in one slam. Mix 36 weapons and special balls across 1v1, 2v2, 3v3 and Free For All on 8 maps with saws, meteors, gravity and a hot potato bomb. Earn coins and unlock legendary gear.
+**Description:** Pick a weapon, drop two balls into the arena and watch them fight! Every weapon gets stronger with each hit. Swords hit harder, daggers spin faster, bows fire more arrows. A ball whose hits follow the Fibonacci sequence can turn a fight around in one slam. Mix 66 weapons and special balls across 1v1, 2v2, 3v3 and Free For All on 8 maps with saws, meteors, gravity and a hot potato bomb. Earn coins and unlock legendary gear.
 
 **Controls:** Mouse / touch for menus. Space or Enter starts a battle. P or Esc pauses.
 

@@ -151,7 +151,7 @@
     }
 
     spawnMini(b) {
-      const m = this.makeBall(BB.MINI, b.team, b.x, b.y, { hp: 6, scale: b.scale * 0.55, main: false, owner: b });
+      const m = this.makeBall(BB.MINI, b.team, b.x, b.y, { hp: 12, scale: b.scale * 0.55, main: false, owner: b });
       m.name = 'Mini';
       this.ring(b.x, b.y, 4, 30, '#ff6fb5', 0.3);
     }
@@ -193,14 +193,18 @@
     onHit(attacker, target, dealt) {
       const w = attacker.w;
       w.hits++;
+      const hadBurn = target && target.burnT;
       if (attacker.def.onHit) attacker.def.onHit(this, attacker, w, target, dealt);
+      if (target && target.burnT && target.burnT !== hadBurn) target.burnPow = BB.BALANCE[attacker.def.id] || 1;
     }
 
     // Applies damage, returns the amount actually dealt.
     damage(target, amt, src, info) {
       if (!target.alive || amt <= 0) return 0;
       if (target.phase > 0 && !(info && info.dot)) { this.fxNum(target.x, target.y - target.r - 4, 'MISS', '#8da2c0'); return 0; }
-      const a = amt * this.dmgMul;
+      // per-ball balance multiplier (tools/balance.js) and painted targets take extra damage
+      const pow = src && src.def ? (BB.BALANCE[src.def.id] || 1) : 1;
+      const a = amt * this.dmgMul * pow * (target.paintT > 0 ? 1.3 : 1);
       target.hp -= a;
       target.flash = 0.12;
       const x = info && info.x != null ? info.x : target.x;
@@ -211,18 +215,33 @@
       }
       if (this.settings.dmgNumbers !== false) this.fxNum(target.x, target.y - target.r - 4, (info && info.crit ? 'CRIT ' : '') + BB.fmt(a), info && info.dot ? (info.color || '#ff8a1f') : '#1d1d22');
       this.emit({ type: info && info.dot ? 'dot' : 'hit', amt: a, x, y, team: target.team, crit: info && info.crit });
-      if (!(info && info.dot) && (a >= 6 || (info && info.crit))) this.emit({ type: 'impact', x, y, amt: a });
+      if (!(info && info.dot) && (a >= 4 || (info && info.crit))) this.emit({ type: 'impact', x, y, amt: a, crit: info && info.crit });
+      if (target.def.onDamaged && !(info && info.dot)) target.def.onDamaged(this, target, a, src, info);
       if (target.hp <= 0.0001) { target.hp = 0; this.kill(target, src); this.emit({ type: 'impact', x: target.x, y: target.y, amt: 99 }); }
       return a;
     }
 
     kill(b, src) {
+      if (b.def.revive && !b.revived) {
+        b.revived = true; b.hp = b.maxHp * 0.4;
+        this.ring(b.x, b.y, b.r, b.r * 4, '#ff8a1f', 0.5);
+        this.burst(b.x, b.y, 30, ['#ffd23f', '#ff8a1f', '#ff3d1f'], 420, 5);
+        this.fxNum(b.x, b.y - b.r - 10, 'REVIVE!', '#ff8a1f');
+        this.emit({ type: 'boom', x: b.x, y: b.y });
+        return;
+      }
       b.alive = false;
       if (src && src.alive !== undefined) src.kills++;
       this.burst(b.x, b.y, 30, [BB.TEAMS[b.team].fill, '#ffffff', BB.TEAMS[b.team].dark], 380, 5);
       this.ring(b.x, b.y, b.r, b.r * 3, BB.TEAMS[b.team].fill, 0.4);
       this.emit({ type: 'death', x: b.x, y: b.y, team: b.team, main: b.main });
       if (this.potato && this.potato.holder === b) { this.potato.holder = this.pickPotatoHolder(); this.potato.t = Math.max(this.potato.t, 4); }
+      if (b.def.splits && b.main) {
+        for (let k = 0; k < 2; k++) {
+          const j = this.makeBall(BB.ITEM.jellylet, b.team, b.x + (k ? 12 : -12), b.y, { hp: Math.max(5, Math.round(b.maxHp * 0.3)), scale: b.scale * 0.65 });
+          j.name = 'Jellylet';
+        }
+      }
       if (b.main) for (const m of this.balls) if (m.owner === b && m.alive) { m.alive = false; this.burst(m.x, m.y, 8, ['#ffffff', BB.TEAMS[m.team].fill], 200, 3); }
     }
 
@@ -311,13 +330,13 @@
 
         if (b.burnT > 0) {
           b.burnT -= dt; b.burnTick -= dt;
-          if (b.burnTick <= 0) { b.burnTick = 1; this.damage(b, b.burnLvl, null, { dot: true, color: '#ff7a1a' }); }
+          if (b.burnTick <= 0) { b.burnTick = 1; this.damage(b, b.burnLvl * (b.burnPow || 1), null, { dot: true, color: '#ff7a1a' }); }
           if (this.frng() < dt * 20) this.fx.push({ k: 'p', x: b.x + (this.frng() - 0.5) * b.r, y: b.y - b.r * 0.5, vx: 0, vy: -60, life: 0.4, max: 0.4, c: this.frng() < 0.5 ? '#ff7a1a' : '#ffd23f', s: 3 });
           if (b.burnT <= 0) b.burnLvl = 0;
         }
         if (b.poison > 0 && b.alive) {
           b.poisonTick -= dt;
-          if (b.poisonTick <= 0) { b.poisonTick = 1; this.damage(b, b.poison * 0.5, null, { dot: true, color: '#a259ff' }); }
+          if (b.poisonTick <= 0) { b.poisonTick = 1; this.damage(b, b.poison * 0.35 * (BB.BALANCE.flask || 1), null, { dot: true, color: '#a259ff' }); }
         }
         if (this.t > 150 && b.alive) {
           b.stormTick = (b.stormTick || 0) - dt;
@@ -327,6 +346,7 @@
 
         const w = b.w;
         if (b.slowT > 0) b.slowT -= dt;
+        if (b.paintT > 0) b.paintT -= dt;
         if (b.stunT > 0) b.stunT -= dt;
         if (b.sq > 0) b.sq = Math.max(0, b.sq - dt * 5);
         w.prevAngle = w.angle;
@@ -613,6 +633,7 @@
             if (!cap.block) continue;
             const r = cap.hw + p.r;
             if (geo.segPoint2(cap.ax, cap.ay, cap.bx, cap.by, p.x, p.y) < r * r) {
+              if (!b.def.reflect) { p.swat = p.swat || {}; if (p.swat[b.id] === undefined) p.swat[b.id] = this.rng() < 0.35; if (!p.swat[b.id]) continue; }
               this.burst(p.x, p.y, 6, ['#ffffff', '#ffe36e'], 200, 2.5);
               this.emit({ type: 'parry', x: p.x, y: p.y, small: true });
               if (b.def.reflect) {
@@ -633,6 +654,14 @@
           if (!e.alive || e.team === p.team || p.hit.has(e.id)) continue;
           if ((e.x - p.x) ** 2 + (e.y - p.y) ** 2 < (e.r + p.r) ** 2) {
             p.hit.add(e.id);
+            if (e.def.mirrorBody) {
+              const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy) || 1, sp = Math.hypot(p.vx, p.vy);
+              p.vx = (dx / d) * sp; p.vy = (dy / d) * sp; p.team = e.team; p.owner = e; p.hit.clear(); p.homing = 0;
+              this.burst(p.x, p.y, 6, ['#ffffff', '#bfe9ff'], 200, 2.5); this.emit({ type: 'parry', x: p.x, y: p.y, small: true });
+              break;
+            }
+            if (p.burn) { e.burnLvl = Math.max(e.burnLvl, p.burn); e.burnT = 3; e.burnPow = BB.BALANCE[p.owner.def.id] || 1; }
+            if (p.slow) e.slowT = Math.max(e.slowT, p.slow);
             const dealt = this.damage(e, p.dmg, p.owner, { x: p.x, y: p.y, lag: p.kind === 'cannonball' });
             this.knock(e, p.x - p.vx, p.y - p.vy, p.knock || 90);
             this.onHit(p.owner, e, dealt);
