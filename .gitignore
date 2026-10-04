@@ -1,0 +1,4 @@
+node_modules/
+dist/
+marketing/_frames/
+marketing/_frame-*.png

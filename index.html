@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Ball Battles</title>
+  <meta name="description" content="Pick a weapon, drop two balls in the arena and watch them battle it out.">
+  <link rel="preload" href="fonts/lilita-one.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+</head>
+<body>
+  <div id="app" class="is-menu">
+    <header id="topbar">
+      <div class="coins" id="coins" title="Coins"><span class="coin-ic"></span><span id="coinCount">0</span></div>
+      <div class="brand">Ball Battles</div>
+      <button class="icon-btn" id="btnSettings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1L11 21h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5A3.5 3.5 0 1 1 13 8.5a3.5 3.5 0 0 1 0 7z"/></svg>
+      </button>
+    </header>
+
+    <main id="stage">
+      <section id="arenaCol">
+        <div id="matchup" class="matchup"></div>
+        <div id="arenaWrap">
+          <canvas id="arena"></canvas>
+          <button class="icon-btn pause-btn" id="btnPause" aria-label="Pause">
+            <svg viewBox="0 0 24 24" width="22" height="22"><rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor"/></svg>
+          </button>
+          <div id="banner" class="banner"></div>
+        </div>
+        <div id="statRow" class="stat-row"></div>
+      </section>
+
+      <section id="panel">
+        <div id="menuPanel">
+          <div id="slots" class="slots"></div>
+          <div class="opts">
+            <button class="opt" id="optMode"><span class="opt-k">Mode</span><span class="opt-v" id="optModeV">1 vs 1</span></button>
+            <button class="opt" id="optMap"><span class="opt-k">Map</span><span class="opt-v" id="optMapV">Classic</span></button>
+            <button class="opt" id="optControl"><span class="opt-k">Control</span><span class="opt-v" id="optControlV">Off</span></button>
+            <button class="opt opt-dice" id="optRandom" aria-label="Random opponents"><span class="opt-k">Random</span><span class="opt-v">Foes</span></button>
+          </div>
+          <button class="big-btn" id="btnStart">Start Battle</button>
+        </div>
+        <div id="battlePanel">
+          <div id="joystick" class="joystick" aria-label="Joystick"><div class="knob"></div></div>
+          <div id="controlHint" class="hint">Drag the stick or use WASD / arrow keys to steer your ball</div>
+        </div>
+      </section>
+    </main>
+
+    <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="sheet" id="sheet"></div>
+    </div>
+    <div id="toast" class="toast"></div>
+  </div>
+
+  <script src="js/core.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/sim.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/sdk.js"></script>
+  <script src="js/save.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
