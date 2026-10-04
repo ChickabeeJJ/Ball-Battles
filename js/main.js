@@ -92,6 +92,7 @@
       S = Math.max(150, Math.floor(S));
       document.documentElement.style.setProperty('--arena', S + 'px');
       App.renderer.resize(S);
+      if (App.preview || App.sim) App.fitMatchup();
       App.draw();
     },
 
@@ -157,6 +158,17 @@
       if (mode.id === '1v1') m.innerHTML = name(mains[0]) + '<span class="vs">VS</span>' + name(mains[1]);
       else if (mode.id === 'ffa') m.innerHTML = '<span class="nm" style="color:#fff">Free For All</span>';
       else m.innerHTML = `<span class="nm" style="color:${BB.TEAMS[0].fill}">Green Team</span><span class="vs">VS</span><span class="nm" style="color:${BB.TEAMS[1].fill}">Red Team</span>`;
+      App.fitMatchup();
+    },
+
+    // Shrink the header font until "A VS B" fits the arena width (long names on phones).
+    fitMatchup() {
+      const m = $('matchup');
+      m.style.fontSize = '';
+      const max = parseFloat(getComputedStyle(m).fontSize);
+      let fs = max;
+      while (m.scrollWidth > m.clientWidth - 6 && fs > 11) { fs -= 1; m.style.fontSize = fs + 'px'; }
+      m.querySelectorAll('img').forEach((i) => { i.style.width = i.style.height = Math.round(fs * 1.1) + 'px'; });
     },
 
     renderStats(sim, force) {

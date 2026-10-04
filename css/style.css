@@ -324,3 +324,7 @@ body.dark .big-btn { color: #fff; }
 /* Control mode removed: pure spectator battles */
 #optControl, #battlePanel { display: none !important; }
 .opts { grid-template-columns: repeat(3, 1fr); }
+
+/* Matchup header: never clip names or their outline; JS shrinks the font to fit. */
+.matchup { height: auto; min-height: 40px; overflow: visible; padding: 2px 4px; line-height: 1.15; }
+.matchup .nm { overflow: visible; text-overflow: clip; padding: 2px 1px; }
