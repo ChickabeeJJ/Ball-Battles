@@ -311,7 +311,7 @@
         if (this.endTimer < 0) { this.over = { winner: this.winner, t: this.t }; this.emit({ type: 'over', winner: this.winner }); return; }
       }
 
-      const ot = this.t > 40 ? 1 + Math.floor((this.t - 40) / 10) : 1;
+      const ot = this.t > 55 ? 1 + Math.floor((this.t - 55) / 10) : 1;
       if (ot !== this.dmgMul) { this.dmgMul = ot; this.emit({ type: 'overtime', mul: ot }); }
 
       // Map dynamics
@@ -338,9 +338,9 @@
           b.poisonTick -= dt;
           if (b.poisonTick <= 0) { b.poisonTick = 1; this.damage(b, b.poison * 0.35 * (BB.BALANCE.flask || 1), null, { dot: true, color: '#a259ff' }); }
         }
-        if (this.t > 150 && b.alive) {
+        if (this.t > 165 && b.alive) {
           b.stormTick = (b.stormTick || 0) - dt;
-          if (b.stormTick <= 0) { b.stormTick = 0.5; this.damage(b, 1 + Math.floor((this.t - 150) / 15), null, { dot: true, color: '#e23b3b' }); }
+          if (b.stormTick <= 0) { b.stormTick = 0.5; this.damage(b, 1 + Math.floor((this.t - 165) / 15), null, { dot: true, color: '#e23b3b' }); }
         }
         if (!b.alive) continue;
 

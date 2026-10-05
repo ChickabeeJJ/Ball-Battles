@@ -661,3 +661,33 @@ html.cland .banner { font-size: calc(var(--arena) * 0.16); }
 html.cland .is-battle #stage { padding-top: 6px; }
 html.cland .is-battle #topbar { left: 10px; width: auto; }
 .is-battle #stage { justify-content: center; }
+
+/* ================================================================ v7 */
+/* top bar: daily / profile / settings match the coin pill height */
+#topbar .coins { height: 40px; box-sizing: border-box; }
+#topbar .icon-btn { width: 40px; height: 40px; box-sizing: border-box; }
+#topbar .icon-btn svg { width: 20px; height: 20px; }
+html.cland #topbar .coins, html.cland #topbar .icon-btn { height: 36px; } html.cland #topbar .icon-btn { width: 36px; }
+#btnProfile { color: #ffd23f; }
+.pf-head { display: flex; align-items: center; gap: 12px; }
+.pf-pic { width: 64px; height: 64px; border-radius: 50%; border: 3px solid #111; object-fit: cover; background: #3c3c42; }
+.pf-none { display: grid; place-items: center; color: #ffd23f; } .pf-none .ico { width: 30px; height: 30px; }
+.pf-name { font-family: var(--display); font-size: 26px; }
+.pf-rank { color: #ffd23f; font-family: var(--num); }
+
+/* loader title: BALL / VS / BALL */
+.ld-title .ld-vs { font-size: clamp(30px, 7vw, 70px) !important; color: #e8473f !important; margin: -4px 0; }
+
+/* touch devices: no keyboard hints, and a cleaner font so small text stays readable */
+html.touch .big-btn::after, html.touch .pz-hint { display: none !important; }
+html.touch { --font: 'Lilita One', 'Arial Rounded MT Bold', system-ui, sans-serif; }
+html.touch body { letter-spacing: 0.02em; }
+html.touch .opt-k { font-size: 11px; letter-spacing: .06em; }
+html.touch .f-s, html.touch .d-d, html.touch .mp-d, html.touch .m-d, html.touch .tut-x, html.touch .slot .sl-s { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; font-weight: 600; }
+html.touch .tut-x { font-size: 15px; } html.touch .f-s { font-size: 13px; }
+html.touch .stat-row { font-size: 13px; } html.cland.touch .stat-row { font-size: 12px; }
+html.touch .tile .t-n { font-size: 11px; }
+html.touch .br-e { font-size: 11px; }
+.ld-title { line-height: 1; gap: 0; }
+.ld-title span { line-height: 0.95; }
+.ld-title .ld-vs { display: block; line-height: 1; margin: 2px 0 4px; }

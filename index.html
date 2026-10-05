@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Ball Battles</title>
+  <title>Ball Vs Ball</title>
   <meta name="description" content="Pick a weapon, drop two balls in the arena and watch them battle it out.">
   <link rel="preload" href="fonts/anton.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/pixelify.woff2" as="font" type="font/woff2" crossorigin>
@@ -22,7 +22,7 @@
       <div class="ld-flash"></div>
       <div class="ld-ring"></div>
     </div>
-    <div class="ld-title"><span>BALL</span><span>BATTLES</span></div>
+    <div class="ld-title"><span>BALL</span><span class="ld-vs">VS</span><span>BALL</span></div>
     <div class="ld-bar"><i id="ldFill"></i></div>
     <div class="ld-tip" id="ldTip">Sharpening blades...</div>
   </div>
@@ -31,6 +31,7 @@
       <div class="coins" id="coins" title="Coins"><span class="coin-ic"></span><span id="coinCount">0</span></div>
       <div class="brand"></div>
       <button class="icon-btn gift-btn" id="btnGift" aria-label="Daily gift"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M20 7h-2.2A3 3 0 0 0 12 4.4 3 3 0 0 0 6.2 7H4a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h1v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8h1a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zm-5-1a1 1 0 1 1 0 2h-2a1 1 0 0 1 2-2zM9 6a1 1 0 0 1 1 1v1H9a1 1 0 0 1 0-2zm2 14H7v-8h4zm0-10H5V9h6zm6 10h-4v-8h4zm2-10h-6V9h6z"/></svg><span class="dot-badge"></span></button>
+      <button class="icon-btn hidden" id="btnProfile" aria-label="Profile"><svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zm0 2c-4.4 0-8 2.2-8 5v2h16v-2c0-2.8-3.6-5-8-5z"/></svg></button>
       <button class="icon-btn" id="btnSettings" aria-label="Settings">
         <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1L11 21h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5A3.5 3.5 0 1 1 13 8.5a3.5 3.5 0 0 1 0 7z"/></svg>
       </button>

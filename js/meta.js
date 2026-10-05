@@ -17,7 +17,7 @@
     { id: 'maps3', text: 'Battle on 3 different maps', goal: 3, reward: 70, ev: 'map' },
     { id: 'special2', text: 'Win 2 battles with a special ball', goal: 2, reward: 90, ev: 'specialwin' },
     { id: 'team2', text: 'Win 2 team or Free For All battles', goal: 2, reward: 80, ev: 'teamwin' },
-    { id: 'cup1', text: 'Win a Cup match', goal: 1, reward: 100, ev: 'cupwin' },
+    { id: 'cup1', text: 'Play a Cup match', goal: 1, reward: 100, ev: 'cupwin' },
     { id: 'gaunt3', text: 'Reach stage 3 in the Gauntlet', goal: 3, reward: 110, ev: 'gauntlet', max: true },
   ];
 
@@ -139,6 +139,27 @@
       }, { width: '520px', onClose: () => M.refreshBadges() });
     },
 
+    // ------------------------------------------------------------- profile (CrazyGames account)
+    async openProfile() {
+      const user = await BB.sdk.getUser();
+      const m = M.data(), pv = M.pvpData(), st = BB.save.data.stats;
+      const owned = BB.ITEMS.filter((i) => BB.save.data.unlocked[i.id]).length;
+      const stars = Object.keys(m.mastery).reduce((n, id) => n + M.stars(id), 0);
+      BB.ui.open((sheet) => {
+        const body = BB.ui.head(sheet, 'Profile');
+        const name = user ? esc(user.username) : 'Guest';
+        const pic = user && user.profilePictureUrl ? `<img class="pf-pic" src="${esc(user.profilePictureUrl)}" alt="">` : `<div class="pf-pic pf-none">${BB.ICON.star}</div>`;
+        body.innerHTML += `<div class="pf-head">${pic}<div><div class="pf-name">${name}</div><div class="pf-rank">${M.rankName(pv.rating)} · ${pv.rating}</div></div></div>
+          <div class="q-stats"><div><b>${st.wins}</b><span>Wins</span></div><div><b>${st.battles}</b><span>Battles</span></div><div><b>${m.trophies}</b><span>Cups</span></div><div><b>${pv.w}-${pv.l}</b><span>PvP</span></div></div>
+          <div class="q-stats"><div><b>${owned}/${BB.ITEMS.length}</b><span>Balls</span></div><div><b>${stars}</b><span>Mastery stars</span></div><div><b>${m.gauntletBest}</b><span>Best Gauntlet</span></div><div><b>${m.gift.streak || 0}</b><span>Login streak</span></div></div>`;
+        if (!user) {
+          const li = document.createElement('button'); li.className = 'btn primary'; li.textContent = 'Log in to CrazyGames to save progress';
+          li.onclick = async () => { const u = await BB.sdk.login(); if (u) { BB.ui.onClose = null; BB.ui.close(); M.openProfile(); } };
+          body.appendChild(li);
+        }
+      }, { width: '460px' });
+    },
+
     // ------------------------------------------------------------- quests
     openQuests() {
       const m = M.data();
@@ -204,12 +225,13 @@
       return out;
     },
 
-    // ------------------------------------------------------------- Cup (8-ball bracket)
+    // ------------------------------------------------------------- Cup (8-ball bracket of your picks)
+    // Pick 8 of your balls; they fight a knockout bracket. Watch each match or sim the rest.
     openCup() {
-      M.pickBall('Ball Cup', 'Pick your champion. Win 3 knockout rounds against 7 rivals to lift the trophy!', (id) => {
+      M.pickN(8, 'Ball Cup', 'Pick 8 of your balls. They fight a knockout bracket until one champion is left!', (ids) => {
         const rng = BB.RNG((Math.random() * 1e9) | 0);
-        const entrants = [id].concat(M.randomFoes(7, id, rng));
-        M.cup = { rounds: [entrants], round: 0, me: id, rng, maps: ['classic', 'pillars', BB.MAPS[Math.floor(rng() * BB.MAPS.length)].id] };
+        for (let k = ids.length - 1; k > 0; k--) { const r = Math.floor(rng() * (k + 1)); [ids[k], ids[r]] = [ids[r], ids[k]]; }
+        M.cup = { rounds: [ids], round: 0, match: 0, rng, maps: ['classic', 'pillars', BB.MAPS[Math.floor(rng() * BB.MAPS.length)].id] };
         M.showBracket();
       });
     },
@@ -222,15 +244,17 @@
         if (msg) body.appendChild(Object.assign(document.createElement('div'), { className: 'cup-msg', innerHTML: msg }));
         const br = document.createElement('div');
         br.className = 'bracket';
+        const cur = c.done ? [] : c.rounds[c.round].slice(c.match * 2, c.match * 2 + 2);
         for (let r = 0; r < 4; r++) {
           const col = document.createElement('div');
           col.className = 'br-col';
           col.innerHTML = `<div class="br-h">${names[r]}</div>`;
-          const list = c.rounds[r] || new Array(8 >> r).fill(null);
-          list.forEach((id) => {
-            const me = id === c.me && c.alive !== false;
-            col.innerHTML += `<div class="br-e${me ? ' me' : ''}${id ? '' : ' tbd'}">${id ? `<img src="${BB.icon(id)}" alt=""><span>${esc(BB.ITEM[id].name)}</span>` : '<span>?</span>'}</div>`;
-          });
+          const list = c.rounds[r] || [];
+          for (let k = 0; k < (8 >> r); k++) {
+            const id = list[k];
+            const next = r === c.round && cur.includes(id) && Math.floor(k / 2) === c.match;
+            col.innerHTML += `<div class="br-e${next ? ' me' : ''}${id ? '' : ' tbd'}">${id ? `<img src="${BB.icon(id)}" alt=""><span>${esc(BB.ITEM[id].name)}</span>` : '<span>?</span>'}</div>`;
+          }
           br.appendChild(col);
         }
         body.appendChild(br);
@@ -241,65 +265,65 @@
           ok.onclick = () => { M.cup = null; BB.ui.onClose = null; BB.ui.close(); BB.app.toMenu(); };
           foot.appendChild(ok);
         } else {
-          const list = c.rounds[c.round], i = list.indexOf(c.me), foe = list[i ^ 1];
+          const [a, b] = cur;
+          const sim = document.createElement('button'); sim.className = 'btn'; sim.textContent = 'Sim round';
+          sim.onclick = () => { BB.audio.play('click'); M.cupSimRound(); };
           const go = document.createElement('button'); go.className = 'btn primary';
-          go.innerHTML = `Fight ${esc(BB.ITEM[foe].name)} · ${esc(BB.MAP[c.maps[c.round]].name)}`;
-          go.onclick = () => { BB.ui.onClose = null; BB.ui.close(); BB.sdk.maybeMidgame().then(() => M.cupFight(foe)); };
-          foot.appendChild(go);
+          go.innerHTML = `${BB.ICON.play} ${esc(BB.ITEM[a].name)} vs ${esc(BB.ITEM[b].name)}`;
+          go.onclick = () => { BB.ui.onClose = null; BB.ui.close(); BB.sdk.maybeMidgame().then(() => M.cupFight(a, b)); };
+          foot.append(sim, go);
         }
         sheet.appendChild(foot);
       }, { width: '640px', onClose: () => { if (!M.cup || M.cup.done) BB.app.toMenu(); } });
     },
 
-    cupFight(foe) {
-      const c = M.cup;
-      const app = BB.app;
+    cupFight(a, b) {
+      const c = M.cup, app = BB.app;
       app.event = {
         kind: 'cup', seed: (c.rng() * 2147483647) | 0, map: c.maps[c.round],
-        teams: [[{ id: c.me, hp: 100, scale: 1, ov: {}, slot: 0 }], [{ id: foe, hp: 100, scale: 1, ov: {}, slot: 1 }]],
-        onOver: (w) => M.cupResult(w),
+        teams: [[{ id: a, hp: 100, scale: 1, ov: {}, slot: 0 }], [{ id: b, hp: 100, scale: 1, ov: {}, slot: 1 }]],
+        onOver: (w) => M.cupAdvance(w === 1 ? b : a),
       };
       app.startBattle();
     },
 
-    // headless sim for the other bracket matches
+    // headless sim for matches you skip
     quickDuel(a, b, seed, map) {
       const s = new BB.Sim({ seed, map, settings: { dmgNumbers: false }, teams: [[{ id: a, hp: 100, slot: 0 }], [{ id: b, hp: 100, slot: 1 }]] });
-      while (!s.over && s.t < 150) { s.step(1 / 60); s.events.length = 0; s.fx.length = 0; }
+      while (!s.over && s.t < 180) { s.step(1 / 60); s.events.length = 0; s.fx.length = 0; }
       return s.over && s.over.winner === 1 ? b : a;
     },
 
-    cupResult(w) {
+    cupSimRound() {
+      const c = M.cup;
+      const list = c.rounds[c.round];
+      while (c.match * 2 < list.length && !c.done && c.rounds[c.round] === list) {
+        const a = list[c.match * 2], b = list[c.match * 2 + 1];
+        M.cupAdvance(M.quickDuel(a, b, (c.rng() * 1e9) | 0, c.maps[c.round]), true);
+      }
+      M.showBracket(c.done ? M.cupChampionMsg() : 'Round simulated!');
+    },
+
+    cupChampionMsg() { const id = M.cup.rounds[3][0]; return `<b>${esc(BB.ITEM[id].name)}</b> is the champion! +${coin(100)}`; },
+
+    cupAdvance(winner, silent) {
       const c = M.cup, app = BB.app;
       app.event = null;
-      const list = c.rounds[c.round];
-      const won = w === 0;
-      const prize = [25, 60, 0][c.round];
-      if (won) {
-        M.track('cupwin', 1);
-        const next = [];
-        for (let i = 0; i < list.length; i += 2) {
-          if (list[i] === c.me || list[i + 1] === c.me) next.push(c.me);
-          else next.push(M.quickDuel(list[i], list[i + 1], (c.rng() * 1e9) | 0, c.maps[c.round]));
-        }
-        c.rounds.push(next);
-        c.round++;
+      c.next = c.next || [];
+      c.next.push(winner);
+      c.match++;
+      M.track('cupwin', 1);
+      if (c.match * 2 >= c.rounds[c.round].length) {
+        c.rounds.push(c.next); c.next = []; c.round++; c.match = 0;
         if (c.round === 3) {
           c.done = true;
           const m = M.data(); m.trophies++;
-          BB.save.data.coins += 400; BB.save.write(); app.refreshCoins();
+          M.addMastery(winner);
+          BB.save.data.coins += 100; BB.save.write(); app.refreshCoins();
           BB.audio.play('win'); BB.sdk.happytime();
-          M.showBracket('<b>CHAMPION!</b> +' + coin(400) + ' and a trophy!');
-          return;
         }
-        BB.save.data.coins += prize; BB.save.write(); app.refreshCoins(); BB.audio.play('win');
-        M.showBracket('Round won! +' + coin(prize) + ' · Next up: the ' + ['Quarterfinal', 'Semifinal', 'Final'][c.round]);
-      } else {
-        c.done = true; c.alive = false;
-        const consolation = [10, 30, 120][c.round];
-        BB.save.data.coins += consolation; BB.save.write(); app.refreshCoins(); BB.audio.play('lose');
-        M.showBracket('Knocked out in the ' + ['Quarterfinal', 'Semifinal', 'Final'][c.round] + '. +' + coin(consolation));
       }
+      if (!silent) M.showBracket(c.done ? M.cupChampionMsg() : `<b>${esc(BB.ITEM[winner].name)}</b> advances!`);
     },
 
     // ------------------------------------------------------------- PvP 3v3 series (CrazyGames only)
@@ -319,26 +343,27 @@
       return { ids, maps, seed: (Number(p[2]) || 1) | 0, rating: Math.round(Number(p[3]) || 1000) };
     },
 
-    pick3(title, sub, onDone) {
+    pick3(title, sub, onDone) { M.pickN(3, title, sub, onDone); },
+    pickN(N, title, sub, onDone) {
       const sel = [];
       BB.ui.open((sheet) => {
         const body = BB.ui.head(sheet, title);
         body.appendChild(Object.assign(document.createElement('div'), { className: 'f-s', textContent: sub }));
-        const squad = document.createElement('div'); squad.className = 'squad';
+        const squad = document.createElement('div'); squad.className = 'squad'; squad.style.gridTemplateColumns = 'repeat(' + Math.min(N, 4) + ', 1fr)';
         body.appendChild(squad);
         const grid = document.createElement('div'); grid.className = 'grid';
         const foot = document.createElement('div'); foot.className = 'sh-foot';
-        const go = document.createElement('button'); go.className = 'btn green'; go.textContent = 'Confirm squad'; go.disabled = true;
+        const go = document.createElement('button'); go.className = 'btn green'; go.textContent = N === 3 ? 'Confirm squad' : 'Start the cup'; go.disabled = true;
         const draw = () => {
-          squad.innerHTML = [0, 1, 2].map((k) => sel[k] ? `<div class="sq-s"><img src="${BB.icon(sel[k])}" alt=""><span>${esc(BB.ITEM[sel[k]].name)}</span></div>` : `<div class="sq-s empty"><span>${k + 1}</span></div>`).join('');
+          squad.innerHTML = [...Array(N).keys()].map((k) => sel[k] ? `<div class="sq-s"><img src="${BB.icon(sel[k])}" alt=""><span>${esc(BB.ITEM[sel[k]].name)}</span></div>` : `<div class="sq-s empty"><span>${k + 1}</span></div>`).join('');
           grid.querySelectorAll('.tile').forEach((t) => { const k = sel.indexOf(t.dataset.id); t.classList.toggle('sel', k >= 0); t.dataset.order = k >= 0 ? k + 1 : ''; });
-          go.disabled = sel.length !== 3;
+          go.disabled = sel.length !== N;
         };
         for (const it of BB.ITEMS.filter((i) => i.cat !== 'hidden' && BB.app.isOwned(i.id))) {
           const t = document.createElement('button');
           t.className = 'tile'; t.dataset.id = it.id;
           t.innerHTML = `<img src="${BB.icon(it.id)}" alt=""><span class="t-n">${esc(it.name)}</span>${M.starHtml(it.id)}<span class="rar" style="background:${BB.RARITY[it.rarity].color}"></span>`;
-          t.onclick = () => { BB.audio.play('click'); const k = sel.indexOf(it.id); if (k >= 0) sel.splice(k, 1); else if (sel.length < 3) sel.push(it.id); draw(); };
+          t.onclick = () => { BB.audio.play('click'); const k = sel.indexOf(it.id); if (k >= 0) sel.splice(k, 1); else if (sel.length < N) sel.push(it.id); draw(); };
           grid.appendChild(t);
         }
         body.appendChild(grid);

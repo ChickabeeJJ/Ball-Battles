@@ -110,6 +110,15 @@
       if (!S.ready) return null;
       try { return S.sdk.game.getInviteParam(name); } catch (e) { return null; }
     },
+    // CrazyGames account (profile button)
+    async getUser() {
+      if (!S.ready || !S.sdk.user) return null;
+      try { return await S.sdk.user.getUser(); } catch (e) { return null; }
+    },
+    async login() {
+      if (!S.ready || !S.sdk.user) return null;
+      try { return await S.sdk.user.showAuthPrompt(); } catch (e) { return null; }
+    },
     showInvite(params) { S.call((c) => c.game.showInviteButton(params)); },
     hideInvite() { S.call((c) => c.game.hideInviteButton()); },
   });

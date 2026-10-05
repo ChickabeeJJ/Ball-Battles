@@ -1,4 +1,4 @@
-# Ball Battles
+# Ball Vs Ball
 
 A weapon-ball battle simulator for the web. Pick a weapon or special ball for each side, drop them into the arena and watch them bounce, parry and scale up until one is left standing.
 
@@ -77,7 +77,7 @@ node tools/seeds.js       # finds seeds whose battles end with a K.O. inside a c
 
 ## Suggested listing text
 
-**Title:** Ball Battles
+**Title:** Ball Vs Ball
 
 **Description:** Pick a weapon, drop two balls into the arena and watch them fight! Every weapon gets stronger with each hit. Swords hit harder, daggers spin faster, bows fire more arrows. A ball whose hits follow the Fibonacci sequence can turn a fight around in one slam. Mix 66 weapons and special balls across 1v1, 2v2, 3v3 and Free For All on 8 maps with saws, meteors, gravity and a hot potato bomb. Earn coins and unlock legendary gear.
 

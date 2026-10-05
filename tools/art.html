@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Ball Battles cover art</title>
+<title>Ball Vs Ball cover art</title>
 <style>
   @font-face { font-family: 'Anton'; src: url('../fonts/anton.woff2') format('woff2'); }
   @font-face { font-family: 'Lilita One'; src: url('../fonts/lilita-one.woff2') format('woff2'); }
@@ -131,15 +131,16 @@
   function title(cx, cy, size) {
     ctx.save(); ctx.translate(cx, cy); ctx.rotate(-0.045);
     ctx.font = size + 'px Anton'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
-    const lines = ['BALL', 'BATTLES'], lh = size * 0.9;
+    const lines = ['BALL', 'VS', 'BALL'], lh = size * 0.82;
     lines.forEach((t, i) => {
-      const y = (i - 0.5) * lh;
+      const y = (i - 1) * lh; const fs = i === 1 ? 0.62 : 1; ctx.font = (size * fs) + 'px Anton';
       ctx.save(); ctx.shadowColor = 'rgba(255,170,60,0.85)'; ctx.shadowBlur = size * 0.35;
       ctx.lineWidth = size * 0.2; ctx.strokeStyle = OUT; ctx.strokeText(t, 0, y + size * 0.07); ctx.restore();
       ctx.lineWidth = size * 0.2; ctx.strokeStyle = OUT; ctx.strokeText(t, 0, y);
-      ctx.lineWidth = size * 0.08; ctx.strokeStyle = i ? '#8a4b00' : '#55606e'; ctx.strokeText(t, 0, y);
+      ctx.lineWidth = size * 0.08; ctx.strokeStyle = i === 1 ? '#5a0d10' : i ? '#8a4b00' : '#55606e'; ctx.strokeText(t, 0, y);
       const g = ctx.createLinearGradient(0, y - size * 0.42, 0, y + size * 0.42);
-      if (i === 0) { g.addColorStop(0, '#ffffff'); g.addColorStop(0.5, '#dfe7f0'); g.addColorStop(0.52, '#aab8c6'); g.addColorStop(1, '#eef4fa'); }
+      if (i === 1) { g.addColorStop(0, '#ff8a8a'); g.addColorStop(0.5, '#e8473f'); g.addColorStop(1, '#a8262c'); }
+      else if (i === 0) { g.addColorStop(0, '#ffffff'); g.addColorStop(0.5, '#dfe7f0'); g.addColorStop(0.52, '#aab8c6'); g.addColorStop(1, '#eef4fa'); }
       else { g.addColorStop(0, '#fff3a0'); g.addColorStop(0.48, '#ffc21a'); g.addColorStop(0.52, '#e08a00'); g.addColorStop(1, '#ffd34d'); }
       ctx.fillStyle = g; ctx.fillText(t, 0, y);
     });
@@ -160,7 +161,7 @@
       ball(W * 0.75, cy + r * 0.1, r, '#e8473f', 'sword', Math.PI + 0.12, { len: 112 });
       ball(W * 0.09, H * 0.86, r * 0.5, '#ff7f11', null, -0.2);
       ball(W * 0.91, H * 0.85, r * 0.5, '#1abc9c', 'trident', Math.PI + 0.6);
-      title(cx, H * 0.25, H * 0.19);
+      title(cx, H * 0.29, H * 0.15);
     } else if (port) {
       const cx = W * 0.5, cy = H * 0.6, r = W * 0.2;
       background(cx, cy);
@@ -171,7 +172,7 @@
       ball(W * 0.76, H * 0.75, r * 0.92, '#e8473f', 'sword', 0, { len: 74, aim: [cx, cy] });
       ball(W * 0.18, H * 0.87, r * 0.5, '#2c5aa0', 'claymore', -0.4);
       ball(W * 0.86, H * 0.42, r * 0.45, '#d35400', 'firestaff', Math.PI + 0.3);
-      title(cx, H * 0.2, W * 0.22);
+      title(cx, H * 0.21, W * 0.18);
     } else {
       const cx = W * 0.5, cy = H * 0.66, r = W * 0.15;
       background(cx, cy);
@@ -180,7 +181,7 @@
       clash(cx, cy - r * 0.05, r * 0.55);
       ball(W * 0.24, cy + r * 0.1, r, '#9aa0a6', 'rapier', 0, { len: 100, aim: [cx, cy - r * 0.05] });
       ball(W * 0.76, cy + r * 0.1, r, '#e8473f', 'sword', 0, { len: 94, aim: [cx, cy - r * 0.05] });
-      title(cx, H * 0.25, W * 0.16);
+      title(cx, H * 0.28, W * 0.13);
     }
     // cinematic vignette + film grain
     const vg = ctx.createRadialGradient(W / 2, H / 2, U * 0.35, W / 2, H / 2, Math.hypot(W, H) * 0.62);

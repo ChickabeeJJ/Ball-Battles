@@ -272,13 +272,14 @@
           ['hitlag', 'Hit Freeze', 'Tiny pause on big hits'],
           ['parrylag', 'Parry Freeze', 'Tiny pause when weapons clash'],
           ['dmgNumbers', 'Damage Numbers', ''],
-          ['impact', 'Impact Frames', 'Dramatic black & white flash on huge hits'],
-          ['reverseB', 'Reverse Team 2 Spin', 'Team 2 spins the other way'],
+          ['impact', 'Impact Frames', 'Quick black flash on hits'],
+          ['finisher', 'Finisher', 'Full anime cut on the knockout'],
+          ['reverseB', 'Reverse Team Two Spin', 'Team Two spins the other way'],
           ['vibrate', 'Vibration', 'On supported phones'],
         ];
         for (const [k, n, sub] of toggles) {
           const f = el('div', 'field');
-          f.innerHTML = `<div><div class="f-k">${n.replace(/(\d+)/g, '<span class="num">$1</span>')}</div>${sub ? `<div class="f-s">${sub}</div>` : ''}</div>`;
+          f.innerHTML = `<div><div class="f-k">${n}</div>${sub ? `<div class="f-s">${sub}</div>` : ''}</div>`;
           const t = el('button', 'toggle' + (st[k] ? ' on' : ''));
           t.setAttribute('aria-label', n);
           t.onclick = () => { BB.audio.play('click'); st[k] = !st[k]; t.classList.toggle('on', st[k]); BB.save.write(); app.applySettings(); };
@@ -320,18 +321,6 @@
           big('red', BB.ICON.home, 'Quit', () => { UI.onClose = null; UI.close(); app.pvp = null; app.event = null; BB.meta.cup = null; BB.meta.gaunt = null; BB.meta.series = null; app.toMenu(); }),
         );
         body.appendChild(grid);
-        // quick toggles
-        const q = el('div', 'pz-quick');
-        for (const [k, n] of [['hitlag', 'Hit Freeze'], ['impact', 'Impact Frames'], ['dmgNumbers', 'Numbers']]) {
-          const t = el('button', 'chip' + (st[k] ? ' on' : ''), n);
-          t.onclick = () => { st[k] = !st[k]; t.classList.toggle('on', st[k]); BB.save.write(); app.applySettings(); BB.audio.play('click'); };
-          q.appendChild(t);
-        }
-        const snd = el('button', 'chip' + (st.sound > 0 ? ' on' : ''), 'Sound');
-        snd.onclick = () => { st.sound = st.sound > 0 ? 0 : 0.8; snd.classList.toggle('on', st.sound > 0); BB.save.write(); app.applySettings(); BB.audio.play('click'); };
-        q.appendChild(snd);
-        body.appendChild(q);
-        body.appendChild(el('div', 'f-s pz-hint', 'Press P or Esc to resume'));
       }, { onClose: () => app.resume(), width: '440px' });
     },
 
@@ -391,7 +380,7 @@
     // ------------------------------------------------------------- tutorial
     tutorial(done) {
       const steps = [
-        { sel: '#arenaWrap', title: 'Welcome to Ball Battles!', text: 'Balls bounce around the arena with spinning weapons. Every hit makes a weapon stronger. Last ball standing wins!' },
+        { sel: '#arenaWrap', title: 'Welcome to Ball Vs Ball!', text: 'Balls bounce around the arena with spinning weapons. Every hit makes a weapon stronger. Last ball standing wins!' },
         { sel: '#slots', title: 'Pick your fighters', text: 'Tap a ball card to choose its weapon and set its health and size.' },
         { sel: '.opts', title: 'Modes & maps', text: 'Switch between 1v1, team fights and Free For All, pick a map, or roll random foes.' },
         { sel: '#btnStart', title: 'Start the battle', text: 'Press Start Battle and watch the chaos. Wins earn coins to unlock 36 different balls.' },

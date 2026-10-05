@@ -62,6 +62,8 @@
       if (!App.capture) requestAnimationFrame(App.frame);
       await App.loader.done();
       BB.meta.refreshBadges();
+      $('btnProfile').classList.toggle('hidden', !App.pvpAvailable());
+      document.documentElement.classList.toggle('touch', matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window);
       document.querySelectorAll('[data-ico]').forEach((e) => { e.innerHTML = BB.ICON[e.dataset.ico]; });
       // CrazyGames players get the PvP Arena in place of the Gauntlet
       $('optPvp').classList.add('hidden');
@@ -416,12 +418,13 @@
           case 'impact':
             // With the setting on, every hit gets an impact frame: big hits/crits/K.O.s get the full
             // sequence, small hits a short ink flash (throttled so rapid hits stay readable).
-            if (BB.save.data.settings.impact) {
+            {
               // K.O.: the full anime cut. Other hits: just the short black cut, and ~30% fewer of them.
               const ko = e.amt >= 99;
-              if (ko) {
+              const st = BB.save.data.settings;
+              if (ko && st.finisher) {
                 App.impact = { t: 0, dur: 1.0, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0, ko: true };
-              } else if (!App.impact && !(App.impactCd > 0) && Math.random() < 0.8) {
+              } else if (!ko && st.impact && !App.impact && !(App.impactCd > 0) && Math.random() < 0.8) {
                 App.impact = { t: 0, dur: 0.18, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0, ko: false };
                 App.impactCd = 0.45;
               }
@@ -510,6 +513,7 @@
       $('btnGauntlet').addEventListener('click', () => { if (!App.pvpAvailable()) { BB.audio.unlock(); BB.audio.play('click'); BB.meta.openGauntlet(); } });
       click('btnQuests', () => BB.meta.openQuests());
       click('btnGift', () => BB.meta.claimGift());
+      click('btnProfile', () => BB.meta.openProfile());
       click('btnSpeed', () => {
         const st = BB.save.data.settings;
         st.speed = st.speed === 1 || !st.speed ? 2 : st.speed === 2 ? 3 : 1;
