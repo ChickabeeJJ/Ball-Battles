@@ -128,20 +128,20 @@
       const s = save.setup.slots[slotIdx];
       const mine = true; // every slot uses only unlocked balls
       let sel = s.id;
-      tab = tab || (BB.ITEM[s.id].rarity === 'iridescent' ? 'iridescent' : BB.ITEM[s.id].cat === 'special' ? 'special' : 'weapon');
+      tab = tab === 'iridescent' ? 'special' : tab || (BB.ITEM[s.id].cat === 'special' ? 'special' : 'weapon');
 
       UI.open((sheet) => {
         const body = UI.head(sheet, app.teamOfSlot(slotIdx) === 0 ? 'Choose Your Ball' : 'Choose Opponent', { onX: () => UI.editSlot(slotIdx) });
         const tabs = el('div', 'tabs');
-        for (const [k, n] of [['weapon', 'Weapons'], ['special', 'Specials'], ['iridescent', 'Iridescent']]) {
-          const t = el('button', 'tab' + (tab === k ? ' on' : '') + (k === 'iridescent' ? ' iri' : ''), n);
+        for (const [k, n] of [['weapon', 'Weapons'], ['special', 'Specials']]) {
+          const t = el('button', 'tab' + (tab === k ? ' on' : ''), n);
           t.onclick = () => { BB.audio.play('click'); UI.pickItem(slotIdx, k); };
           tabs.appendChild(t);
         }
         body.appendChild(tabs);
         const detail = el('div', 'detail');
         body.appendChild(detail);
-        const inTab = (i) => (tab === 'iridescent' ? i.rarity === 'iridescent' : i.cat === tab && i.rarity !== 'iridescent');
+        const inTab = (i) => i.cat === tab;
         if (!inTab(BB.ITEM[sel])) { const first = BB.ITEMS.find((i) => inTab(i)); if (first) sel = first.id; }
         const grid = el('div', 'grid');
         body.appendChild(grid);
