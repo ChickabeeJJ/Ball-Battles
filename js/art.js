@@ -256,31 +256,7 @@
       for (let i = 0; i < 70; i++) { ctx.beginPath(); ctx.arc((r() - 0.5) * S, (r() - 0.5) * S, 1.5 + r() * 3, 0, TAU); ctx.fillStyle = 'rgba(120,85,40,0.18)'; ctx.fill(); }
       ctx.beginPath(); ctx.arc(0, 0, 110, 0, TAU); ctx.strokeStyle = 'rgba(180,40,40,0.35)'; ctx.lineWidth = 8; ctx.stroke();
     } else if (id === 'bouncy') {
-      // layered sky: gradient, sunburst, distant floating islands, parallax clouds, trampoline floor
-      const g = ctx.createLinearGradient(0, -hh, 0, hh);
-      g.addColorStop(0, '#3fa2f5'); g.addColorStop(0.55, '#9fd8ff'); g.addColorStop(1, '#e9f8ff');
-      ctx.fillStyle = g; ctx.fillRect(-S / 2, -S / 2, S, S);
-      const sx = hw - 110, sy = -hh + 105;
-      ctx.save(); ctx.translate(sx, sy); ctx.rotate(t * 0.15);
-      for (let k = 0; k < 12; k++) { ctx.rotate(TAU / 12); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(S, -40); ctx.lineTo(S, 40); ctx.fillStyle = 'rgba(255,255,220,0.10)'; ctx.fill(); }
-      ctx.restore();
-      ctx.beginPath(); ctx.arc(sx, sy, 70, 0, TAU); ctx.fillStyle = 'rgba(255,245,180,0.35)'; ctx.fill();
-      ctx.beginPath(); ctx.arc(sx, sy, 46, 0, TAU); ctx.fillStyle = '#fff6b8'; ctx.fill();
-      // floating islands (far layer)
-      for (const [ix, iy, isz] of [[-0.3, -0.18, 1], [0.12, 0.05, 0.7], [-0.05, -0.32, 0.55]]) {
-        const x = ix * S + Math.sin(t * 0.4 + ix * 9) * 6, y = iy * S + Math.cos(t * 0.5 + iy * 7) * 5, w = 110 * isz;
-        ctx.beginPath(); ctx.moveTo(x - w, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w * 0.4, y + w * 0.7); ctx.lineTo(x - w * 0.3, y + w * 0.8); ctx.closePath();
-        ctx.fillStyle = 'rgba(120,150,190,0.45)'; ctx.fill();
-        ctx.beginPath(); ctx.ellipse(x, y, w, w * 0.18, 0, Math.PI, TAU); ctx.fillStyle = 'rgba(110,200,120,0.55)'; ctx.fill();
-      }
-      const cloud = (cx, cy, k, a) => { ctx.fillStyle = 'rgba(255,255,255,' + a + ')'; ctx.beginPath(); ctx.arc(cx, cy, 26 * k, 0, TAU); ctx.arc(cx + 32 * k, cy - 14 * k, 34 * k, 0, TAU); ctx.arc(cx + 70 * k, cy, 26 * k, 0, TAU); ctx.rect(cx, cy, 70 * k, 26 * k); ctx.fill(); };
-      for (let k = 0; k < 4; k++) cloud(((k * 230 + t * 8) % (S + 220)) - S / 2 - 110, -hh + 70 + k * 85, 0.7, 0.55);
-      for (let k = 0; k < 3; k++) cloud(((k * 310 + t * 22) % (S + 260)) - S / 2 - 130, -hh + 150 + k * 120, 1.2, 0.95);
-      // trampoline floor
-      ctx.fillStyle = '#1d1d22'; ctx.fillRect(-S / 2, hh - 34, S, 34);
-      for (let x = -S / 2; x < S / 2; x += 48) { ctx.fillStyle = (x / 48) % 2 ? '#2f7bdc' : '#ffd23f'; ctx.fillRect(x + 2, hh - 30, 44, 26); }
-      ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(-S / 2, hh - 30, S, 6);
-      for (let x = -S / 2 + 24; x < S / 2; x += 48) { ctx.beginPath(); ctx.moveTo(x, hh - 34); for (let k = 0; k < 4; k++) ctx.lineTo(x + (k % 2 ? 6 : -6), hh - 34 - (k + 1) * 6); ctx.strokeStyle = 'rgba(30,30,40,0.5)'; ctx.lineWidth = 2; ctx.stroke(); }
+      BB.paintedFloor(ctx, sim, 'bouncy');
     } else if (id === 'pillars') {
       tiles(ctx, S, 75, '#f1ece2', '#e6dece');
       ctx.strokeStyle = 'rgba(160,140,110,0.25)'; ctx.lineWidth = 1.5;
@@ -313,47 +289,14 @@
       }
       if (sim.potato && sim.potato.t < 3) { ctx.fillStyle = 'rgba(255,60,30,' + (0.08 + 0.08 * Math.sin(t * 18)) + ')'; ctx.fillRect(-S / 2, -S / 2, S, S); }
     } else if (id === 'meteor') {
-      // volcanic basalt plates split by flowing lava rivers, glowing pools and cooling crust
-      ctx.fillStyle = '#140d0b'; ctx.fillRect(-S / 2, -S / 2, S, S);
-      const pulse = 0.65 + 0.25 * Math.sin(t * 2.2);
-      // lava rivers (under the plates)
-      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      for (let i = 0; i < 5; i++) {
-        let x = (r() - 0.5) * S, y = -S / 2 - 20; const pts = [[x, y]];
-        while (y < S / 2 + 20) { x += (r() - 0.5) * 120; y += 60 + r() * 50; pts.push([x, y]); }
-        for (const [wd, c] of [[46, 'rgba(255,60,10,' + 0.35 * pulse + ')'], [24, '#ff5a14'], [10, '#ffb23a'], [3, '#fff2a8']]) {
-          ctx.beginPath(); pts.forEach(([px, py], k) => (k ? ctx.lineTo(px, py) : ctx.moveTo(px, py))); ctx.strokeStyle = c; ctx.lineWidth = wd; ctx.stroke();
-        }
-        // flowing highlights moving down the river
-        ctx.setLineDash([8, 40]); ctx.lineDashOffset = -t * 60;
-        ctx.beginPath(); pts.forEach(([px, py], k) => (k ? ctx.lineTo(px, py) : ctx.moveTo(px, py))); ctx.strokeStyle = 'rgba(255,255,220,0.8)'; ctx.lineWidth = 3; ctx.stroke();
-        ctx.setLineDash([]);
-      }
-      // basalt plates on top, leaving lava visible in the cracks
-      for (let i = 0; i < 26; i++) {
-        const cx = (r() - 0.5) * S, cy = (r() - 0.5) * S, rr = 40 + r() * 55;
-        ctx.beginPath(); for (let v = 0; v < 6; v++) { const a = v * TAU / 6 + r() * 0.4; ctx.lineTo(cx + Math.cos(a) * rr * (0.75 + r() * 0.3), cy + Math.sin(a) * rr * (0.75 + r() * 0.3)); }
-        ctx.closePath();
-        const pg = ctx.createRadialGradient(cx - rr * 0.3, cy - rr * 0.3, 2, cx, cy, rr);
-        pg.addColorStop(0, '#4a3a35'); pg.addColorStop(1, '#231917');
-        ctx.fillStyle = pg; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,90,20,' + 0.45 * pulse + ')'; ctx.stroke();
-      }
-      // glowing lava pools
-      for (let i = 0; i < 3; i++) {
-        const px = (r() - 0.5) * S * 0.8, py = (r() - 0.5) * S * 0.8, pr = 26 + r() * 22;
-        const lg = ctx.createRadialGradient(px, py, 2, px, py, pr * 1.8);
-        lg.addColorStop(0, '#fff2a8'); lg.addColorStop(0.35, '#ff8a1f'); lg.addColorStop(0.7, 'rgba(255,60,10,0.6)'); lg.addColorStop(1, 'rgba(255,60,10,0)');
-        ctx.fillStyle = lg; ctx.beginPath(); ctx.arc(px, py, pr * 1.8, 0, TAU); ctx.fill();
-        ctx.beginPath(); ctx.arc(px + Math.sin(t * 3 + i) * pr * 0.4, py, 4 + 3 * Math.sin(t * 5 + i), 0, TAU); ctx.fillStyle = '#fffbe0'; ctx.fill();
-      }
-      // drifting embers and ash
-      for (let i = 0; i < 24; i++) { const ex = (r() - 0.5) * S + Math.sin(t + i) * 10, ey = ((r() * S - t * (40 + r() * 50)) % S + S) % S - S / 2; ctx.beginPath(); ctx.arc(ex, ey, 2.2, 0, TAU); ctx.fillStyle = 'rgba(255,170,60,0.85)'; ctx.fill(); }
+      BB.paintedFloor(ctx, sim, 'meteor');
     }
   };
 
   // Lighting + ambient life drawn over the arena (under the walls).
   BB.drawAmbient = function (ctx, sim) {
     const hw = sim.W / 2, hh = sim.H / 2, S = sim.size, id = sim.map.id, t = sim.t;
+    if (id === 'bouncy' || id === 'meteor') return;
     const r = BB.RNG(77);
     ctx.save(); ctx.beginPath(); ctx.rect(-hw, -hh, sim.W, sim.H); ctx.clip();
     const tint = { classic: 'rgba(40,30,20,', large: 'rgba(90,50,10,', bouncy: 'rgba(20,60,140,', pillars: 'rgba(90,70,20,', saws: 'rgba(20,20,30,', shrink: 'rgba(40,0,80,', potato: 'rgba(120,40,0,', meteor: 'rgba(60,0,0,' }[id] || 'rgba(0,0,0,';
@@ -399,6 +342,148 @@
       ctx.fillStyle = 'rgba(255,90,20,' + fl + ')'; ctx.fillRect(-S / 2, -S / 2, S, S);
     }
     ctx.restore();
+  };
+
+
+  // ------------------------------------------------------------ painted backgrounds (Meteor, Bouncy)
+  // Painted once into a cached texture (fractal noise + cel-shaded forms), then a light live layer.
+  function noiseField(n, seed, oct) {
+    const r = BB.RNG(seed), g = [];
+    const grids = [];
+    for (let o = 0; o < oct; o++) { const m = 4 << o, a = new Float32Array((m + 1) * (m + 1)); for (let k = 0; k < a.length; k++) a[k] = r(); grids.push([m, a]); }
+    const out = new Float32Array(n * n);
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      let v = 0, amp = 1, tot = 0;
+      for (const [m, a] of grids) {
+        const fx = (x / n) * m, fy = (y / n) * m, ix = fx | 0, iy = fy | 0, tx = fx - ix, ty = fy - iy;
+        const sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty), w = m + 1;
+        const a0 = a[iy * w + ix], a1 = a[iy * w + ix + 1], a2 = a[(iy + 1) * w + ix], a3 = a[(iy + 1) * w + ix + 1];
+        v += amp * ((a0 + (a1 - a0) * sx) + ((a2 + (a3 - a2) * sx) - (a0 + (a1 - a0) * sx)) * sy); tot += amp; amp *= 0.5;
+      }
+      out[y * n + x] = v / tot;
+    }
+    void g;
+    return out;
+  }
+  function textureCanvas(n, seed, oct, colorFn) {
+    const c = document.createElement('canvas'); c.width = c.height = n;
+    const x = c.getContext('2d'), img = x.createImageData(n, n), f = noiseField(n, seed, oct);
+    for (let k = 0; k < n * n; k++) { const col = colorFn(f[k], k % n / n, ((k / n) | 0) / n); img.data[k * 4] = col[0]; img.data[k * 4 + 1] = col[1]; img.data[k * 4 + 2] = col[2]; img.data[k * 4 + 3] = col[3] == null ? 255 : col[3]; }
+    x.putImageData(img, 0, 0);
+    return c;
+  }
+  function celCloud(g, x, y, w, sh, lit) {
+    // puffy cumulus: shadow underside, lit body, rim highlight
+    const puffs = [[0, 0, 0.42], [-0.32, 0.08, 0.3], [0.33, 0.06, 0.32], [-0.12, -0.18, 0.3], [0.16, -0.2, 0.26], [-0.5, 0.18, 0.2], [0.52, 0.17, 0.2]];
+    g.save();
+    g.fillStyle = sh;
+    for (const [px, py, pr] of puffs) { g.beginPath(); g.arc(x + px * w, y + py * w + w * 0.05, pr * w, 0, TAU); g.fill(); }
+    g.fillStyle = lit;
+    for (const [px, py, pr] of puffs) { g.beginPath(); g.arc(x + px * w - w * 0.02, y + py * w - w * 0.03, pr * w * 0.9, 0, TAU); g.fill(); }
+    g.fillStyle = 'rgba(255,255,255,0.9)';
+    for (const [px, py, pr] of puffs) { g.beginPath(); g.arc(x + px * w - pr * w * 0.25, y + py * w - pr * w * 0.3, pr * w * 0.45, 0, TAU); g.fill(); }
+    g.restore();
+  }
+  const painted = {};
+  function paint(id, S) {
+    const key = id + S;
+    if (painted[key]) return painted[key];
+    const PX = Math.min(1600, S * 2), c = document.createElement('canvas'); c.width = c.height = PX;
+    const g = c.getContext('2d'); g.scale(PX / S, PX / S);
+    const r = BB.RNG(id === 'meteor' ? 4242 : 1717);
+    const data = { canvas: c, cracks: [] };
+    if (id === 'meteor') {
+      // scorched volcanic ground
+      const base = g.createRadialGradient(S * 0.5, S * 0.55, S * 0.05, S * 0.5, S * 0.5, S * 0.75);
+      base.addColorStop(0, '#4a2e22'); base.addColorStop(0.6, '#2a1914'); base.addColorStop(1, '#120a08');
+      g.fillStyle = base; g.fillRect(0, 0, S, S);
+      g.globalAlpha = 0.55; g.globalCompositeOperation = 'overlay';
+      g.drawImage(textureCanvas(256, 11, 5, (v) => { const k = 60 + v * 160; return [k, k * 0.8, k * 0.7]; }), 0, 0, S, S);
+      g.globalAlpha = 0.35; g.globalCompositeOperation = 'multiply';
+      g.drawImage(textureCanvas(128, 29, 3, (v) => { const k = 120 + v * 135; return [k, k * 0.92, k * 0.88]; }), 0, 0, S, S);
+      g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+      // glowing fissures (geometry kept for the live pulse)
+      for (let i = 0; i < 4; i++) {
+        let x = r() * S, y = r() * S, a = r() * TAU; const pts = [[x, y]];
+        for (let k = 0; k < 9; k++) { a += (r() - 0.5) * 1.1; const l = 22 + r() * 30; x += Math.cos(a) * l; y += Math.sin(a) * l; pts.push([x, y]); }
+        data.cracks.push(pts);
+      }
+      const strokeCrack = (pts, w, col, blur) => { g.save(); g.shadowColor = col; g.shadowBlur = blur; g.beginPath(); pts.forEach(([px, py], k) => (k ? g.lineTo(px, py) : g.moveTo(px, py))); g.strokeStyle = col; g.lineWidth = w; g.lineCap = 'round'; g.lineJoin = 'round'; g.stroke(); g.restore(); };
+      for (const pts of data.cracks) { strokeCrack(pts, 14, 'rgba(255,70,10,0.35)', 30); strokeCrack(pts, 6, '#ff6a14', 12); strokeCrack(pts, 2.2, '#ffd36a', 4); }
+      // scorch craters with lit rims
+      for (let i = 0; i < 5; i++) {
+        const x = r() * S, y = r() * S, rr = 24 + r() * 34;
+        const cg = g.createRadialGradient(x, y, rr * 0.1, x, y, rr);
+        cg.addColorStop(0, 'rgba(8,4,3,0.85)'); cg.addColorStop(0.7, 'rgba(20,10,8,0.6)'); cg.addColorStop(1, 'rgba(20,10,8,0)');
+        g.fillStyle = cg; g.beginPath(); g.arc(x, y, rr, 0, TAU); g.fill();
+        g.beginPath(); g.arc(x, y, rr * 0.82, Math.PI * 1.05, Math.PI * 1.75); g.strokeStyle = 'rgba(255,160,90,0.35)'; g.lineWidth = 3; g.stroke();
+        g.beginPath(); g.arc(x, y, rr * 0.82, Math.PI * 0.1, Math.PI * 0.8); g.strokeStyle = 'rgba(0,0,0,0.5)'; g.lineWidth = 4; g.stroke();
+      }
+      // cel-shaded boulders: shadow side, body, warm rim light from the lava
+      for (let i = 0; i < 16; i++) {
+        const x = r() * S, y = r() * S, rr = 10 + r() * 26, pts = [];
+        for (let v = 0; v < 7; v++) { const a = v * TAU / 7 + r() * 0.5; pts.push([x + Math.cos(a) * rr * (0.7 + r() * 0.4), y + Math.sin(a) * rr * (0.6 + r() * 0.4)]); }
+        const poly = (dx, dy, k) => { g.beginPath(); pts.forEach(([px, py], n) => { const qx = x + (px - x) * k + dx, qy = y + (py - y) * k + dy; n ? g.lineTo(qx, qy) : g.moveTo(qx, qy); }); g.closePath(); };
+        poly(rr * 0.15, rr * 0.25, 1.05); g.fillStyle = 'rgba(0,0,0,0.45)'; g.fill();
+        poly(0, 0, 1); const bg = g.createLinearGradient(x - rr, y - rr, x + rr, y + rr); bg.addColorStop(0, '#6b4636'); bg.addColorStop(0.5, '#3a2620'); bg.addColorStop(1, '#1c110d');
+        g.fillStyle = bg; g.fill(); g.lineWidth = 2; g.strokeStyle = '#0d0706'; g.stroke();
+        poly(-rr * 0.12, -rr * 0.14, 0.55); g.fillStyle = 'rgba(255,170,110,0.18)'; g.fill();
+      }
+      // ash speckle
+      for (let i = 0; i < 260; i++) { g.fillStyle = r() < 0.7 ? 'rgba(200,180,170,0.18)' : 'rgba(0,0,0,0.35)'; g.fillRect(r() * S, r() * S, 1.2 + r() * 1.6, 1.2 + r() * 1.6); }
+      const vg = g.createRadialGradient(S / 2, S / 2, S * 0.3, S / 2, S / 2, S * 0.75);
+      vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.55)');
+      g.fillStyle = vg; g.fillRect(0, 0, S, S);
+    } else {
+      // sky playground: atmosphere, sun bloom, cel-shaded cumulus banks, quilted bounce mat
+      const sky = g.createLinearGradient(0, 0, 0, S);
+      sky.addColorStop(0, '#2f7fd8'); sky.addColorStop(0.45, '#6fb7f2'); sky.addColorStop(0.8, '#bfe4fb'); sky.addColorStop(1, '#eef9ff');
+      g.fillStyle = sky; g.fillRect(0, 0, S, S);
+      const sx = S * 0.8, sy = S * 0.16;
+      for (const [rr, a] of [[S * 0.55, 0.18], [S * 0.28, 0.3], [S * 0.12, 0.6]]) { const sg = g.createRadialGradient(sx, sy, 0, sx, sy, rr); sg.addColorStop(0, 'rgba(255,250,215,' + a + ')'); sg.addColorStop(1, 'rgba(255,250,215,0)'); g.fillStyle = sg; g.fillRect(0, 0, S, S); }
+      g.beginPath(); g.arc(sx, sy, S * 0.055, 0, TAU); g.fillStyle = '#fffbe6'; g.fill();
+      g.globalAlpha = 0.18; g.globalCompositeOperation = 'soft-light';
+      g.drawImage(textureCanvas(192, 7, 4, (v) => { const k = 90 + v * 165; return [k, k, k]; }), 0, 0, S, S);
+      g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+      // far cloud bank, hazy
+      g.globalAlpha = 0.55;
+      for (let i = 0; i < 7; i++) celCloud(g, -S * 0.05 + i * S * 0.18, S * 0.66 + (i % 2) * 14, S * 0.22, '#a9c3e6', '#e3eefb');
+      g.globalAlpha = 1;
+      // near clouds
+      for (const [x, y, w] of [[S * 0.2, S * 0.3, S * 0.26], [S * 0.62, S * 0.48, S * 0.2], [S * 0.12, S * 0.62, S * 0.16]]) celCloud(g, x, y, w, '#9fb6dd', '#f4f8ff');
+      // quilted bounce mat
+      const mh = S * 0.075, my = S - mh;
+      const mg = g.createLinearGradient(0, my, 0, S); mg.addColorStop(0, '#5aa8ff'); mg.addColorStop(0.5, '#2f6fd0'); mg.addColorStop(1, '#1d4796');
+      g.fillStyle = mg; g.fillRect(0, my, S, mh);
+      g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 1.5; g.setLineDash([5, 4]);
+      for (let x = -mh; x < S + mh; x += mh * 0.9) { g.beginPath(); g.moveTo(x, my); g.lineTo(x + mh, S); g.moveTo(x + mh, my); g.lineTo(x, S); g.stroke(); }
+      g.setLineDash([]);
+      g.fillStyle = 'rgba(255,255,255,0.45)'; g.fillRect(0, my, S, 3);
+      g.fillStyle = '#ffd23f'; g.fillRect(0, my - 6, S, 6); g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(0, my - 1, S, 2);
+      const vg = g.createRadialGradient(S / 2, S * 0.45, S * 0.35, S / 2, S * 0.45, S * 0.8);
+      vg.addColorStop(0, 'rgba(10,40,90,0)'); vg.addColorStop(1, 'rgba(10,40,90,0.25)');
+      g.fillStyle = vg; g.fillRect(0, 0, S, S);
+    }
+    painted[key] = data;
+    return data;
+  }
+  BB.paintedFloor = function (ctx, sim, id) {
+    const S = sim.size, t = sim.t, data = paint(id, S);
+    ctx.drawImage(data.canvas, -S / 2, -S / 2, S, S);
+    if (id === 'meteor') {
+      // breathing glow along the fissures + rising embers
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      const a = 0.12 + 0.1 * Math.sin(t * 2.4);
+      for (const pts of data.cracks) { ctx.beginPath(); pts.forEach(([px, py], k) => (k ? ctx.lineTo(px - S / 2, py - S / 2) : ctx.moveTo(px - S / 2, py - S / 2))); ctx.strokeStyle = 'rgba(255,120,30,' + a + ')'; ctx.lineWidth = 18; ctx.stroke(); }
+      const r = BB.RNG(9);
+      for (let i = 0; i < 22; i++) { const ex = (r() - 0.5) * S + Math.sin(t * 1.3 + i) * 8, ey = ((r() * S - t * (25 + r() * 35)) % S + S) % S - S / 2; ctx.beginPath(); ctx.arc(ex, ey, 1.6 + r() * 1.4, 0, TAU); ctx.fillStyle = 'rgba(255,160,70,' + (0.4 + 0.4 * r()) + ')'; ctx.fill(); }
+      ctx.restore();
+    } else {
+      // slow drifting foreground clouds
+      ctx.save(); ctx.globalAlpha = 0.9;
+      for (let i = 0; i < 2; i++) { const w = S * (0.14 + i * 0.05); celCloud(ctx, ((i * S * 0.6 + t * (6 + i * 4)) % (S + w * 2)) - S / 2 - w, -S * 0.3 + i * S * 0.22, w, '#a7bde2', '#ffffff'); }
+      ctx.restore();
+    }
   };
 
   BB.drawWalls = function (ctx, sim, dark) {
