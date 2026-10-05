@@ -118,9 +118,8 @@
       const ch3 = App.pvpAvailable() && !res3 ? BB.meta.decode3(BB.sdk.getInviteParam('pvp3')) : null;
       const ch = !ch3 && App.pvpAvailable() ? App.decodeChallenge(BB.sdk.getInviteParam('pvp')) : null;
       // squads of mine fought while I was away (matchmaking)
-      if (App.pvpAvailable() && BB.match) BB.match.inbox();
       // CrazyGames instant multiplayer: straight into matchmaking (or the PvP Arena if it isn't set up)
-      if (App.pvpAvailable() && BB.sdk.instantMultiplayer() && !res3 && !ch3 && !ch) { if (BB.match && BB.match.ready()) BB.match.start(); else BB.meta.openPvp(); }
+      if (App.pvpAvailable() && BB.sdk.instantMultiplayer() && !res3 && !ch3 && !ch) { BB.match.start(); }
       else if (res3) BB.meta.pvpResult(res3);
       else if (ch3) BB.meta.pvpReceive(ch3);
       else if (ch) BB.ui.pvpReceive(ch);

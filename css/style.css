@@ -991,3 +991,12 @@ html.cport .stat-row:not(.team) .st { white-space: normal; line-height: 1.15; }
 .mm-spin i { width: 18px; height: 18px; border-radius: 50%; background: #ffd23f; border: 3px solid #111; animation: mmB .9s ease-in-out infinite; }
 .mm-spin i:nth-child(2) { animation-delay: .15s; background: #ff6fd8; } .mm-spin i:nth-child(3) { animation-delay: .3s; background: #7fe3ff; }
 @keyframes mmB { 50% { transform: translateY(-12px); } }
+.pvp-mode.mm .pm-h em { background: #35d047; }
+.mm-radar { position: relative; width: 170px; height: 170px; margin: 14px auto; border-radius: 50%; background: radial-gradient(circle, rgba(127,227,255,.12), transparent 70%); }
+.mm-radar > i { position: absolute; inset: 0; border: 3px solid rgba(127,227,255,.6); border-radius: 50%; animation: mmPing 2.4s ease-out infinite; }
+.mm-radar > i:nth-child(2) { animation-delay: .8s; } .mm-radar > i:nth-child(3) { animation-delay: 1.6s; }
+@keyframes mmPing { from { transform: scale(.3); opacity: 1; } to { transform: scale(1.15); opacity: 0; } }
+.mm-squad { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 4px; }
+.mm-squad img { width: 44px; height: 44px; filter: drop-shadow(0 3px 0 rgba(0,0,0,.5)); }
+.mm-status { text-align: center; color: #fff; font-family: var(--num); font-size: 16px; }
+.mm-status b { color: #ffd23f; font-weight: 400; margin-left: 6px; }

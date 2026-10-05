@@ -59,8 +59,9 @@
       if (app.event && app.event.spectate) return;
       M.track('play', 1);
       M.track('map', sim.map.id);
-      const mine = sim.balls.filter((b) => b.main && b.team === 0 && !b.owner);
-      if (w === 0) {
+      const side = (app.event && app.event.mySide) || 0;
+      const mine = sim.balls.filter((b) => b.main && b.team === side && !b.owner);
+      if (w === side) {
         M.track('win', 1);
         if (mine.some((b) => b.def.cat === 'special')) M.track('specialwin', 1);
         if (!app.pvp && !app.event && (mode.teams[0].length > 1 || mode.teams.length > 2)) M.track('teamwin', 1);
@@ -69,10 +70,10 @@
       // both sides are yours, so whichever team wins earns it; in PvP / Gauntlet the other side is an
       // opponent, so only your own winning ball does.
       M.lastXP = [];
-      const anySide = !app.event || app.event.kind === 'cup';
+      const anySide = !app.event || app.event.kind === 'cup', mySide = (app.event && app.event.mySide) || 0;
       const seen = {};
       for (const b of sim.balls) {
-        if (w < 0 || !b.main || b.owner || b.team !== w || (!anySide && b.team !== 0)) continue;
+        if (w < 0 || !b.main || b.owner || b.team !== w || (!anySide && b.team !== mySide)) continue;
         const id = b.def.id;
         if (!BB.ITEM[id] || BB.ITEM[id].cat === 'hidden' || !app.isOwned(id)) continue;
         const xp = 40 + Math.min(40, Math.round((b.dealt || 0) / 4)) + (b.kills || 0) * 10;
@@ -636,7 +637,7 @@
             <div class="pvp-rec">${next ? (next[0] - pv.rating) + ' to ' + next[1] : 'Top rank'} · ${pv.w} W · ${pv.d} D · ${pv.l} L</div></div>
           <div class="pvp-modes">
             <div class="pvp-mode code"><div class="pm-h">${BB.ICON.scroll}<b>Play a Friend</b></div><span>Make a challenge and share its code or invite link. They answer with the same code.</span><div class="pm-btns"></div></div>
-            <div class="pvp-mode mm"><div class="pm-h">${BB.ICON.swords}<b>Matchmaking</b>${BB.match && BB.match.ready() ? '<em class="on">LIVE</em>' : '<em>SOON</em>'}</div><span>Fight a real player's squad near your rating. Your squad joins the pool too, and you gain or lose rating when others fight it.</span><button class="btn green pm-find"${BB.match && BB.match.ready() ? '' : ' disabled'}>Find a match</button></div>
+            <div class="pvp-mode mm"><div class="pm-h">${BB.ICON.swords}<b>Matchmaking</b><em class="on">LIVE</em></div><span>Get matched with another player who is online right now. Same fights on both screens.</span><button class="btn green pm-find">Find a match</button></div>
           </div>
           <div class="pvp-steps"><div><b>1</b><span>Pick 3 different balls in fight order</span></div><div><b>2</b><span>Share the code with a friend</span></div><div><b>3</b><span>All 3 rounds play. Most wins takes it</span></div></div>`;
         const go = document.createElement('button'); go.className = 'btn primary'; go.innerHTML = BB.ICON.swords + ' Create';
@@ -745,9 +746,11 @@
 
     pvpFight() {
       const sr = M.series, k = sr.round, app = BB.app;
+      // live matches: the host's ball is always team 0 on both screens so the fights are identical
+      const a = { id: sr.mine[k], hp: 100, scale: 1, ov: {} }, b = { id: sr.theirs[k], hp: 100, scale: 1, ov: {} };
       app.event = {
-        kind: 'pvp3', spectate: !!sr.spectate, seed: (sr.seed + k * 7919) | 0, map: sr.maps[k],
-        teams: [[{ id: sr.mine[k], hp: 100, scale: 1, ov: {}, slot: 0 }], [{ id: sr.theirs[k], hp: 100, scale: 1, ov: {}, slot: 1 }]],
+        kind: 'pvp3', spectate: !!sr.spectate, mySide: sr.flip ? 1 : 0, seed: (sr.seed + k * 7919) | 0, map: sr.maps[k],
+        teams: sr.flip ? [[Object.assign(b, { slot: 0 })], [Object.assign(a, { slot: 1 })]] : [[Object.assign(a, { slot: 0 })], [Object.assign(b, { slot: 1 })]],
         onOver: (w) => M.pvpRound(w),
       };
       app.startBattle();
@@ -757,6 +760,7 @@
       const sr = M.series, app = BB.app;
       app.event = null;
       if (!sr) { app.toMenu(); return; }
+      if (sr.flip && w >= 0) w = 1 - w; // back to 'my' point of view
       sr.results.push(w);
       if (w === 0) sr.score[0]++; else if (w === 1) sr.score[1]++;
       sr.round++;
@@ -771,8 +775,7 @@
       BB.save.data.coins += coinsWon; BB.save.write(); app.refreshCoins();
       BB.audio.play(won ? 'win' : 'lose');
       if (won) BB.sdk.happytime();
-      if (sr.matchmade && BB.match) { BB.match.report(sr.squadId, sr); BB.sdk.updateRoom(null, false); }
-      M.seriesEnd(sr, { won, draw, delta, coinsWon, canReply: !sr.matchmade });
+      M.seriesEnd(sr, { won, draw, delta, coinsWon, canReply: !sr.live, title: sr.live ? 'Live match vs ' + esc(sr.foeName) : null });
     },
 
     applyRating(pv, foe, score) {
@@ -813,8 +816,8 @@
           wb.onclick = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); o.watch(); };
           foot.append(wb);
         }
-        const re = document.createElement('button'); re.className = 'btn primary'; re.textContent = sr.matchmade ? 'Find another' : 'New challenge';
-        re.onclick = () => { BB.sdk.hideInvite(); BB.ui.onClose = null; BB.ui.close(); M.series = null; BB.app.toMenu(); if (sr.matchmade) BB.match.start(); else M.pick3('Your PvP Squad', 'Pick 3 different balls in fight order.', (ids) => M.pvpCreated(ids)); };
+        const re = document.createElement('button'); re.className = 'btn primary'; re.textContent = sr.live ? 'Find another' : 'New challenge';
+        re.onclick = () => { BB.sdk.hideInvite(); BB.ui.onClose = null; BB.ui.close(); M.series = null; BB.app.toMenu(); if (sr.live) BB.match.start(); else M.pick3('Your PvP Squad', 'Pick 3 different balls in fight order.', (ids) => M.pvpCreated(ids)); };
         const ok = document.createElement('button'); ok.className = 'btn green'; ok.textContent = 'Menu';
         ok.onclick = () => { BB.sdk.hideInvite(); M.series = null; BB.ui.onClose = null; BB.ui.close(); BB.sdk.maybeMidgame().then(() => BB.app.toMenu()); };
         foot.append(re, ok); sheet.appendChild(foot);
