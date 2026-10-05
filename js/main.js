@@ -373,6 +373,7 @@
       App.acc = 0;
       App.resultsShown = false;
       $('app').className = 'is-battle';
+      $('app').classList.toggle('no-pause', !!(App.event && App.event.kind === 'pvp3'));
       BB.sdk.hideInvite();
       App.layout();
       App.renderMatchup(App.sim);
@@ -385,6 +386,7 @@
 
     pause() {
       if (App.state !== 'battle' || App.paused || App.resultsShown) return;
+      if (App.event && App.event.kind === 'pvp3') return; // PvP rounds can't be paused
       App.paused = true;
       BB.sdk.gameplayStop();
       BB.ui.pause();

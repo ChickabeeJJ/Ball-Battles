@@ -330,8 +330,9 @@
         const grid = el('div', 'pz-grid');
         grid.append(
           big('green pz-main', BB.ICON.play, 'Resume', () => app.resume()),
-          big('primary', BB.ICON.restart, 'Restart', () => { UI.onClose = null; UI.close(); app.startBattle(); }),
-          big('', BB.ICON.gear, 'Settings', () => { UI.onClose = null; UI.settings(); }),
+          // no Restart inside Gauntlet / Cup / PvP runs (it would reroll the fight); Settings fills the row instead
+          ...(app.event ? [] : [big('primary', BB.ICON.restart, 'Restart', () => { UI.onClose = null; UI.close(); app.startBattle(); })]),
+          big(app.event ? 'pz-wide' : '', BB.ICON.gear, 'Settings', () => { UI.onClose = null; UI.settings(); }),
           big('red', BB.ICON.home, 'Quit', () => { UI.onClose = null; UI.close(); app.pvp = null; app.event = null; BB.meta.cup = null; BB.meta.gaunt = null; BB.meta.series = null; BB.meta.series = null; app.toMenu(); }),
         );
         body.appendChild(grid);

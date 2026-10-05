@@ -951,3 +951,5 @@ html.cport .slots.compact .slot .sl-n { font-size: 13px; }
 html.cport .slots.compact .slot .sl-s { display: none; }
 html.cport .slots.compact .vs-mid { font-size: 14px; }
 html.cland .slots.compact .slot .sl-s { display: none; }
+.pz-wide { grid-column: 1 / -1; justify-content: center; }
+.no-pause .pause-btn { display: none !important; }

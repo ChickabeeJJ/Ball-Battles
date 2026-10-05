@@ -2,7 +2,7 @@
 // ball's damage multiplier toward a 50% win rate. Writes js/balance.js.
 // node tools/balance.js [iterations]
 global.window = globalThis;
-for (const f of ['core', 'data', 'data2', 'sim']) require('../js/' + f + '.js');
+for (const f of ['core', 'data', 'data2', 'abilities', 'sim']) require('../js/' + f + '.js');
 const fs = require('fs');
 const BB = globalThis.BB;
 BB.BALANCE = {};
