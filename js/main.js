@@ -484,7 +484,7 @@
           case 'ko':
             App.slowmo = 1.1; App.shake = 14;
             // Kami's own finisher replaces the regular one
-            if (App.kamiKill && e.winner >= 0 && BB.save.data.settings.kamiCine !== false) {
+            if (App.kamiKill && e.winner >= 0 && BB.save.data.settings.finisher) {
               const foe = sim.balls.find((b) => b.main && !b.alive && b.team !== e.winner);
               App.impact = { t: 0, dur: 2.8, kamiFin: true, x: 0, y: 0, seed: (Math.random() * 1e6) | 0, foe: foe ? BB.itemColor(foe.def.id) : '#e8473f' };
               BB.audio.play('kamiFinisher');

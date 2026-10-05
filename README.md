@@ -22,7 +22,7 @@ The game also runs without the SDK (opened from disk, other hosts, ad blockers).
 | Modes | 1v1, 2v2, 3v3, Free For All |
 | Maps | Classic, Large, Bouncy (gravity), Pillars, Saws, Shrinking, Hot Potato, Meteors |
 | Per ball | Health, size, and overrides for damage, spin and speed |
-| Settings | Sound, dark mode, hit freeze, parry freeze, damage numbers, impact frames, finisher, Kami cutscenes, overtime bonus, reverse Team Two spin, vibration |
+| Settings | Sound, dark mode, hit freeze, parry freeze, damage numbers, impact frames, finisher (incl. Kami's), ability text, overtime bonus, reverse Team Two spin, vibration |
 
 Every weapon scales on hit (for example, Sword gains +1 damage, Dagger spins faster, Bow adds an arrow). Weapons that touch **parry**, which flips both spin directions. After 40s, **overtime** raises all damage, so every battle ends. Wins earn coins, which unlock Rare, Epic and Legendary items. Opponent slots can use any item, so players can see locked items in action.
 

@@ -234,7 +234,7 @@
       }
     }
 
-    fxTag(x, y, text, c) { this.fx.push({ k: 'tag', x, y, text, c, life: 0.9, max: 0.9 }); }
+    fxTag(x, y, text, c) { if (this.settings.callouts === false) return; this.fx.push({ k: 'tag', x, y, text, c, life: 0.9, max: 0.9 }); }
 
     // Applies damage, returns the amount actually dealt.
     damage(target, amt, src, info) {
