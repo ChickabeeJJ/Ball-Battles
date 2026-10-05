@@ -179,10 +179,15 @@
     const r = b.r;
     if (showTeam) { ctx.beginPath(); ctx.arc(0, 0, r + 5, 0, TAU); ctx.lineWidth = 5; ctx.strokeStyle = tm.fill; ctx.stroke(); }
     // body
+    // mastery skins (Classic / Shadow / Neon / Gold)
+    const skin = b.main && BB.meta && BB.meta.skinOf ? BB.meta.skinOf(id) : 'classic';
     ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU);
     const g = ctx.createRadialGradient(-r * 0.35, -r * 0.4, r * 0.1, 0, 0, r * 1.05);
-    g.addColorStop(0, shade(col, 0.28)); g.addColorStop(0.55, col); g.addColorStop(1, shade(col, -0.28));
-    ctx.fillStyle = g; ctx.fill();
+    if (skin === 'shadow') { g.addColorStop(0, shade(col, -0.25)); g.addColorStop(0.6, shade(col, -0.62)); g.addColorStop(1, '#0b0b10'); }
+    else if (skin === 'gold') { g.addColorStop(0, '#fff6c2'); g.addColorStop(0.45, '#f2c230'); g.addColorStop(1, '#8a5a00'); }
+    else { g.addColorStop(0, shade(col, 0.28)); g.addColorStop(0.55, col); g.addColorStop(1, shade(col, -0.28)); }
+    if (skin === 'neon') { ctx.save(); ctx.shadowColor = col; ctx.shadowBlur = r * 0.9; ctx.fillStyle = g; ctx.fill(); ctx.restore(); }
+    else { ctx.fillStyle = g; ctx.fill(); }
     ctx.save(); ctx.clip();
     ctx.beginPath(); ctx.ellipse(-r * 0.32, -r * 0.42, r * 0.38, r * 0.2, -0.5, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.fill();
     if (b.slowT > 0) { ctx.fillStyle = 'rgba(191,233,255,0.55)'; ctx.fillRect(-r, -r, r * 2, r * 2); }
@@ -190,6 +195,12 @@
     if (b.flash > 0) { ctx.fillStyle = 'rgba(255,255,255,' + Math.min(1, b.flash * 9) + ')'; ctx.fillRect(-r, -r, r * 2, r * 2); }
     ctx.restore();
     ctx.lineWidth = lw * (b.main ? 1.5 : 1.1); ctx.strokeStyle = OUT; ctx.stroke();
+    if (skin === 'shadow') { ctx.beginPath(); ctx.arc(0, 0, r - lw, Math.PI * 1.05, Math.PI * 1.7); ctx.strokeStyle = shade(col, 0.2); ctx.lineWidth = 3; ctx.stroke(); }
+    else if (skin === 'neon') { ctx.beginPath(); ctx.arc(0, 0, r + 1, 0, TAU); ctx.strokeStyle = shade(col, 0.55); ctx.lineWidth = 3; ctx.stroke(); }
+    else if (skin === 'gold') {
+      ctx.fillStyle = '#fffbe0';
+      for (let k = 0; k < 3; k++) { const a = sim.t * 1.6 + k * 2.1, d = r * 0.75, x = Math.cos(a) * d, y = Math.sin(a) * d, s2 = r * (0.1 + 0.05 * Math.sin(sim.t * 7 + k)); ctx.beginPath(); ctx.moveTo(x, y - s2 * 2); ctx.lineTo(x + s2 * 0.5, y); ctx.lineTo(x, y + s2 * 2); ctx.lineTo(x - s2 * 0.5, y); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(x - s2 * 2, y); ctx.lineTo(x, y + s2 * 0.5); ctx.lineTo(x + s2 * 2, y); ctx.lineTo(x, y - s2 * 0.5); ctx.closePath(); ctx.fill(); }
+    }
     // status rings
     if (b.burnT > 0) { ctx.beginPath(); ctx.arc(0, 0, r + 2, 0, TAU); ctx.strokeStyle = 'rgba(255,122,26,0.85)'; ctx.lineWidth = 3; ctx.stroke(); }
     if (b.poison > 0) { ctx.beginPath(); ctx.arc(0, 0, r - 4, 0, TAU); ctx.strokeStyle = 'rgba(155,77,255,0.9)'; ctx.lineWidth = 3; ctx.stroke(); }

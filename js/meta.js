@@ -58,35 +58,140 @@
       const app = BB.app, mode = app.mode();
       M.track('play', 1);
       M.track('map', sim.map.id);
+      const mine = sim.balls.filter((b) => b.main && b.team === 0 && !b.owner);
       if (w === 0) {
         M.track('win', 1);
-        const mine = sim.balls.filter((b) => b.main && b.team === 0 && !b.owner);
         if (mine.some((b) => b.def.cat === 'special')) M.track('specialwin', 1);
         if (!app.pvp && !app.event && (mode.teams[0].length > 1 || mode.teams.length > 2)) M.track('teamwin', 1);
-        // mastery: every ball on the winning (your) side earns a win
-        const seen = new Set();
-        for (const b of mine) {
-          if (seen.has(b.def.id) || BB.ITEM[b.def.id].cat === 'hidden') continue;
-          seen.add(b.def.id);
-          M.addMastery(b.def.id);
-        }
       }
+      // Mastery XP: every ball on your side (both sides in the Cup, where all 8 are yours)
+      M.lastXP = [];
+      const both = app.event && app.event.kind === 'cup';
+      const seen = {};
+      for (const b of sim.balls) {
+        if (!b.main || b.owner || (b.team !== 0 && !both)) continue;
+        const id = b.def.id;
+        if (!BB.ITEM[id] || BB.ITEM[id].cat === 'hidden') continue;
+        const won = b.team === w;
+        const xp = 15 + (won ? 25 : 0) + Math.min(40, Math.round((b.dealt || 0) / 4)) + (b.kills || 0) * 10;
+        seen[id] = (seen[id] || 0) + xp;
+      }
+      for (const id in seen) M.lastXP.push(M.addXP(id, seen[id]));
       BB.save.write();
     },
 
-    stars(id) { const n = M.data().mastery[id] || 0; return STAR_AT.filter((x) => n >= x).length; },
-    addMastery(id) {
+    // ------------------------------------------------------------- mastery (per-ball XP, 10 levels, skins)
+    MXP: [0, 60, 150, 280, 450, 670, 950, 1300, 1720, 2200],
+    SKINS: [
+      { id: 'classic', name: 'Classic', lvl: 1 },
+      { id: 'shadow', name: 'Shadow', lvl: 4 },
+      { id: 'neon', name: 'Neon', lvl: 6 },
+      { id: 'gold', name: 'Gold', lvl: 10 },
+    ],
+    xpData() {
       const m = M.data();
-      const before = M.stars(id);
-      m.mastery[id] = (m.mastery[id] || 0) + 1;
-      const after = M.stars(id);
-      if (after > before) {
-        const r = STAR_REWARD[after - 1];
-        BB.save.data.coins += r;
-        setTimeout(() => BB.ui.toast(BB.ITEM[id].name + ' mastery ' + '★'.repeat(after) + '  +' + r + ' coins!', 2600), 900);
+      if (!m.mxp) {
+        // migrate the old win-count mastery into XP
+        m.mxp = {};
+        for (const id in m.mastery) m.mxp[id] = (m.mastery[id] || 0) * 40;
       }
+      m.skin = m.skin || {};
+      return m;
     },
-    starHtml(id) { const n = M.stars(id); return n ? '<span class="stars">' + '★'.repeat(n) + '</span>' : ''; },
+    xp(id) { return M.xpData().mxp[id] || 0; },
+    level(id) { const x = M.xp(id); let l = 1; for (let k = 1; k < M.MXP.length; k++) if (x >= M.MXP[k]) l = k + 1; return l; },
+    levelProgress(id) {
+      const l = M.level(id), x = M.xp(id);
+      if (l >= 10) return { l, cur: 1, need: 1, pct: 100 };
+      const a = M.MXP[l - 1], b = M.MXP[l];
+      return { l, cur: x - a, need: b - a, pct: Math.round(((x - a) / (b - a)) * 100) };
+    },
+    nextReward(id) {
+      const l = M.level(id);
+      const sk = M.SKINS.find((s) => s.lvl > l);
+      return sk ? sk.name + ' skin at Lv ' + sk.lvl : 'Fully mastered!';
+    },
+    addXP(id, amount) {
+      const m = M.xpData();
+      const before = M.level(id);
+      m.mxp[id] = (m.mxp[id] || 0) + amount;
+      const after = M.level(id);
+      let coinsWon = 0;
+      const skins = [];
+      for (let l = before + 1; l <= after; l++) {
+        coinsWon += 40 * l;
+        const sk = M.SKINS.find((s) => s.lvl === l);
+        if (sk) skins.push(sk.name);
+      }
+      if (coinsWon) {
+        BB.save.data.coins += coinsWon;
+        if (after === 10) BB.sdk.happytime();
+      }
+      return { id, xp: amount, from: before, to: after, coins: coinsWon, skins };
+    },
+    // legacy hooks (Cup champion, star counts)
+    addMastery(id) { M.addXP(id, 40); },
+    stars(id) { const l = M.level(id); return l >= 10 ? 3 : l >= 6 ? 2 : l >= 3 ? 1 : 0; },
+    starHtml(id) { const l = M.level(id); return l > 1 ? `<span class="mlv${l >= 10 ? ' max' : ''}">Lv${l}</span>` : ''; },
+    skinOf(id) { const m = M.xpData(); const s = m.skin[id]; return s && M.level(id) >= (M.SKINS.find((k) => k.id === s) || { lvl: 99 }).lvl ? s : 'classic'; },
+    setSkin(id, sk) { M.xpData().skin[id] = sk; BB.save.write(); },
+
+    masteryBlock(id) {
+      const p = M.levelProgress(id), cur = M.skinOf(id);
+      const skins = M.SKINS.map((s) => {
+        const ok = p.l >= s.lvl;
+        return `<button class="skin${s.id === cur ? ' on' : ''}${ok ? '' : ' locked'}" data-skin="${s.id}" ${ok ? '' : 'disabled'}><i class="sw sw-${s.id}"></i><span>${s.name}</span>${ok ? '' : `<b>Lv${s.lvl}</b>`}</button>`;
+      }).join('');
+      return `<div class="mastery"><div class="m-top"><span class="mlv big${p.l >= 10 ? ' max' : ''}">Lv${p.l}</span><div class="m-bar"><i style="width:${p.pct}%"></i><b>${p.l >= 10 ? 'MASTERED' : p.cur + ' / ' + p.need + ' XP'}</b></div></div>
+        <div class="m-next">${esc(M.nextReward(id))}</div><div class="skins">${skins}</div></div>`;
+    },
+    bindSkins(root, id, onChange) {
+      root.querySelectorAll('.skin').forEach((b) => b.onclick = () => {
+        if (b.disabled) return;
+        BB.audio.play('click'); M.setSkin(id, b.dataset.skin);
+        root.querySelectorAll('.skin').forEach((x) => x.classList.toggle('on', x === b));
+        if (onChange) onChange();
+      });
+    },
+
+    openMastery() {
+      const owned = BB.ITEMS.filter((i) => i.cat !== 'hidden' && BB.save.data.unlocked[i.id]);
+      owned.sort((a, b) => M.xp(b.id) - M.xp(a.id));
+      const total = owned.reduce((n, i) => n + M.level(i.id), 0);
+      BB.ui.open((sheet) => {
+        const body = BB.ui.head(sheet, 'Ball Mastery');
+        body.innerHTML += `<div class="f-s">Balls earn XP whenever they fight for you: more for winning, dealing damage and knockouts. Level up for coins and new skins.</div>
+          <div class="q-stats"><div><b>${total}</b><span>Total levels</span></div><div><b>${owned.filter((i) => M.level(i.id) >= 10).length}</b><span>Mastered</span></div><div><b>${owned.filter((i) => M.level(i.id) >= 4).length}</b><span>Skins unlocked</span></div><div><b>${owned.length}</b><span>Balls owned</span></div></div>`;
+        const list = document.createElement('div'); list.className = 'm-list';
+        for (const it of owned) {
+          const p = M.levelProgress(it.id);
+          const row = document.createElement('button'); row.className = 'm-row';
+          row.innerHTML = `<img src="${BB.icon(it.id)}" alt=""><div class="m-mid"><div class="m-name">${esc(it.name)}</div><div class="m-bar sm"><i style="width:${p.pct}%"></i></div></div><span class="mlv${p.l >= 10 ? ' max' : ''}">Lv${p.l}</span>`;
+          row.onclick = () => { BB.audio.play('click'); M.openBallMastery(it.id); };
+          list.appendChild(row);
+        }
+        body.appendChild(list);
+      }, { width: '520px' });
+    },
+    openBallMastery(id) {
+      BB.ui.open((sheet) => {
+        const body = BB.ui.head(sheet, BB.ITEM[id].name + ' Mastery', { onX: () => M.openMastery() });
+        body.innerHTML += `<div class="m-hero"><canvas class="m-prev" width="200" height="200"></canvas></div>` + M.masteryBlock(id);
+        const draw = () => M.drawSkinPreview(body.querySelector('.m-prev'), id);
+        M.bindSkins(body, id, draw);
+        requestAnimationFrame(draw);
+        body.appendChild(Object.assign(document.createElement('div'), { className: 'f-s', textContent: 'Level rewards: ' + M.MXP.slice(1).map((_, k) => 'Lv' + (k + 2) + ' +' + 40 * (k + 2)).join(' · ') + ' coins' }));
+      }, { width: '440px' });
+    },
+    drawSkinPreview(cv, id) {
+      if (!cv) return;
+      const sim = new BB.Sim({ seed: 1, map: 'classic', settings: { dmgNumbers: false }, teams: [[{ id, hp: 100, slot: 0 }], [{ id: 'dummy', hp: 100, slot: 1 }]] });
+      const b = sim.balls[0]; b.x = 0; b.y = 0; b.w.angle = -0.8; sim.computeCaps(b);
+      const ctx = cv.getContext('2d'); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, 200, 200);
+      const reach = b.r + (b.w.len || 0) + 20, k = 90 / reach;
+      ctx.setTransform(k, 0, 0, k, 100, 100);
+      BB.drawBallArt(ctx, sim, b, 2.4, { dark: false });
+    },
 
     refreshBadges() {
       if (!BB.save.data) return;
@@ -144,14 +249,14 @@
       const user = await BB.sdk.getUser();
       const m = M.data(), pv = M.pvpData(), st = BB.save.data.stats;
       const owned = BB.ITEMS.filter((i) => BB.save.data.unlocked[i.id]).length;
-      const stars = Object.keys(m.mastery).reduce((n, id) => n + M.stars(id), 0);
+      const stars = BB.ITEMS.filter((i) => BB.save.data.unlocked[i.id]).reduce((n, i) => n + M.level(i.id), 0);
       BB.ui.open((sheet) => {
         const body = BB.ui.head(sheet, 'Profile');
         const name = user ? esc(user.username) : 'Guest';
         const pic = user && user.profilePictureUrl ? `<img class="pf-pic" src="${esc(user.profilePictureUrl)}" alt="">` : `<div class="pf-pic pf-none">${BB.ICON.star}</div>`;
         body.innerHTML += `<div class="pf-head">${pic}<div><div class="pf-name">${name}</div><div class="pf-rank">${M.rankName(pv.rating)} · ${pv.rating}</div></div></div>
           <div class="q-stats"><div><b>${st.wins}</b><span>Wins</span></div><div><b>${st.battles}</b><span>Battles</span></div><div><b>${m.trophies}</b><span>Cups</span></div><div><b>${pv.w}-${pv.l}</b><span>PvP</span></div></div>
-          <div class="q-stats"><div><b>${owned}/${BB.ITEMS.length}</b><span>Balls</span></div><div><b>${stars}</b><span>Mastery stars</span></div><div><b>${m.gauntletBest}</b><span>Best Gauntlet</span></div><div><b>${m.gift.streak || 0}</b><span>Login streak</span></div></div>`;
+          <div class="q-stats"><div><b>${owned}/${BB.ITEMS.length}</b><span>Balls</span></div><div><b>${stars}</b><span>Mastery levels</span></div><div><b>${m.gauntletBest}</b><span>Best Gauntlet</span></div><div><b>${m.gift.streak || 0}</b><span>Login streak</span></div></div>`;
         if (!user) {
           const li = document.createElement('button'); li.className = 'btn primary'; li.textContent = 'Log in to CrazyGames to save progress';
           li.onclick = async () => { const u = await BB.sdk.login(); if (u) { BB.ui.onClose = null; BB.ui.close(); M.openProfile(); } };
@@ -189,6 +294,9 @@
         const owned = BB.ITEMS.filter((i) => BB.save.data.unlocked[i.id]).length;
         st.innerHTML = `<div><b>${owned}/${BB.ITEMS.length}</b><span>Balls</span></div><div><b>${m.trophies}</b><span>Cup trophies</span></div><div><b>${m.gauntletBest}</b><span>Best Gauntlet</span></div><div><b>${BB.save.data.stats.wins}</b><span>Wins</span></div>`;
         body.appendChild(st);
+        const mb = document.createElement('button'); mb.className = 'btn primary'; mb.innerHTML = BB.ICON.star + ' Ball Mastery';
+        mb.onclick = () => { BB.audio.play('click'); M.openMastery(); };
+        body.appendChild(mb);
       }, { width: '480px' });
     },
 

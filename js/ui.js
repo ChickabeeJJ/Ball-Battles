@@ -151,6 +151,7 @@
           const r = BB.RARITY[it.rarity];
           detail.innerHTML = `<img src="${BB.icon(sel)}" alt=""><div style="flex:1;min-width:0"><div class="d-n">${esc(it.name)}</div>
             <div class="d-r" style="color:${r.color}">${r.name}</div><div class="d-d">${esc(it.desc)}</div></div>`;
+          if (app.isOwned(sel)) { detail.insertAdjacentHTML('beforeend', '<div class="m-inline">' + BB.meta.masteryBlock(sel) + '</div>'); BB.meta.bindSkins(detail, sel, () => app.refreshMenu()); }
           foot.innerHTML = '';
           const owned = app.isOwned(sel);
           if (!mine || owned) {
@@ -427,7 +428,8 @@
           <div class="r-sub">${esc(res.sub)}</div>
           ${res.icon ? `<img src="${BB.icon(res.icon, 160)}" alt="">` : ''}
           <div class="r-coins" id="rCoins">+${coinHtml(res.coins)}</div>
-          <div class="r-stats">${esc(res.stats)}</div>`;
+          <div class="r-stats">${esc(res.stats)}</div>
+          ${(BB.meta.lastXP || []).length ? '<div class="xp-list">' + BB.meta.lastXP.map((x) => `<div class="xp-row${x.to > x.from ? ' up' : ''}"><img src="${BB.icon(x.id)}" alt=""><span>${esc(BB.ITEM[x.id].name)}</span><b>+${x.xp} XP</b>${x.to > x.from ? `<em>Lv${x.to}!${x.skins.length ? ' ' + esc(x.skins.join(', ')) + ' skin' : ''} +${x.coins}</em>` : `<i class="m-bar sm"><i style="width:${BB.meta.levelProgress(x.id).pct}%"></i></i>`}</div>`).join('') + '</div>' : ''}`;
         body.appendChild(wrap);
         const foot = el('div', 'sh-foot');
         foot.style.flexDirection = 'column';
