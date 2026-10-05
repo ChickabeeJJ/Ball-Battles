@@ -55,7 +55,7 @@
   add({
     id: 'axe', name: 'Axe', cat: 'weapon', rarity: 'common', color: '#c4702b',
     desc: 'Heavy chops for 2 damage. Swings +30°/s faster every hit.',
-    base: { damage: 2, spin: 140, len: 44, width: 12 }, melee: true, blocks: true, knock: 260,
+    base: { damage: 2, spin: 140, len: 44, width: 12 }, melee: true, blocks: true, 
     onHit(sim, b, w) { w.spin = Math.min(w.spin + 30, 1400); },
     stats: (w) => ['Damage: ' + fmt(w.damage), 'Spin Speed: ' + Math.round(w.spin)],
   });
@@ -172,7 +172,7 @@
   add({
     id: 'shield', name: 'Shield', cat: 'weapon', rarity: 'epic', color: '#4a6fa5',
     desc: 'Reflects projectiles back. Grows wider every hit.',
-    base: { damage: 2, spin: 160, len: 12, width: 34, gap: 4 }, melee: true, blocks: true, perp: true, reflect: true, knock: 300,
+    base: { damage: 2, spin: 160, len: 12, width: 34, gap: 4 }, melee: true, blocks: true, perp: true, reflect: true, 
     onHit(sim, b, w) { w.width = Math.min(w.width + 4 * w.scale, 90 * w.scale); },
     stats: (w) => ['Size: ' + Math.round(w.width / w.scale)],
   });
@@ -194,7 +194,7 @@
   });
   add({
     id: 'cannon', name: 'Cannon', cat: 'weapon', rarity: 'legendary', color: '#4b4f57',
-    desc: 'Big 5 damage cannonballs. Reloads 12% faster every hit.',
+    desc: 'Big 5 damage cannonballs that blast enemies back. Reloads 12% faster every hit.',
     base: { damage: 5, spin: 120, len: 32, width: 16 }, blocks: true,
     init(w) { w.reload = 1.5; w.timer = 0.6; },
     update(sim, b, w, dt) {
@@ -211,7 +211,7 @@
   add({
     id: 'lance', name: 'Lance', cat: 'weapon', rarity: 'legendary', color: '#b8323b',
     desc: 'Damage depends on speed. Each hit makes you 6% faster.',
-    base: { damage: 1, spin: 90, len: 78, width: 10 }, melee: true, blocks: true, knock: 300,
+    base: { damage: 1, spin: 90, len: 78, width: 10 }, melee: true, blocks: true, 
     damageFn(sim, b, w) { return [Math.round((w.damage + Math.hypot(b.vx, b.vy) / 160) * 2) / 2, false]; },
     onHit(sim, b) { b.speedMul = Math.min(b.speedMul + 0.06, 2.6); },
     stats: (w, b) => ['Damage: ' + fmt(Math.round((w.damage + Math.hypot(b.vx, b.vy) / 160) * 2) / 2), 'Speed: ' + Math.round(b.speedMul * 100) + '%'],
@@ -315,7 +315,7 @@
   add({
     id: 'pan', name: 'Frying Pan', cat: 'weapon', rarity: 'rare', color: '#e67e22',
     desc: 'BONK! Stuns the enemy weapon for a moment. +0.5 damage every hit.',
-    base: { damage: 1.5, spin: 170, len: 40, width: 22 }, melee: true, blocks: true, knock: 320,
+    base: { damage: 1.5, spin: 170, len: 40, width: 22 }, melee: true, blocks: true, 
     onHit(sim, b, w, t) { if (t) t.stunT = 0.7; w.damage += 0.5; },
     stats: (w) => ['Damage: ' + fmt(w.damage), 'Stun: 0.7s'],
   });
@@ -329,7 +329,7 @@
   add({
     id: 'flail', name: 'Flail', cat: 'weapon', rarity: 'epic', color: '#6d4c41',
     desc: 'A spiked ball on a chain that swings behind the spin. +1 damage every hit.',
-    base: { damage: 2, spin: 190, len: 56, width: 20 }, melee: true, blocks: true, flail: true, knock: 300,
+    base: { damage: 2, spin: 190, len: 56, width: 20 }, melee: true, blocks: true, flail: true,
     init(w) { w.head = 0; },
     onHit(sim, b, w) { w.damage += 1; },
     stats: (w) => ['Damage: ' + fmt(w.damage)],

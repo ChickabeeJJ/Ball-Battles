@@ -21,11 +21,11 @@
     };
   }
 
-  const TRACK = ['damage', 'spin', 'len', 'width', 'arrows', 'n', 'orbs', 'moons', 'crit', 'burn', 'reload', 'heal', 'wave', 'zap', 'applied'];
+  const TRACK = ['damage', 'spin', 'len', 'width', 'arrows', 'n', 'orbs', 'moons', 'crit', 'burn', 'reload', 'heal', 'wave', 'zap', 'applied', 'knock'];
   const LABEL = {
     damage: (d) => (d > 0 ? '+' + BB.fmt(d) + ' DMG' : null), spin: 'SPIN UP', len: 'LONGER', width: 'BIGGER',
     arrows: '+1 ARROW', n: (d) => (Math.floor(d * 2) >= 1 || d >= 1 ? '+1 SHOT' : 'CHARGING'), orbs: '+ORB', moons: '+MOON',
-    crit: 'CRIT CHANCE UP', burn: 'HOTTER FLAME', reload: 'FASTER RELOAD', heal: 'MORE HEALING', wave: 'LOUDER', zap: 'ZAP UP', applied: null,
+    crit: 'CRIT CHANCE UP', burn: 'HOTTER FLAME', reload: 'FASTER RELOAD', heal: 'MORE HEALING', wave: 'LOUDER', zap: 'ZAP UP', applied: null, knock: 'MORE KNOCKBACK',
   };
 
   class Sim {
@@ -349,7 +349,8 @@
         if (this.endTimer < 0) { this.over = { winner: this.winner, t: this.t }; this.emit({ type: 'over', winner: this.winner }); return; }
       }
 
-      const ot = this.t > 55 ? 1 + Math.floor((this.t - 55) / 10) : 1;
+      const otOff = this.cfg.settings && this.cfg.settings.overtime === false;
+      const ot = !otOff && this.t > 55 ? 1 + Math.floor((this.t - 55) / 10) : 1;
       if (ot !== this.dmgMul) { this.dmgMul = ot; this.emit({ type: 'overtime', mul: ot }); }
 
       // Map dynamics
@@ -613,9 +614,10 @@
       const tx = -Math.sin(ang) * a.w.dir, ty = Math.cos(ang) * a.w.dir;
       let nx = c.x - px, ny = c.y - py; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl;
       const kx = nx + tx * 0.7, ky = ny + ty * 0.7, kl = Math.hypot(kx, ky) || 1;
-      this.knock(c, c.x - kx / kl, c.y - ky / kl, def.knock || 220);
+      const kp = w.knock || def.knock || 220;
+      this.knock(c, c.x - kx / kl, c.y - ky / kl, kp);
       this.knock(a, c.x, c.y, 60);
-      if ((def.knock || 220) >= 300) this.launch(c, px, py);
+      if (kp >= 300) this.launch(c, px, py);
       this.squash(c, Math.atan2(ky, kx), 1);
       this.onHit(a, c, dealt);
     }

@@ -304,7 +304,8 @@
       App.seed = cu ? cu.seed : (Math.random() * 2147483647) | 0;
       App.sim = new BB.Sim({
         seed: App.seed, map: cu ? cu.map : setup.map, teams: cu ? cu.teams : App.buildTeams(),
-        settings: BB.save.data.settings, controlSlot: null,
+        // seeded PvP/event rounds always use overtime so both players see the same fight
+        settings: cu ? Object.assign({}, BB.save.data.settings, { overtime: true }) : BB.save.data.settings, controlSlot: null,
       });
       void mode;
       App.maxHit = 0;

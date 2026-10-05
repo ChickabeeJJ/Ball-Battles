@@ -275,6 +275,7 @@
           ['dmgNumbers', 'Damage Numbers', ''],
           ['impact', 'Impact Frames', 'Quick black flash on hits'],
           ['finisher', 'Finisher', 'Full anime cut on the knockout'],
+          ['overtime', 'Overtime Bonus', 'Damage ramps up after 55s'],
           ['reverseB', 'Reverse Team Two Spin', 'Team Two spins the other way'],
           ['vibrate', 'Vibration', 'On supported phones'],
         ];

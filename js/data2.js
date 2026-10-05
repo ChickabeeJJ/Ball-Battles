@@ -23,7 +23,7 @@
   // ---------------------------------------------------------------- melee weapons
   add(Object.assign({ id: 'claymore', name: 'Claymore', cat: 'weapon', rarity: 'rare', color: '#2c5aa0',
     desc: 'A huge two-handed sword. Slow, but +1.5 damage every hit.',
-    base: { damage: 2, spin: 125, len: 72, width: 12 }, knock: 280,
+    base: { damage: 2, spin: 125, len: 72, width: 12 }, 
     onHit(sim, b, w) { w.damage += 1.5; }, stats: dmgStat }, melee));
   add(Object.assign({ id: 'sai', name: 'Sai', cat: 'weapon', rarity: 'common', color: '#c0392b',
     desc: 'Twin-pronged and very fast. +0.5 damage and +40°/s every hit.',
@@ -31,11 +31,11 @@
     onHit(sim, b, w) { w.damage += 0.5; w.spin = Math.min(w.spin + 40, 2000); }, stats: (w) => ['Damage: ' + fmt(w.damage), 'Spin: ' + Math.round(w.spin)] }, melee));
   add(Object.assign({ id: 'halberd', name: 'Halberd', cat: 'weapon', rarity: 'epic', color: '#7f8c8d',
     desc: 'Very long polearm with an axe head. +1 damage every hit.',
-    base: { damage: 2, spin: 115, len: 84, width: 14 }, knock: 300,
+    base: { damage: 2, spin: 115, len: 84, width: 14 }, 
     onHit(sim, b, w) { w.damage += 1; }, stats: dmgStat }, melee));
   add(Object.assign({ id: 'mace', name: 'Mace', cat: 'weapon', rarity: 'rare', color: '#8e6e53',
     desc: 'Spiked head stuns the enemy weapon briefly. +0.5 damage every hit.',
-    base: { damage: 2, spin: 150, len: 42, width: 18 }, knock: 300,
+    base: { damage: 2, spin: 150, len: 42, width: 18 }, 
     onHit(sim, b, w, t) { if (t) t.stunT = 0.45; w.damage += 0.5; }, stats: dmgStat }, melee));
   add(Object.assign({ id: 'club', name: 'Club', cat: 'weapon', rarity: 'common', color: '#a0522d',
     desc: 'Simple and brutal. Massive knockback, +1 damage every hit.',
@@ -60,10 +60,11 @@
   add(Object.assign({ id: 'broom', name: 'Broom', cat: 'weapon', rarity: 'common', color: '#d4ac0d',
     desc: 'Sweeps enemies across the arena. +0.5 damage and more knockback every hit.',
     base: { damage: 1, spin: 140, len: 64, width: 18 }, knock: 460,
-    onHit(sim, b, w) { w.damage += 0.5; }, stats: dmgStat }, melee));
+    init(w) { w.knock = 460; },
+    onHit(sim, b, w) { w.damage += 0.5; w.knock = Math.min(900, w.knock + 40); }, stats: dmgStat }, melee));
   add({ id: 'umbrella', name: 'Umbrella', cat: 'weapon', rarity: 'epic', color: '#e84393',
     desc: 'Opens wide to reflect projectiles. Grows every hit.',
-    base: { damage: 1.5, spin: 150, len: 10, width: 40, gap: 6 }, melee: true, blocks: true, perp: true, reflect: true, knock: 260,
+    base: { damage: 1.5, spin: 150, len: 10, width: 40, gap: 6 }, melee: true, blocks: true, perp: true, reflect: true, 
     onHit(sim, b, w) { w.width = Math.min(w.width + 4 * w.scale, 96 * w.scale); }, stats: (w) => ['Size: ' + Math.round(w.width / w.scale)] });
   add(Object.assign({ id: 'guitar', name: 'Guitar', cat: 'weapon', rarity: 'epic', color: '#e67e22',
     desc: 'Smashes up close and plays a damaging sound wave every 3s. Waves get louder every hit.',
@@ -99,7 +100,7 @@
     desc: 'Throws heavy javelins that pierce. +1 damage every hit.',
     base: { damage: 3, spin: 130, len: 60, width: 8 }, blocks: true,
     init(w) { w.timer = 1; },
-    update(sim, b, w, dt) { w.timer -= dt; if (w.timer <= 0) { w.timer = 1.05; shoot(sim, b, w, 1, 0, 900, { kind: 'javelin', r: 6 * w.scale, dmg: w.damage, life: 1.5, pierce: true, knock: 260 }); sim.emit({ type: 'shoot', x: b.x, y: b.y }); } },
+    update(sim, b, w, dt) { w.timer -= dt; if (w.timer <= 0) { w.timer = 1.05; shoot(sim, b, w, 1, 0, 900, { kind: 'javelin', r: 6 * w.scale, dmg: w.damage, life: 1.5, pierce: true, knock: 160 }); sim.emit({ type: 'shoot', x: b.x, y: b.y }); } },
     onHit(sim, b, w) { w.damage += 1; }, stats: dmgStat });
   add({ id: 'slingshot', name: 'Slingshot', cat: 'weapon', rarity: 'common', color: '#a04000',
     desc: 'Rapid bouncing pebbles. +0.5 damage every hit.',
