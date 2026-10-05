@@ -699,11 +699,22 @@
       ctx.lineWidth = Wc * 0.012; ctx.strokeStyle = '#ffe2b0';
       for (let n = 0; n < 14; n++) { const a = (n / 14) * TAU; ctx.beginPath(); ctx.moveTo(Math.cos(a) * Wc * 0.18, Math.sin(a) * Wc * 0.18); ctx.lineTo(Math.cos(a) * Wc * 0.28, Math.sin(a) * Wc * 0.28); ctx.stroke(); }
       ctx.restore();
-      for (let n = 0; n < 30; n++) {
-        const a = rng() * TAU, d = Wc * (0.05 + rng() * 0.4) * (0.6 + k), s = Wc * (0.03 + rng() * 0.06);
+      // shards of light flying outward, plus a few four-point sparkles
+      for (let n = 0; n < 26; n++) {
+        const a = rng() * TAU, d = Wc * (0.12 + rng() * 0.36) * (0.7 + k * 0.6), L = Wc * (0.04 + rng() * 0.07), w = L * 0.16;
         const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d * 0.8;
-        ctx.beginPath(); ctx.moveTo(x, y - s); ctx.quadraticCurveTo(x + s, y, x, y + s * 0.6); ctx.quadraticCurveTo(x - s * 0.8, y + s * 0.2, x - s * 0.3, y - s * 0.4); ctx.closePath();
+        ctx.save(); ctx.translate(x, y); ctx.rotate(a);
+        ctx.beginPath(); ctx.moveTo(L, 0); ctx.lineTo(0, -w); ctx.lineTo(-L * 0.6, 0); ctx.lineTo(0, w); ctx.closePath();
         ctx.fillStyle = rng() < 0.7 ? '#fff1d6' : '#ffb3d1'; ctx.fill();
+        ctx.restore();
+      }
+      for (let n = 0; n < 7; n++) {
+        const a = rng() * TAU, d = Wc * (0.08 + rng() * 0.3), x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d * 0.8;
+        const S = Wc * (0.02 + rng() * 0.03) * (0.8 + 0.4 * Math.sin(k * 9 + n)), t = S * 0.18;
+        ctx.beginPath();
+        ctx.moveTo(x, y - S); ctx.quadraticCurveTo(x + t, y - t, x + S, y); ctx.quadraticCurveTo(x + t, y + t, x, y + S);
+        ctx.quadraticCurveTo(x - t, y + t, x - S, y); ctx.quadraticCurveTo(x - t, y - t, x, y - S);
+        ctx.fillStyle = '#ffffff'; ctx.fill();
       }
     }
     // thin letterbox for a cinematic cut
