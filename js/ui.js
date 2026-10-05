@@ -286,7 +286,7 @@
           ['dmgNumbers', 'Damage Numbers', ''],
           ['callouts', 'Ability Text', 'Stunned, +DMG, Knockback, Dodge...'],
           ['impact', 'Impact Frames', 'Quick black flash on hits'],
-          ['finisher', 'Finisher', 'Full anime cut on the knockout'],
+          ['finisher', 'Finisher', 'Cinematic cut on the final knockout'],
           ['overtime', 'Overtime Bonus', 'Damage ramps up after 55s'],
           ['reverseB', 'Reverse Team Two Spin', 'Team Two spins the other way'],
           ['vibrate', 'Vibration', 'On supported phones'],

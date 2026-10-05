@@ -953,3 +953,14 @@ html.cport .slots.compact .vs-mid { font-size: 14px; }
 html.cland .slots.compact .slot .sl-s { display: none; }
 .pz-wide { grid-column: 1 / -1; justify-content: center; }
 .no-pause .pause-btn { display: none !important; }
+
+/* phone portrait, team modes: no roster on the menu; a roomier one in battle, pinned under the arena */
+html.cport .is-menu .stat-row.team { display: none !important; }
+html.cport .is-battle #stage { justify-content: flex-start; padding-top: 10px; }
+html.cport .is-battle .stat-row.team { gap: 6px 14px; margin-top: 4px; }
+html.cport .is-battle .stat-row.team .tr { height: 24px; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 6px; }
+html.cport .is-battle .stat-row.team .tr img { width: 22px; height: 22px; }
+html.cport .is-battle .stat-row.team .tr .hpbar { height: 18px !important; }
+html.cport .is-battle .stat-row.team .tr .hpbar b { font-size: 12px !important; line-height: 13px !important; }
+.stat-row.team .tr em { max-width: none !important; min-width: 22px; text-align: right; flex-shrink: 0; overflow: visible !important; }
+html.cport .is-battle .stat-row.team .tr em { font-size: 13px; }
