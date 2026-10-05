@@ -65,16 +65,17 @@
         if (mine.some((b) => b.def.cat === 'special')) M.track('specialwin', 1);
         if (!app.pvp && !app.event && (mode.teams[0].length > 1 || mode.teams.length > 2)) M.track('teamwin', 1);
       }
-      // Mastery XP: every ball on your side (both sides in the Cup, where all 8 are yours)
+      // Mastery XP goes only to the winning side (nobody on a draw). In sandbox battles and the Cup
+      // both sides are yours, so whichever team wins earns it; in PvP / Gauntlet the other side is an
+      // opponent, so only your own winning ball does.
       M.lastXP = [];
-      const both = app.event && app.event.kind === 'cup';
+      const anySide = !app.event || app.event.kind === 'cup';
       const seen = {};
       for (const b of sim.balls) {
-        if (!b.main || b.owner || (b.team !== 0 && !both)) continue;
+        if (w < 0 || !b.main || b.owner || b.team !== w || (!anySide && b.team !== 0)) continue;
         const id = b.def.id;
-        if (!BB.ITEM[id] || BB.ITEM[id].cat === 'hidden') continue;
-        const won = b.team === w;
-        const xp = 15 + (won ? 25 : 0) + Math.min(40, Math.round((b.dealt || 0) / 4)) + (b.kills || 0) * 10;
+        if (!BB.ITEM[id] || BB.ITEM[id].cat === 'hidden' || !app.isOwned(id)) continue;
+        const xp = 40 + Math.min(40, Math.round((b.dealt || 0) / 4)) + (b.kills || 0) * 10;
         seen[id] = (seen[id] || 0) + xp;
       }
       for (const id in seen) M.lastXP.push(M.addXP(id, seen[id]));
@@ -250,21 +251,49 @@
     async openProfile() {
       const user = await BB.sdk.getUser();
       const m = M.data(), pv = M.pvpData(), st = BB.save.data.stats;
-      const owned = BB.ITEMS.filter((i) => BB.save.data.unlocked[i.id]).length;
-      const stars = BB.ITEMS.filter((i) => BB.save.data.unlocked[i.id]).reduce((n, i) => n + M.level(i.id), 0);
+      const all = BB.ITEMS.filter((i) => i.cat !== 'hidden');
+      const ownedL = all.filter((i) => BB.app.isOwned(i.id));
+      const levels = ownedL.reduce((n, i) => n + M.level(i.id), 0), mastered = ownedL.filter((i) => M.level(i.id) >= 10).length;
+      const winRate = st.battles ? Math.round((st.wins / st.battles) * 100) : 0;
+      const top = ownedL.filter((i) => M.xp(i.id) > 0).sort((a, b) => M.xp(b.id) - M.xp(a.id)).slice(0, 3);
+      const k = M.rankOf(pv.rating), next = M.RANKS[k + 1], lo = M.RANKS[k][0];
+      const rpct = next ? Math.max(0, Math.min(100, ((pv.rating - lo) / (next[0] - lo)) * 100)) : 100;
+      const fav = top[0] ? top[0].id : (BB.save.data.setup.slots[0] || {}).id || 'sword';
       BB.ui.open((sheet) => {
+        sheet.classList.add('pf-sheet');
         const body = BB.ui.head(sheet, 'Profile');
         const name = user ? esc(user.username) : 'Guest';
-        const pic = user && user.profilePictureUrl ? `<img class="pf-pic" src="${esc(user.profilePictureUrl)}" alt="">` : `<div class="pf-pic pf-none">${BB.ICON.star}</div>`;
-        body.innerHTML += `<div class="pf-head">${pic}<div><div class="pf-name">${name}</div><div class="pf-rank">${M.rankName(pv.rating)} · ${pv.rating}</div></div></div>
-          <div class="q-stats"><div><b>${st.wins}</b><span>Wins</span></div><div><b>${st.battles}</b><span>Battles</span></div><div><b>${m.trophies}</b><span>Cups</span></div><div><b>${pv.w}-${pv.l}</b><span>PvP</span></div></div>
-          <div class="q-stats"><div><b>${owned}/${BB.ITEMS.length}</b><span>Balls</span></div><div><b>${stars}</b><span>Mastery levels</span></div><div><b>${m.gauntletBest}</b><span>Best Gauntlet</span></div><div><b>${m.gift.streak || 0}</b><span>Login streak</span></div></div>`;
+        const pic = user && user.profilePictureUrl ? `<img class="pf-pic" src="${esc(user.profilePictureUrl)}" alt="">` : `<img class="pf-pic pf-ball" src="${BB.icon(fav, 128)}" alt="">`;
+        const stat = (v, l) => `<div><b>${v}</b><span>${l}</span></div>`;
+        body.innerHTML += `<div class="pf-hero" style="--rc:${M.RANKS[k][2]}">
+            ${pic}
+            <div class="pf-id"><div class="pf-name">${name}</div>
+              <div class="pf-rankrow">${M.rankHtml(pv.rating)}<b>${pv.rating}</b></div>
+              <div class="pvp-rankbar"><i style="width:${rpct}%"></i></div>
+              <div class="pf-next">${next ? (next[0] - pv.rating) + ' rating to ' + next[1] : 'Top rank reached'}</div></div>
+          </div>
+          <div class="pf-sec"><div class="pf-h">Battles</div><div class="pf-grid">${stat(st.wins, 'Wins')}${stat(st.battles, 'Played')}${stat(winRate + '%', 'Win rate')}${stat(m.trophies, 'Cups won')}</div></div>
+          <div class="pf-sec"><div class="pf-h">PvP Arena</div><div class="pf-grid">${stat(pv.w, 'Won')}${stat(pv.d, 'Drawn')}${stat(pv.l, 'Lost')}${stat(pv.rating, 'Rating')}</div></div>
+          <div class="pf-sec"><div class="pf-h">Collection</div>
+            <div class="pf-coll"><span>${ownedL.length} / ${all.length} balls</span><div class="m-bar sm"><i style="width:${(ownedL.length / all.length) * 100}%"></i></div></div>
+            <div class="pf-grid">${stat(levels, 'Mastery levels')}${stat(mastered, 'Mastered')}${stat(m.gauntletBest, 'Best Gauntlet')}${stat(m.gift.streak || 0, 'Login streak')}</div></div>
+          ${top.length ? `<div class="pf-sec"><div class="pf-h">Top balls</div><div class="pf-top">${top.map((i, n) => { const lp = M.levelProgress(i.id); return `<div class="pf-tb"><em>#${n + 1}</em><img src="${BB.icon(i.id)}" alt=""><div class="m-mid"><div class="m-name">${esc(i.name)}</div><div class="m-bar sm"><i style="width:${lp.pct}%"></i></div></div><span class="mlv${lp.l >= 10 ? ' max' : ''}">Lv${lp.l}</span></div>`; }).join('')}</div></div>` : ''}`;
+        const row = document.createElement('div'); row.className = 'pf-btns';
+        const mb = document.createElement('button'); mb.className = 'btn primary'; mb.innerHTML = BB.ICON.star + ' Ball Mastery';
+        mb.onclick = () => { BB.audio.play('click'); M.openMastery(); };
+        row.appendChild(mb);
+        if (BB.app.pvpAvailable()) {
+          const pb = document.createElement('button'); pb.className = 'btn blue'; pb.innerHTML = BB.ICON.swords + ' PvP Arena';
+          pb.onclick = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); M.openPvp(); };
+          row.appendChild(pb);
+        }
+        body.appendChild(row);
         if (!user) {
-          const li = document.createElement('button'); li.className = 'btn primary'; li.textContent = 'Log in to CrazyGames to save progress';
+          const li = document.createElement('button'); li.className = 'btn green pf-login'; li.textContent = 'Log in to CrazyGames to keep your progress';
           li.onclick = async () => { const u = await BB.sdk.login(); if (u) { BB.ui.onClose = null; BB.ui.close(); M.openProfile(); } };
           body.appendChild(li);
         }
-      }, { width: '460px' });
+      }, { width: '500px' });
     },
 
     // ------------------------------------------------------------- quests

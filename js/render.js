@@ -4,6 +4,13 @@
   const BB = window.BB;
   const TAU = Math.PI * 2;
   const OUT = '#1d1d22';
+  // lighten (k > 0) or darken (k < 0) a #rrggbb colour
+  function shadeHex(hex, k) {
+    const n = parseInt(String(hex).replace('#', ''), 16);
+    if (!isFinite(n)) return hex;
+    const f = (c) => Math.round(Math.max(0, Math.min(255, k > 0 ? c + (255 - c) * k : c * (1 + k))));
+    return '#' + [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) => f(c).toString(16).padStart(2, '0')).join('');
+  }
   const METAL = '#eef2f6', METAL_D = '#b4c0cb', WOOD = '#a0612f', WOOD_D = '#6e3d1c', GOLD = '#f6c431', GREY = '#8d969f';
   const FONT = "Anton, \"Lilita One\", Impact, sans-serif";
   const NUM_FONT = "\"Lilita One\", \"Arial Black\", sans-serif";
@@ -127,17 +134,49 @@
         s + L * 0.88, W * 0.12, s + L, W * 0.12, s + L, W * 0.42, s + L * 0.86, W * 0.5, s + L * 0.72, W * 0.5]);
       fillStroke(ctx, '#a7b0b9', lw);
     },
+    // Curved knight's shield seen edge-on: arm strap, painted face with a gold band, steel rim
+    // with rivets and a domed boss.
     shield(ctx, s, L, W, lw, t, team) {
-      const h = W / 2, x0 = s, x1 = s + L;
-      ctx.beginPath();
-      ctx.moveTo(x0, -h); ctx.quadraticCurveTo(x1 + L * 0.8, -h, x1 + L * 0.8, 0); ctx.quadraticCurveTo(x1 + L * 0.8, h, x0, h);
-      ctx.quadraticCurveTo(x0 + L * 0.4, 0, x0, -h);
-      ctx.closePath(); fillStroke(ctx, '#c9d2da', lw);
-      ctx.beginPath();
-      ctx.moveTo(x0 + L * 0.3, -h * 0.8); ctx.quadraticCurveTo(x1 + L * 0.45, -h * 0.8, x1 + L * 0.45, 0); ctx.quadraticCurveTo(x1 + L * 0.45, h * 0.8, x0 + L * 0.3, h * 0.8);
-      ctx.quadraticCurveTo(x0 + L * 0.6, 0, x0 + L * 0.3, -h * 0.8);
-      ctx.closePath(); ctx.fillStyle = team || '#3d8bf2'; ctx.fill();
-      circle(ctx, x1 + L * 0.15, 0, Math.min(h * 0.22, L * 0.6), GOLD, lw * 0.8);
+      const h = W / 2, x0 = s, bulge = s + L * 1.7, col = team || '#3d8bf2';
+      ctx.save(); ctx.lineJoin = 'round';
+      // arm strap behind the plate
+      ctx.beginPath(); ctx.rect(s - L * 0.55, -h * 0.16, L * 0.7, h * 0.32); ctx.fillStyle = '#6e4a2a'; ctx.fill(); ctx.lineWidth = lw * 0.8; ctx.strokeStyle = OUT; ctx.stroke();
+      const plate = (k) => { // k < 1 insets the outline for the painted face
+        const yh = h * k, xb = x0 + (bulge - x0) * (0.25 + 0.75 * k), xi = x0 + L * (1 - k) * 0.55;
+        ctx.beginPath(); ctx.moveTo(xi, -yh);
+        ctx.bezierCurveTo(xb, -yh * 0.95, xb + L * 0.15, -yh * 0.35, xb + L * 0.15, 0);
+        ctx.bezierCurveTo(xb + L * 0.15, yh * 0.35, xb, yh * 0.95, xi, yh);
+        ctx.quadraticCurveTo(xi + L * 0.45, 0, xi, -yh); ctx.closePath();
+      };
+      // steel rim
+      plate(1);
+      const rg = ctx.createLinearGradient(0, -h, 0, h);
+      rg.addColorStop(0, '#f1f4f7'); rg.addColorStop(0.45, '#aeb8c2'); rg.addColorStop(0.55, '#8d98a4'); rg.addColorStop(1, '#d8dee4');
+      ctx.fillStyle = rg; ctx.fill(); ctx.lineWidth = lw; ctx.strokeStyle = OUT; ctx.stroke();
+      // painted face with shading
+      plate(0.8);
+      const fg = ctx.createLinearGradient(0, -h, 0, h);
+      fg.addColorStop(0, shadeHex(col, 0.3)); fg.addColorStop(0.5, col); fg.addColorStop(1, shadeHex(col, -0.3));
+      ctx.fillStyle = fg; ctx.fill();
+      // gold band across the face
+      ctx.save(); plate(0.8); ctx.clip();
+      ctx.fillStyle = GOLD; ctx.fillRect(x0 - L, -h * 0.13, L * 4, h * 0.26);
+      ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(x0 - L, -h * 0.13, L * 4, h * 0.06);
+      // specular sheen
+      ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillRect(x0 - L, -h * 0.8, L * 4, h * 0.22);
+      ctx.restore();
+      plate(0.8); ctx.lineWidth = lw * 0.6; ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.stroke();
+      // rivets along the rim
+      for (const k of [-0.88, -0.5, 0.5, 0.88]) {
+        const y = h * k, x = x0 + (bulge - x0) * (1 - Math.abs(k) * 0.55) + L * 0.05;
+        ctx.beginPath(); ctx.arc(x, y, Math.max(1.4, L * 0.09), 0, TAU); ctx.fillStyle = '#e9edf1'; ctx.fill(); ctx.lineWidth = lw * 0.5; ctx.stroke();
+      }
+      // domed boss
+      const bx = x0 + (bulge - x0) * 0.86, br = Math.min(h * 0.24, L * 0.62);
+      const bgr = ctx.createRadialGradient(bx - br * 0.3, -br * 0.35, br * 0.1, bx, 0, br);
+      bgr.addColorStop(0, '#fff3c4'); bgr.addColorStop(0.6, GOLD); bgr.addColorStop(1, '#a8740c');
+      ctx.beginPath(); ctx.arc(bx, 0, br, 0, TAU); ctx.fillStyle = bgr; ctx.fill(); ctx.lineWidth = lw * 0.8; ctx.strokeStyle = OUT; ctx.stroke();
+      ctx.restore();
     },
     bow(ctx, s, L, W, lw) {
       const h = W * 0.95, back = s + L * 0.2;

@@ -61,10 +61,28 @@
   });
   add({
     id: 'unarmed', name: 'Unarmed', cat: 'weapon', rarity: 'common', color: '#9aa0a6',
-    desc: 'No weapon. Body slams get +0.5 damage and 8% more speed every hit.',
+    desc: 'Keeps speeding up until it hits something, up to its speed cap. Slams deal damage based on how fast it is moving. Each hit resets its speed but raises the cap. Getting hit or flung speeds it up.',
     base: { damage: 1 }, contact: true,
-    onHit(sim, b, w) { w.damage += 0.5; b.speedMul = Math.min(b.speedMul + 0.08, 2.6); },
-    stats: (w, b) => ['Damage: ' + fmt(w.damage), 'Speed: ' + Math.round(b.speedMul * 100) + '%'],
+    init(w) { w.cap = 1.6; },
+    update(sim, b, w, dt) {
+      const v = Math.hypot(b.vx, b.vy), base = b.speed;
+      // flung / knocked faster than its pace: keep that momentum (up to the cap)
+      if (v > base * b.speedMul * 1.05) b.speedMul = Math.min(w.cap, v / base);
+      // accelerates the whole time it goes without hitting anything
+      b.speedMul = Math.min(w.cap, b.speedMul + 0.45 * dt);
+      // slam damage follows the speed it is travelling at right now
+      w.damage = Math.max(1, Math.round(5 * (v / base)) / 2);
+    },
+    contactDamage: (w) => w.damage,
+    onHit(sim, b, w) {
+      w.cap = Math.min(w.cap + 0.3, 4);
+      // back to normal speed (not the cap) after every hit
+      b.speedMul = 1;
+      const v = Math.hypot(b.vx, b.vy) || 1;
+      b.vx *= b.speed / v; b.vy *= b.speed / v;
+    },
+    onDamaged(sim, b) { b.speedMul = Math.min(b.w.cap, b.speedMul + 0.3); },
+    stats: (w, b) => ['Hit dmg: ' + fmt(w.damage), 'Speed: ' + Math.round(b.speedMul * 100) + '% / ' + Math.round(w.cap * 100) + '%'],
   });
   add({
     id: 'bow', name: 'Bow', cat: 'weapon', rarity: 'rare', color: '#e7b928',

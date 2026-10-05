@@ -19,14 +19,14 @@
     capture: /[?&]capture\b/.test(location.search),
 
     // Loader: five segments, one per real boot stage. Inside the current stage the bar keeps
-    // creeping toward the segment's end so it never sits still, and a time floor (~1.15s, the
+    // creeping toward the segment's end so it never sits still, and a time floor (~1.1s, just past the final clash of the
     // length of the intro fight) keeps it from snapping straight to 100%. Tap or key skips.
     loader: {
       STAGES: ['Contacting the arena', 'Loading your save', 'Sharpening blades', 'Building the arena', 'Polishing balls'],
       t0: performance.now(), stage: 0, sub: 0, stageT: performance.now(), shown: 0, raf: 0, lastDone: -1,
       tick() {
         const L = App.loader, now = performance.now(), N = L.STAGES.length;
-        const tk = Math.min(1, (now - L.t0) / 1150);
+        const tk = Math.min(1, (now - L.t0) / 1100);
         const timeCap = App.capture ? 1 : 1 - Math.pow(1 - tk, 2);
         const creep = L.stage >= N ? 0 : Math.max(L.sub, 0.88 * (1 - Math.exp(-(now - L.stageT) / 600)));
         const realCap = Math.min(1, (L.stage + creep) / N);
@@ -78,7 +78,7 @@
       App.loader.set(2);
 
       try {
-        await Promise.race([Promise.all([document.fonts.load('20px Anton'), document.fonts.load('20px "Pixelify Sans"')]), new Promise((r) => setTimeout(r, 700))]);
+        await Promise.race([Promise.all([document.fonts.load('20px Anton'), document.fonts.load('20px "Pixelify Sans"')]), new Promise((r) => setTimeout(r, 300))]);
       } catch (e) { /* fall back to system font */ }
       App.loader.set(3);
 
@@ -94,15 +94,13 @@
       BB.sdk.on('adEnd', () => { App.applyAudio(); App.last = performance.now(); });
       BB.sdk.on('settings', () => App.applyAudio());
 
-      // warm the icon cache so the menus open instantly
-      const ids = BB.ITEMS.filter((i) => i.cat !== 'hidden').map((i) => i.id);
-      for (let i = 0; i < ids.length; i++) {
-        BB.icon(ids[i]);
-        if (i % 8 === 7) { App.loader.set(4, i / ids.length); await new Promise((r) => setTimeout(r, 0)); }
-      }
       BB.sdk.loadingStop();
       if (!App.capture) requestAnimationFrame(App.frame);
       await App.loader.done();
+      // warm the icon cache in idle time after the menu is up, so loading isn't held up by it
+      const ids = BB.ITEMS.filter((i) => i.cat !== 'hidden').map((i) => i.id);
+      const warm = () => { const t0 = performance.now(); while (ids.length && performance.now() - t0 < 8) BB.icon(ids.shift()); if (ids.length) setTimeout(warm, 30); };
+      setTimeout(warm, 200);
       BB.meta.refreshBadges();
       $('btnProfile').classList.toggle('hidden', !App.pvpAvailable());
       document.documentElement.classList.toggle('touch', matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window);

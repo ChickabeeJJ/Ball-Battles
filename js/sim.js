@@ -21,11 +21,11 @@
     };
   }
 
-  const TRACK = ['damage', 'spin', 'len', 'width', 'arrows', 'n', 'orbs', 'moons', 'crit', 'burn', 'reload', 'heal', 'wave', 'zap', 'applied', 'knock', 'stun'];
+  const TRACK = ['damage', 'spin', 'len', 'width', 'arrows', 'n', 'orbs', 'moons', 'crit', 'burn', 'reload', 'heal', 'wave', 'zap', 'applied', 'knock', 'stun', 'cap'];
   const LABEL = {
     damage: (d) => (d > 0 ? '+' + BB.fmt(d) + ' DMG' : null), spin: 'SPIN UP', len: 'LONGER', width: 'BIGGER',
     arrows: '+1 ARROW', n: (d) => (Math.floor(d * 2) >= 1 || d >= 1 ? '+1 SHOT' : 'CHARGING'), orbs: '+ORB', moons: '+MOON',
-    crit: 'CRIT CHANCE UP', burn: 'HOTTER FLAME', reload: 'FASTER RELOAD', heal: 'MORE HEALING', wave: 'LOUDER', zap: 'ZAP UP', applied: null, knock: 'MORE KNOCKBACK', stun: 'LONGER STUN',
+    crit: 'CRIT CHANCE UP', burn: 'HOTTER FLAME', reload: 'FASTER RELOAD', heal: 'MORE HEALING', wave: 'LOUDER', zap: 'ZAP UP', applied: null, knock: 'MORE KNOCKBACK', stun: 'LONGER STUN', cap: 'SPEED CAP UP',
   };
 
   class Sim {
@@ -432,7 +432,8 @@
           else { const ns = s + (tgt - s) * Math.min(1, 1.2 * dt); b.vx *= ns / s; b.vy *= ns / s; }
         }
         const sp = Math.hypot(b.vx, b.vy);
-        if (sp > 1400) { b.vx *= 1400 / sp; b.vy *= 1400 / sp; }
+        const vmax = Math.max(1400, b.speed * b.speedMul * 1.1);
+        if (sp > vmax) { b.vx *= vmax / sp; b.vy *= vmax / sp; }
         if (b.stunT > 0 || b.hold || b.jail) {
           // stunned (or imprisoned / channelling) balls freeze in place; their momentum resumes when the stun wears off
           if (!b.stunV) b.stunV = [b.vx, b.vy];
