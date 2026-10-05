@@ -121,5 +121,9 @@
     },
     showInvite(params) { S.call((c) => c.game.showInviteButton(params)); },
     hideInvite() { S.call((c) => c.game.hideInviteButton()); },
+    // CrazyGames "Play with friends / instant multiplayer": launch straight into multiplayer
+    instantMultiplayer() { try { return !!(S.ready && S.sdk.game && S.sdk.game.isInstantMultiplayer); } catch (e) { return false; } },
+    // tell CrazyGames whether the player is in a (joinable) multiplayer room
+    updateRoom(roomId, joinable) { S.call((c) => { if (c.game.updateRoom) c.game.updateRoom({ roomId, isJoinable: !!joinable }); }); },
   });
 })();

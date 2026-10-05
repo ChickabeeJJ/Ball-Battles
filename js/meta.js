@@ -636,7 +636,7 @@
             <div class="pvp-rec">${next ? (next[0] - pv.rating) + ' to ' + next[1] : 'Top rank'} · ${pv.w} W · ${pv.d} D · ${pv.l} L</div></div>
           <div class="pvp-modes">
             <div class="pvp-mode code"><div class="pm-h">${BB.ICON.scroll}<b>Play a Friend</b></div><span>Make a challenge and share its code or invite link. They answer with the same code.</span><div class="pm-btns"></div></div>
-            <div class="pvp-mode mm"><div class="pm-h">${BB.ICON.swords}<b>Matchmaking</b><em>SOON</em></div><span>Get matched with a random player's squad automatically.</span><button class="btn" disabled>Find a match</button></div>
+            <div class="pvp-mode mm"><div class="pm-h">${BB.ICON.swords}<b>Matchmaking</b>${BB.match && BB.match.ready() ? '<em class="on">LIVE</em>' : '<em>SOON</em>'}</div><span>Fight a real player's squad near your rating. Your squad joins the pool too, and you gain or lose rating when others fight it.</span><button class="btn green pm-find"${BB.match && BB.match.ready() ? '' : ' disabled'}>Find a match</button></div>
           </div>
           <div class="pvp-steps"><div><b>1</b><span>Pick 3 different balls in fight order</span></div><div><b>2</b><span>Share the code with a friend</span></div><div><b>3</b><span>All 3 rounds play. Most wins takes it</span></div></div>`;
         const go = document.createElement('button'); go.className = 'btn primary'; go.innerHTML = BB.ICON.swords + ' Create';
@@ -651,6 +651,8 @@
           body.innerHTML += `<div class="section-t">Recent series</div><div class="pvp-hist">${pv.hist.map((h) => `<div class="ph ${h.r > 0 ? 'w' : h.r < 0 ? 'l' : 'd'}"><span class="ph-r">${h.r > 0 ? 'WIN' : h.r < 0 ? 'LOSS' : 'DRAW'}</span><span class="ph-n">vs ${esc(h.n)}</span><b>${esc(h.s)}</b><small>${h.d >= 0 ? '+' : ''}${h.d}</small></div>`).join('')}</div>`;
         }
         body.querySelector('.pm-btns').append(go, enter);
+        const fm = body.querySelector('.pm-find');
+        if (fm) fm.onclick = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); BB.match.start(); };
       }, { width: '460px' });
     },
 
@@ -769,7 +771,8 @@
       BB.save.data.coins += coinsWon; BB.save.write(); app.refreshCoins();
       BB.audio.play(won ? 'win' : 'lose');
       if (won) BB.sdk.happytime();
-      M.seriesEnd(sr, { won, draw, delta, coinsWon, canReply: true });
+      if (sr.matchmade && BB.match) { BB.match.report(sr.squadId, sr); BB.sdk.updateRoom(null, false); }
+      M.seriesEnd(sr, { won, draw, delta, coinsWon, canReply: !sr.matchmade });
     },
 
     applyRating(pv, foe, score) {
@@ -810,8 +813,8 @@
           wb.onclick = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); o.watch(); };
           foot.append(wb);
         }
-        const re = document.createElement('button'); re.className = 'btn primary'; re.textContent = 'New challenge';
-        re.onclick = () => { BB.sdk.hideInvite(); BB.ui.onClose = null; BB.ui.close(); M.series = null; BB.app.toMenu(); M.pick3('Your PvP Squad', 'Pick 3 different balls in fight order.', (ids) => M.pvpCreated(ids)); };
+        const re = document.createElement('button'); re.className = 'btn primary'; re.textContent = sr.matchmade ? 'Find another' : 'New challenge';
+        re.onclick = () => { BB.sdk.hideInvite(); BB.ui.onClose = null; BB.ui.close(); M.series = null; BB.app.toMenu(); if (sr.matchmade) BB.match.start(); else M.pick3('Your PvP Squad', 'Pick 3 different balls in fight order.', (ids) => M.pvpCreated(ids)); };
         const ok = document.createElement('button'); ok.className = 'btn green'; ok.textContent = 'Menu';
         ok.onclick = () => { BB.sdk.hideInvite(); M.series = null; BB.ui.onClose = null; BB.ui.close(); BB.sdk.maybeMidgame().then(() => BB.app.toMenu()); };
         foot.append(re, ok); sheet.appendChild(foot);

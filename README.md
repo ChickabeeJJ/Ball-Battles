@@ -20,6 +20,7 @@ The game also runs without the SDK (opened from disk, other hosts, ad blockers).
 | Specials (21) | Fibonacci, Speedy, Grower, Spiky, Gravitron, Splodey, Orbital, Duplicator, Vampire |
 | Iridescent (1) | **Kami (神)**: 25,000 coins. Locked at 1 HP; Divine Grace dodges every attack while charged (4 charges, refills over time). Three divine arts on cooldowns with anime cut-ins (Seraph Beam, Golden Gates, Heaven's Arsenal) and its own finisher cutscene. Logic and art live in `js/kami.js`. |
 | Modes | 1v1, 2v2, 3v3, Free For All |
+| PvP matchmaking | Async squad pool on Supabase (free tier): `tools/matchmaking.sql` + URL/anon key in `js/config.js`. Find a match pulls a real squad near your rating; your squad joins the pool and your rating updates when others fight it. CrazyGames instant multiplayer opens it directly; room status is reported with `updateRoom`. Until configured the card shows SOON. |
 | PvP (CrazyGames) | Async 3-ball series via invite links. Each side picks 3 different balls in order; the receiver picks blind, then lineups are revealed; all 3 rounds play (1v1, 2v2, 3v3 by slot) and most wins takes it. Seeded fights replay identically on both screens; a result link sends the outcome (and a replay) back to the challenger. Elo rating with ranks. |
 | Maps | Classic, Large, Bouncy (gravity), Pillars, Saws, Shrinking, Hot Potato, Meteors |
 | Per ball | Health, size, and overrides for damage, spin and speed |
