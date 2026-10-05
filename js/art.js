@@ -189,11 +189,18 @@
     if (skin === 'neon') { ctx.save(); ctx.shadowColor = col; ctx.shadowBlur = r * 0.9; ctx.fillStyle = g; ctx.fill(); ctx.restore(); }
     else { ctx.fillStyle = g; ctx.fill(); }
     ctx.save(); ctx.clip();
-    ctx.beginPath(); ctx.ellipse(-r * 0.32, -r * 0.42, r * 0.38, r * 0.2, -0.5, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.fill();
+    // soft specular highlight + bounce light along the lower rim (no outline)
+    const hl = ctx.createRadialGradient(-r * 0.34, -r * 0.42, 0, -r * 0.34, -r * 0.42, r * 0.5);
+    hl.addColorStop(0, 'rgba(255,255,255,0.75)'); hl.addColorStop(0.45, 'rgba(255,255,255,0.28)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = hl; ctx.beginPath(); ctx.ellipse(-r * 0.32, -r * 0.4, r * 0.5, r * 0.36, -0.6, 0, TAU); ctx.fill();
+    const rim = ctx.createRadialGradient(r * 0.2, r * 0.25, r * 0.55, 0, 0, r);
+    rim.addColorStop(0, 'rgba(0,0,0,0)'); rim.addColorStop(0.75, 'rgba(0,0,0,0.12)'); rim.addColorStop(1, 'rgba(255,255,255,0.18)');
+    ctx.fillStyle = rim; ctx.fillRect(-r, -r, r * 2, r * 2);
     if (b.slowT > 0) { ctx.fillStyle = 'rgba(191,233,255,0.55)'; ctx.fillRect(-r, -r, r * 2, r * 2); }
     if (b.paintT > 0) { ctx.fillStyle = 'rgba(255,60,120,0.7)'; for (const [px, py, pr] of [[-0.3, 0.2, 0.45], [0.35, -0.1, 0.35], [0.05, 0.5, 0.28]]) { ctx.beginPath(); ctx.arc(px * r, py * r, pr * r, 0, TAU); ctx.fill(); } }
     if (b.flash > 0) { ctx.fillStyle = 'rgba(255,255,255,' + Math.min(1, b.flash * 9) + ')'; ctx.fillRect(-r, -r, r * 2, r * 2); }
     ctx.restore();
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU);
     ctx.lineWidth = lw * (b.main ? 1.5 : 1.1); ctx.strokeStyle = OUT; ctx.stroke();
     if (skin === 'shadow') { ctx.beginPath(); ctx.arc(0, 0, r - lw, Math.PI * 1.05, Math.PI * 1.7); ctx.strokeStyle = shade(col, 0.2); ctx.lineWidth = 3; ctx.stroke(); }
     else if (skin === 'neon') { ctx.beginPath(); ctx.arc(0, 0, r + 1, 0, TAU); ctx.strokeStyle = shade(col, 0.55); ctx.lineWidth = 3; ctx.stroke(); }
