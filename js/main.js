@@ -19,23 +19,39 @@
     capture: /[?&]capture\b/.test(location.search),
 
     // Cinematic loader: ~2s intro (tap/key skips), then fades to the menu.
+    // Loader: the bar eases toward the real progress, but never faster than ~1.5s for the full fill,
+    // so it always visibly progresses and the whole screen is gone in ~2s.
     loader: {
-      t0: performance.now(),
-      set(p, tip) { const f = document.getElementById('ldFill'); if (f) f.style.width = Math.round(p * 100) + '%'; if (tip) { const t = document.getElementById('ldTip'); if (t) t.textContent = tip; } },
+      t0: performance.now(), real: 0, shown: 0, raf: 0,
+      tick() {
+        const L = App.loader, t = (performance.now() - L.t0) / 1500;
+        const cap = Math.min(L.real, App.capture ? 1 : 1 - Math.pow(1 - Math.min(1, t), 2));
+        L.shown += (cap - L.shown) * 0.25; if (cap - L.shown < 0.003) L.shown = cap;
+        const f = document.getElementById('ldFill'), p = document.getElementById('ldPct');
+        if (f) f.style.transform = 'scaleX(' + L.shown.toFixed(3) + ')';
+        if (p) p.textContent = Math.round(L.shown * 100) + '%';
+        const tip = document.getElementById('ldTip');
+        if (tip) tip.textContent = L.shown >= 1 ? 'Ready!' : ['Entering the arena...', 'Sharpening blades...', 'Inflating balls...', 'Polishing weapons...'][Math.min(3, Math.floor(L.shown * 4))];
+        if (L.shown < 1) L.raf = requestAnimationFrame(L.tick);
+      },
+      set(p) { this.real = Math.max(this.real, p); if (!this.raf) this.raf = requestAnimationFrame(this.tick); },
       async done() {
         const el = document.getElementById('loader');
         if (!el) return;
         this.set(1, 'Ready!');
-        const wait = App.capture ? 0 : Math.max(0, 2300 - (performance.now() - this.t0));
-        await new Promise((r) => { const tm = setTimeout(r, wait); const skip = () => { clearTimeout(tm); r(); }; el.addEventListener('pointerdown', skip, { once: true }); window.addEventListener('keydown', skip, { once: true }); });
+        await new Promise((r) => {
+          const skip = () => { this.shown = 1; this.tick(); r(); };
+          const chk = () => (this.shown >= 1 ? setTimeout(r, 180) : requestAnimationFrame(chk));
+          if (App.capture) { skip(); return; }
+          chk(); el.addEventListener('pointerdown', skip, { once: true }); window.addEventListener('keydown', skip, { once: true });
+        });
         el.classList.add('out');
-        setTimeout(() => el.remove(), 500);
+        setTimeout(() => el.remove(), 450);
       },
     },
 
     async boot() {
       const ld = document.getElementById('loader');
-      if (ld) ld.classList.add('shake');
       App.loader.set(0.15, 'Contacting the arena...');
       await BB.sdk.init();
       App.loader.set(0.4, 'Sharpening blades...');

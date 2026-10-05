@@ -11,20 +11,19 @@
   <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
 <body>
-  <div id="loader" class="loader" aria-label="Loading">
-    <div class="ld-bars top"></div><div class="ld-bars bot"></div>
-    <div class="ld-rays"></div>
-    <div class="ld-floor"></div>
-    <div class="ld-embers"><i style="left:0%;animation-delay:0.00s;animation-duration:2.5s"></i><i style="left:37%;animation-delay:0.23s;animation-duration:3.1s"></i><i style="left:74%;animation-delay:0.46s;animation-duration:3.7s"></i><i style="left:11%;animation-delay:0.69s;animation-duration:4.3s"></i><i style="left:48%;animation-delay:0.92s;animation-duration:4.9s"></i><i style="left:85%;animation-delay:1.15s;animation-duration:2.5s"></i><i style="left:22%;animation-delay:1.38s;animation-duration:3.1s"></i><i style="left:59%;animation-delay:1.61s;animation-duration:3.7s"></i><i style="left:96%;animation-delay:1.84s;animation-duration:4.3s"></i><i style="left:33%;animation-delay:2.07s;animation-duration:4.9s"></i><i style="left:70%;animation-delay:2.30s;animation-duration:2.5s"></i><i style="left:7%;animation-delay:2.53s;animation-duration:3.1s"></i><i style="left:44%;animation-delay:2.76s;animation-duration:3.7s"></i><i style="left:81%;animation-delay:2.99s;animation-duration:4.3s"></i><i style="left:18%;animation-delay:0.22s;animation-duration:4.9s"></i><i style="left:55%;animation-delay:0.45s;animation-duration:2.5s"></i><i style="left:92%;animation-delay:0.68s;animation-duration:3.1s"></i><i style="left:29%;animation-delay:0.91s;animation-duration:3.7s"></i><i style="left:66%;animation-delay:1.14s;animation-duration:4.3s"></i><i style="left:3%;animation-delay:1.37s;animation-duration:4.9s"></i><i style="left:40%;animation-delay:1.60s;animation-duration:2.5s"></i><i style="left:77%;animation-delay:1.83s;animation-duration:3.1s"></i><i style="left:14%;animation-delay:2.06s;animation-duration:3.7s"></i><i style="left:51%;animation-delay:2.29s;animation-duration:4.3s"></i><i style="left:88%;animation-delay:2.52s;animation-duration:4.9s"></i><i style="left:25%;animation-delay:2.75s;animation-duration:2.5s"></i></div>
-    <div class="ld-stage">
-      <div class="ld-ball l"><i></i></div>
-      <div class="ld-ball r"><i></i></div>
-      <div class="ld-flash"></div>
-      <div class="ld-ring"></div>
+  <div id="loader" class="loader lx" aria-label="Loading">
+    <div class="lx-bg"></div><div class="lx-speed"></div><div class="lx-grid"></div><div class="lx-vig"></div>
+    <div class="lx-stage">
+      <div class="lx-ball l"><b></b><i></i></div>
+      <div class="lx-ball r"><b></b><i></i></div>
+      <div class="lx-spark"><i style="--a:0deg"></i><i style="--a:30deg"></i><i style="--a:60deg"></i><i style="--a:90deg"></i><i style="--a:120deg"></i><i style="--a:150deg"></i><i style="--a:180deg"></i><i style="--a:210deg"></i><i style="--a:240deg"></i><i style="--a:270deg"></i><i style="--a:300deg"></i><i style="--a:330deg"></i></div>
+      <div class="lx-ring"></div><div class="lx-ring two"></div><div class="lx-flash"></div>
     </div>
-    <div class="ld-title"><span>BALL</span><span class="ld-vs">VS</span><span>BALL</span></div>
-    <div class="ld-bar"><i id="ldFill"></i></div>
-    <div class="ld-tip" id="ldTip">Sharpening blades...</div>
+    <div class="lx-title"><span class="w">BALL</span><span class="vs">VS</span><span class="y">BALL</span></div>
+    <div class="lx-load">
+      <div class="lx-row"><span id="ldTip">Sharpening blades...</span><b id="ldPct">0%</b></div>
+      <div class="lx-bar"><i id="ldFill"></i></div>
+    </div>
   </div>
   <div id="app" class="is-menu">
     <header id="topbar">

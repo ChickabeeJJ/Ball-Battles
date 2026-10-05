@@ -729,3 +729,55 @@ html.touch .br-e { font-size: 11px; }
 .xp-row b { font-family: var(--num); color: #c9a8ff; font-weight: 400; }
 .xp-row em { font-style: normal; font-family: var(--num); color: #ffd23f; font-size: 11px; grid-column: 4; }
 .xp-row.up { border-color: #ffd23f; box-shadow: 0 0 0 2px rgba(255,210,63,.3); }
+
+/* ================================================================ loader v2 */
+.loader.lx { background: #07060b; animation: none; justify-content: center; gap: 0; }
+.loader.lx.out { opacity: 0; transform: scale(1.06); filter: blur(4px); transition: opacity .4s, transform .4s, filter .4s; }
+.lx-bg { position: absolute; inset: 0; background: radial-gradient(ellipse 70% 55% at 50% 42%, #3a1f2e 0%, #1a1020 45%, #07060b 80%); animation: lxPulse 1.6s .45s ease-out both; }
+.lx-speed { position: absolute; inset: -20%; background: repeating-conic-gradient(from 0deg at 50% 42%, rgba(255,255,255,.07) 0 1.2deg, transparent 1.2deg 9deg); opacity: 0; animation: lxSpeedIn .5s .4s ease-out forwards, spin 30s linear infinite; mask: radial-gradient(circle at 50% 42%, transparent 12%, #000 45%); -webkit-mask: radial-gradient(circle at 50% 42%, transparent 12%, #000 45%); }
+.lx-grid { position: absolute; left: -50%; right: -50%; bottom: -10%; height: 50%; background: linear-gradient(transparent 0 94%, rgba(255,90,80,.35) 94%) 0 0 / 100% 40px, linear-gradient(90deg, transparent 0 97%, rgba(255,90,80,.25) 97%) 0 0 / 60px 100%; transform: perspective(300px) rotateX(62deg); transform-origin: 50% 0; animation: lxGrid 1s linear infinite; mask: linear-gradient(transparent, #000 60%); -webkit-mask: linear-gradient(transparent, #000 60%); }
+.lx-vig { position: absolute; inset: 0; box-shadow: inset 0 0 18vmin 6vmin #000; pointer-events: none; }
+.lx-stage { position: relative; z-index: 2; width: min(80vw, 460px); height: 130px; animation: lxShake .35s .45s both; }
+.lx-ball { position: absolute; top: 50%; width: 90px; height: 90px; margin-top: -45px; border-radius: 50%; border: 5px solid #0a0a0a; box-shadow: inset -12px -14px 0 rgba(0,0,0,.25), inset 8px 8px 0 rgba(255,255,255,.18), 0 10px 30px rgba(0,0,0,.6); }
+.lx-ball.l { left: 50%; background: radial-gradient(circle at 35% 30%, #d9dde2, #9aa0a6 55%, #5d6268); animation: lxInL .45s cubic-bezier(.6,0,1,.6) both, lxRecL .7s .45s cubic-bezier(.15,.9,.3,1) forwards; }
+.lx-ball.r { right: 50%; background: radial-gradient(circle at 35% 30%, #ff9a90, #e8473f 55%, #9c2128); animation: lxInR .45s cubic-bezier(.6,0,1,.6) both, lxRecR .7s .45s cubic-bezier(.15,.9,.3,1) forwards; }
+.lx-ball b { position: absolute; top: 50%; height: 12px; margin-top: -6px; width: 74px; border: 3px solid #0a0a0a; border-radius: 2px 14px 14px 2px; background: linear-gradient(#f4f6f8, #aeb4ba); }
+.lx-ball.l b { left: 70px; transform: rotate(-18deg); transform-origin: 0 50%; }
+.lx-ball.r b { right: 70px; transform: rotate(18deg); transform-origin: 100% 50%; border-radius: 14px 2px 2px 14px; background: linear-gradient(#ffe7a8, #d39a2c); }
+.lx-ball b::before { content: ''; position: absolute; top: -9px; width: 6px; height: 24px; background: #3b2a1a; border: 2px solid #0a0a0a; border-radius: 2px; }
+.lx-ball.l b::before { left: 4px; } .lx-ball.r b::before { right: 4px; }
+.lx-ball::after { content: ''; position: absolute; top: 15%; height: 70%; width: 220%; border-radius: 50%; animation: lxTrail .45s ease-in both; }
+.lx-ball.l::after { right: 80%; background: linear-gradient(90deg, transparent, rgba(220,225,235,.6)); }
+.lx-ball.r::after { left: 80%; background: linear-gradient(-90deg, transparent, rgba(255,90,80,.6)); }
+.lx-spark { position: absolute; left: 50%; top: 50%; }
+.lx-spark i { position: absolute; left: -3px; top: -2px; width: 46px; height: 5px; border-radius: 3px; background: linear-gradient(90deg, #fff, #ffd23f 50%, transparent); transform-origin: 0 50%; transform: rotate(var(--a)) translateX(10px) scaleX(0); animation: lxSpark .55s .45s cubic-bezier(.1,.8,.3,1) both; }
+.lx-ring { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px; border-radius: 50%; border: 6px solid #ffd23f; opacity: 0; animation: lxRing .7s .45s ease-out both; }
+.lx-ring.two { border-color: #fff; border-width: 3px; animation-delay: .52s; animation-duration: .9s; }
+.lx-flash { position: absolute; left: 50%; top: 50%; width: 600px; height: 600px; margin: -300px; border-radius: 50%; background: radial-gradient(circle, #fff 0 4%, rgba(255,255,255,.9) 10%, rgba(255,190,80,.45) 30%, transparent 62%); pointer-events: none; opacity: 0; animation: lxFlash .5s .44s ease-out both; }
+.lx-title { position: relative; z-index: 3; display: flex; align-items: center; gap: .18em; margin-top: 10px; font-family: 'Anton', Impact, sans-serif; font-size: clamp(48px, 11vw, 112px); line-height: 1; letter-spacing: .03em; }
+.lx-title span { text-shadow: 0 7px 0 #000, 4px 4px 0 #000, -4px 4px 0 #000, 4px -4px 0 #000, -4px -4px 0 #000; animation: lxSlam .45s cubic-bezier(.2,1.7,.4,1) both; }
+.lx-title .w { color: #fff; animation-delay: .55s; }
+.lx-title .y { color: #ffd23f; animation-delay: .7s; }
+.lx-title .vs { font-size: .55em; color: #fff; background: #e8473f; padding: .08em .22em .02em; border: 4px solid #000; border-radius: 6px; transform: rotate(-8deg); text-shadow: 0 3px 0 #000; box-shadow: 0 5px 0 #000; animation: lxVs .4s .62s cubic-bezier(.2,1.9,.4,1) both; }
+.lx-load { position: absolute; z-index: 3; bottom: max(9vh, 40px); width: min(78vw, 420px); }
+.lx-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; font-family: 'Pixelify Sans', monospace; font-size: 13px; color: #c9c2d6; }
+.lx-row b { font-family: 'Lilita One', 'Anton', sans-serif; font-weight: 400; font-size: 20px; color: #ffd23f; text-shadow: 0 2px 0 #000; }
+.lx-bar { position: relative; height: 22px; border: 3px solid #000; border-radius: 8px; background: #1d1824; box-shadow: 0 3px 0 #000, inset 0 2px 0 rgba(0,0,0,.4); overflow: hidden; }
+.lx-bar i { position: absolute; inset: 0; transform: scaleX(0); transform-origin: 0 50%; border-radius: 5px; background: repeating-linear-gradient(-45deg, rgba(255,255,255,.18) 0 8px, transparent 8px 16px), linear-gradient(#ffe066, #ff9a1f); background-size: 22px 22px, 100% 100%; animation: lxStripe .5s linear infinite; }
+.lx-bar i::after { content: ''; position: absolute; left: 4px; right: 4px; top: 2px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.45); }
+@keyframes lxInL { from { transform: translateX(-60vw); } to { transform: translateX(-90px); } }
+@keyframes lxInR { from { transform: translateX(60vw); } to { transform: translateX(90px); } }
+@keyframes lxRecL { from { transform: translateX(-90px); } to { transform: translateX(-190px) rotate(-30deg); } }
+@keyframes lxRecR { from { transform: translateX(90px); } to { transform: translateX(190px) rotate(30deg); } }
+@keyframes lxTrail { 0% { opacity: .9; } 100% { opacity: 0; } }
+@keyframes lxSpark { 0% { transform: rotate(var(--a)) translateX(6px) scaleX(0); opacity: 1; } 50% { transform: rotate(var(--a)) translateX(40px) scaleX(1); opacity: 1; } 100% { transform: rotate(var(--a)) translateX(110px) scaleX(.2); opacity: 0; } }
+@keyframes lxRing { 0% { transform: scale(.4); opacity: 1; } 100% { transform: scale(9); opacity: 0; } }
+@keyframes lxFlash { 0% { opacity: 1; transform: scale(.15); } 100% { opacity: 0; transform: scale(1.2); } }
+@keyframes lxShake { 0%,100% { transform: none; } 20% { transform: translate(-8px, 5px); } 45% { transform: translate(7px, -6px); } 70% { transform: translate(-4px, 3px); } }
+@keyframes lxSlam { 0% { transform: scale(3) skewX(-12deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
+@keyframes lxVs { 0% { transform: scale(0) rotate(-120deg); } 100% { transform: rotate(-8deg); } }
+@keyframes lxPulse { 0% { filter: brightness(2.4); } 100% { filter: none; } }
+@keyframes lxSpeedIn { to { opacity: 1; } }
+@keyframes lxGrid { to { background-position: 0 40px, 0 0; } }
+@keyframes lxStripe { to { background-position: 22px 0, 0 0; } }
+@media (max-width: 520px) { .lx-ball { width: 66px; height: 66px; margin-top: -33px; } .lx-ball b { width: 54px; } .lx-ball.l b { left: 52px; } .lx-ball.r b { right: 52px; } @keyframes lxInL { from { transform: translateX(-60vw); } to { transform: translateX(-66px); } } @keyframes lxInR { from { transform: translateX(60vw); } to { transform: translateX(66px); } } @keyframes lxRecL { from { transform: translateX(-66px); } to { transform: translateX(-130px) rotate(-30deg); } } @keyframes lxRecR { from { transform: translateX(66px); } to { transform: translateX(130px) rotate(30deg); } } }
