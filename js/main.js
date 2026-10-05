@@ -113,9 +113,11 @@
         g.onclick = () => { BB.audio.unlock(); BB.audio.play('click'); BB.meta.openPvp(); };
       }
       // A friend's challenge link takes priority; otherwise first-time players get the tutorial.
-      const ch3 = App.pvpAvailable() ? BB.meta.decode3(BB.sdk.getInviteParam('pvp3')) : null;
+      const res3 = App.pvpAvailable() ? BB.meta.decodeR(BB.sdk.getInviteParam('pvp3r')) : null;
+      const ch3 = App.pvpAvailable() && !res3 ? BB.meta.decode3(BB.sdk.getInviteParam('pvp3')) : null;
       const ch = !ch3 && App.pvpAvailable() ? App.decodeChallenge(BB.sdk.getInviteParam('pvp')) : null;
-      if (ch3) BB.meta.pvpReceive(ch3);
+      if (res3) BB.meta.pvpResult(res3);
+      else if (ch3) BB.meta.pvpReceive(ch3);
       else if (ch) BB.ui.pvpReceive(ch);
       else if (!BB.save.data.tutorialDone && !App.capture) setTimeout(() => BB.ui.tutorial(), 400);
     },
@@ -346,7 +348,7 @@
       App.sim = new BB.Sim({
         seed: App.seed, map: cu ? cu.map : setup.map, teams: cu ? cu.teams : App.buildTeams(),
         // seeded PvP/event rounds always use overtime so both players see the same fight
-        settings: cu ? Object.assign({}, BB.save.data.settings, { overtime: true }) : BB.save.data.settings, controlSlot: null,
+        settings: cu ? Object.assign({}, BB.save.data.settings, { overtime: true, reverseB: false }) : BB.save.data.settings, controlSlot: null,
       });
       void mode;
       App.maxHit = 0;

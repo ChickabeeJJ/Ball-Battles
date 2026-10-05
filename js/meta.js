@@ -56,6 +56,7 @@
 
     afterBattle(sim, w) {
       const app = BB.app, mode = app.mode();
+      if (app.event && app.event.spectate) return;
       M.track('play', 1);
       M.track('map', sim.map.id);
       const mine = sim.balls.filter((b) => b.main && b.team === 0 && !b.owner);
@@ -435,20 +436,47 @@
     },
 
     // ------------------------------------------------------------- PvP 3v3 series (CrazyGames only)
-    // Async head-to-head: a challenge link carries your 3 balls (+ maps and seed) via the
-    // CrazyGames invite API. The friend picks 3 owned balls; a best-of-3 duel series plays out
-    // deterministically, so both sides see identical fights.
-    pvpData() { const m = M.data(); m.pvp = m.pvp || { rating: 1000, w: 0, l: 0 }; return m.pvp; },
-    rankName(r) { return r >= 1400 ? 'Legend' : r >= 1250 ? 'Diamond' : r >= 1125 ? 'Gold' : r >= 1000 ? 'Silver' : 'Bronze'; },
+    // Beyblade-style async series: each side brings 3 different balls in a fixed order and all
+    // three rounds are played (ball 1 vs ball 1, 2 vs 2, 3 vs 3); most round wins takes the series.
+    // The challenge link (CrazyGames invite API) carries the squad, maps, seed, rating and name.
+    // The receiver picks blind, the lineups are revealed, and every fight is seeded so it plays
+    // out identically on both screens. A result link sends the outcome back to the challenger.
+    pvpData() {
+      const m = M.data();
+      m.pvp = m.pvp || { rating: 1000, w: 0, l: 0 };
+      m.pvp.d = m.pvp.d || 0; m.pvp.hist = m.pvp.hist || []; m.pvp.sent = m.pvp.sent || []; m.pvp.seen = m.pvp.seen || [];
+      return m.pvp;
+    },
+    RANKS: [[0, 'Bronze', '#d08a4a'], [1000, 'Silver', '#c9d1db'], [1125, 'Gold', '#ffd23f'], [1250, 'Diamond', '#7fe3ff'], [1400, 'Legend', '#ff6fd8']],
+    rankOf(r) { let k = 0; M.RANKS.forEach((x, i) => { if (r >= x[0]) k = i; }); return k; },
+    rankName(r) { return M.RANKS[M.rankOf(r)][1]; },
+    rankHtml(r) { const k = M.rankOf(r); return `<span class="pvp-badge" style="--rc:${M.RANKS[k][2]}">${M.RANKS[k][1]}</span>`; },
+    cleanName(n) { return String(n || '').replace(/[^\w .-]/g, '').trim().slice(0, 16) || 'Rival'; },
+    async myName() {
+      if (M._name) return M._name;
+      const u = await BB.sdk.getUser();
+      M._name = M.cleanName(u && u.username ? u.username : 'Player');
+      return M._name;
+    },
+    validIds(ids) { return ids.length === 3 && new Set(ids).size === 3 && ids.every((id) => BB.ITEM[id] && BB.ITEM[id].cat !== 'hidden'); },
+    validMaps(maps) { return maps.length === 3 && maps.every((m) => BB.MAP[m]); },
 
-    encode3(ids, maps, seed) { return [ids.join('.'), maps.join('.'), seed, M.pvpData().rating].join('~'); },
+    encode3(ids, maps, seed, name) { return [ids.join('.'), maps.join('.'), seed, M.pvpData().rating, M.cleanName(name)].join('~'); },
     decode3(code) {
       const p = String(code || '').split('~');
       if (p.length < 4) return null;
       const ids = p[0].split('.'), maps = p[1].split('.');
-      if (ids.length !== 3 || maps.length !== 3) return null;
-      if (!ids.every((id) => BB.ITEM[id] && BB.ITEM[id].cat !== 'hidden') || !maps.every((m) => BB.MAP[m])) return null;
-      return { ids, maps, seed: (Number(p[2]) || 1) | 0, rating: Math.round(Number(p[3]) || 1000) };
+      if (!M.validIds(ids) || !M.validMaps(maps)) return null;
+      return { ids, maps, seed: (Number(p[2]) || 1) | 0, rating: Math.round(Number(p[3]) || 1000), name: M.cleanName(p[4]) };
+    },
+    // result link: challenger squad, receiver squad, maps, seed, round results (receiver's view), receiver rating + name
+    encodeR(sr, name) { return [sr.theirs.join('.'), sr.mine.join('.'), sr.maps.join('.'), sr.seed, sr.results.join('.'), M.pvpData().rating, M.cleanName(name)].join('~'); },
+    decodeR(code) {
+      const p = String(code || '').split('~');
+      if (p.length < 7) return null;
+      const a = p[0].split('.'), b = p[1].split('.'), maps = p[2].split('.'), res = p[4].split('.').map(Number);
+      if (!M.validIds(a) || !M.validIds(b) || !M.validMaps(maps) || res.length !== 3 || !res.every((r) => r === 0 || r === 1 || r === -1)) return null;
+      return { mine: a, theirs: b, maps, seed: (Number(p[3]) || 1) | 0, results: res.map((r) => (r === 0 ? 1 : r === 1 ? 0 : -1)), rating: Math.round(Number(p[5]) || 1000), name: M.cleanName(p[6]) };
     },
 
     pick3(title, sub, onDone) { M.pickN(3, title, sub, onDone); },
@@ -463,14 +491,19 @@
         const foot = document.createElement('div'); foot.className = 'sh-foot';
         const go = document.createElement('button'); go.className = 'btn green'; go.textContent = N === 3 ? 'Confirm squad' : 'Start the cup'; go.disabled = true;
         const draw = () => {
-          squad.innerHTML = [...Array(N).keys()].map((k) => sel[k] ? `<div class="sq-s"><img src="${BB.icon(sel[k])}" alt=""><span>${esc(BB.ITEM[sel[k]].name)}</span></div>` : `<div class="sq-s empty"><span>${k + 1}</span></div>`).join('');
-          grid.querySelectorAll('.tile').forEach((t) => { const k = sel.indexOf(t.dataset.id); t.classList.toggle('sel', k >= 0); t.dataset.order = k >= 0 ? k + 1 : ''; });
+          squad.innerHTML = [...Array(N).keys()].map((k) => sel[k]
+            ? `<button class="sq-s" data-k="${k}">${N === 3 ? `<em>Round ${k + 1}</em>` : ''}<img src="${BB.icon(sel[k])}" alt=""><span>${esc(BB.ITEM[sel[k]].name)}</span></button>`
+            : `<div class="sq-s empty">${N === 3 ? `<em>Round ${k + 1}</em>` : ''}<span>${k + 1}</span></div>`).join('');
+          squad.querySelectorAll('button.sq-s').forEach((b) => { b.onclick = () => { BB.audio.play('click'); sel.splice(Number(b.dataset.k), 1); draw(); }; });
+          grid.querySelectorAll('.tile').forEach((t) => { const k = sel.indexOf(t.dataset.id); t.classList.toggle('sel', k >= 0); t.dataset.order = k >= 0 ? k + 1 : ''; t.classList.toggle('full', k < 0 && sel.length >= N); });
           go.disabled = sel.length !== N;
+          go.textContent = sel.length === N ? (N === 3 ? 'Confirm squad' : 'Start the cup') : 'Pick ' + (N - sel.length) + ' more';
         };
         for (const it of BB.ITEMS.filter((i) => i.cat !== 'hidden' && BB.app.isOwned(i.id))) {
           const t = document.createElement('button');
           t.className = 'tile'; t.dataset.id = it.id;
           t.innerHTML = `<img src="${BB.icon(it.id)}" alt=""><span class="t-n">${esc(it.name)}</span>${M.starHtml(it.id)}<span class="rar" style="background:${BB.RARITY[it.rarity].color}"></span>`;
+          // tapping a picked ball removes it; the same ball can never be picked twice
           t.onclick = () => { BB.audio.play('click'); const k = sel.indexOf(it.id); if (k >= 0) sel.splice(k, 1); else if (sel.length < N) sel.push(it.id); draw(); };
           grid.appendChild(t);
         }
@@ -481,29 +514,44 @@
       }, { width: '600px' });
     },
 
+    ownedCount() { return BB.ITEMS.filter((i) => i.cat !== 'hidden' && BB.app.isOwned(i.id)).length; },
+
     openPvp() {
-      const pv = M.pvpData();
+      const pv = M.pvpData(), k = M.rankOf(pv.rating), next = M.RANKS[k + 1];
+      const lo = M.RANKS[k][0], pct = next ? Math.max(0, Math.min(100, ((pv.rating - lo) / (next[0] - lo)) * 100)) : 100;
       BB.ui.open((sheet) => {
         const body = BB.ui.head(sheet, 'PvP Arena');
-        body.innerHTML += `<div class="pvp-hero"><div class="pvp-rank">${M.rankName(pv.rating)}</div><div class="pvp-rating">${pv.rating}</div>
-          <div class="pvp-rec">${pv.w} W · ${pv.l} L</div></div>
-          <div class="f-s">Pick 3 of your balls and challenge a friend. They answer with 3 of theirs and the best-of-3 decides it. Same fights on both screens.</div>`;
+        body.innerHTML += `<div class="pvp-hero" style="--rc:${M.RANKS[k][2]}">${M.rankHtml(pv.rating)}<div class="pvp-rating">${pv.rating}</div>
+            <div class="pvp-rankbar"><i style="width:${pct}%"></i></div>
+            <div class="pvp-rec">${next ? (next[0] - pv.rating) + ' to ' + next[1] : 'Top rank'} · ${pv.w} W · ${pv.d} D · ${pv.l} L</div></div>
+          <div class="pvp-steps"><div><b>1</b><span>Pick 3 different balls in fight order</span></div><div><b>2</b><span>Send the challenge to a friend</span></div><div><b>3</b><span>All 3 rounds play. Most wins takes it</span></div></div>`;
         const go = document.createElement('button'); go.className = 'btn primary pvp-go'; go.innerHTML = BB.ICON.swords + ' Create a challenge';
-        go.onclick = () => { BB.audio.play('click'); M.pick3('Your PvP Squad', 'Choose 3 balls, in fight order.', (ids) => M.pvpCreated(ids)); };
+        go.onclick = () => {
+          BB.audio.play('click');
+          if (M.ownedCount() < 3) { BB.ui.toast('Unlock at least 3 balls to play PvP'); return; }
+          M.pick3('Your PvP Squad', 'Round 1 uses your first pick, round 2 your second, round 3 your third. Your rival picks without seeing your squad.', (ids) => M.pvpCreated(ids));
+        };
         body.appendChild(go);
-      }, { width: '440px' });
+        if (pv.hist.length) {
+          body.innerHTML += `<div class="section-t">Recent series</div><div class="pvp-hist">${pv.hist.map((h) => `<div class="ph ${h.r > 0 ? 'w' : h.r < 0 ? 'l' : 'd'}"><span class="ph-r">${h.r > 0 ? 'WIN' : h.r < 0 ? 'LOSS' : 'DRAW'}</span><span class="ph-n">vs ${esc(h.n)}</span><b>${esc(h.s)}</b><small>${h.d >= 0 ? '+' : ''}${h.d}</small></div>`).join('')}</div>`;
+          body.querySelector('.pvp-go').onclick = go.onclick;
+        }
+      }, { width: '460px' });
     },
 
-    pvpCreated(ids) {
+    async pvpCreated(ids) {
       const rng = BB.RNG((Math.random() * 1e9) | 0);
       const maps = [0, 1, 2].map(() => BB.MAPS[Math.floor(rng() * BB.MAPS.length)].id);
-      const code = M.encode3(ids, maps, (rng() * 2147483647) | 0);
+      const seed = (rng() * 2147483647) | 0;
+      const pv = M.pvpData();
+      pv.sent.unshift(seed); pv.sent.length = Math.min(pv.sent.length, 20); BB.save.write();
+      const code = M.encode3(ids, maps, seed, await M.myName());
       const link = BB.sdk.inviteLink({ pvp3: code });
       BB.sdk.showInvite({ pvp3: code });
       BB.ui.open((sheet) => {
         const body = BB.ui.head(sheet, 'Challenge Ready!');
-        body.innerHTML += `<div class="squad">${ids.map((id) => `<div class="sq-s"><img src="${BB.icon(id)}" alt=""><span>${esc(BB.ITEM[id].name)}</span></div>`).join('')}</div>
-          <div class="f-s">Send this link to a friend. When they accept, the series starts on their screen, and their result link lets you watch it too.</div>`;
+        body.innerHTML += `<div class="squad">${ids.map((id, k) => `<div class="sq-s"><em>Round ${k + 1}</em><img src="${BB.icon(id)}" alt=""><span>${esc(BB.ITEM[id].name)}</span></div>`).join('')}</div>
+          <div class="f-s">Send this to a friend with the CrazyGames invite button or the link below. Your squad stays hidden until they lock in theirs. When they finish, they can send the result back to you.</div>`;
         const out = document.createElement('input'); out.className = 'pvp-link'; out.readOnly = true; out.value = link || 'Invites only work on CrazyGames';
         body.appendChild(out);
         const cp = document.createElement('button'); cp.className = 'btn green'; cp.textContent = 'Copy link';
@@ -513,32 +561,70 @@
     },
 
     pvpReceive(ch) {
-      M.pick3('Challenge Received!', 'Your rival (' + M.rankName(ch.rating) + ' ' + ch.rating + ') sends: ' + ch.ids.map((i) => BB.ITEM[i].name).join(', ') + '. Pick your 3 to answer.', (mine) => {
-        M.series = { mine, theirs: ch.ids, maps: ch.maps, seed: ch.seed, foeRating: ch.rating, round: 0, score: [0, 0], results: [] };
-        M.vsSplash();
-      });
+      const pv = M.pvpData();
+      if (pv.sent.includes(ch.seed)) { BB.ui.toast('That is your own challenge. Send it to a friend!'); return; }
+      if (M.ownedCount() < 3) { BB.ui.toast('Unlock at least 3 balls to answer PvP challenges'); return; }
+      BB.ui.open((sheet) => {
+        sheet.classList.add('vs-sheet');
+        sheet.innerHTML = `<div class="vs-round">CHALLENGE RECEIVED</div>
+          <div class="ch-from"><b>${esc(ch.name)}</b>${M.rankHtml(ch.rating)}<span>${ch.rating}</span></div>
+          <div class="lineup hidden-l">${[0, 1, 2].map((k) => `<div class="card-back"><em>Round ${k + 1}</em><b>?</b></div>`).join('')}</div>
+          <div class="f-s" style="text-align:center">Their squad stays hidden until you lock in yours. 3 rounds, in order. Most wins takes the series.</div>`;
+        const go = document.createElement('button'); go.className = 'btn primary vs-go'; go.innerHTML = BB.ICON.swords + ' Pick your squad';
+        go.onclick = () => {
+          BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close();
+          M.pick3('Answer ' + ch.name, 'Pick 3 different balls in fight order. Round 1 uses your first pick.', (mine) => {
+            M.series = { mine, theirs: ch.ids, maps: ch.maps, seed: ch.seed, foeRating: ch.rating, foeName: ch.name, round: 0, score: [0, 0], results: [] };
+            M.lineup();
+          });
+        };
+        sheet.appendChild(go);
+      }, { width: '560px' });
+    },
+
+    // both squads revealed side by side, round by round
+    lineup() {
+      const sr = M.series;
+      BB.ui.open((sheet) => {
+        sheet.classList.add('vs-sheet');
+        sheet.innerHTML = `<div class="vs-round">LINEUP</div>
+          <div class="lu-head"><span>${sr.spectate ? esc(sr.meName) : 'YOU'}</span><span></span><span>${esc(sr.foeName)}</span></div>
+          <div class="lineup">${[0, 1, 2].map((k) => `<div class="lu-row" style="animation-delay:${k * 0.18}s">
+            <div class="lu-b me"><img src="${BB.icon(sr.mine[k])}" alt=""><b style="color:${BB.itemColor(sr.mine[k])}">${esc(BB.ITEM[sr.mine[k]].name)}</b></div>
+            <div class="lu-mid"><em>R${k + 1}</em><small>${esc(BB.MAP[sr.maps[k]].name)}</small></div>
+            <div class="lu-b foe"><b style="color:${BB.itemColor(sr.theirs[k])}">${esc(BB.ITEM[sr.theirs[k]].name)}</b><img src="${BB.icon(sr.theirs[k])}" alt=""></div></div>`).join('')}</div>`;
+        const go = document.createElement('button'); go.className = 'btn primary vs-go'; go.innerHTML = BB.ICON.play + ' Start round 1';
+        go.onclick = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); M.vsSplash(); };
+        sheet.appendChild(go);
+      }, { width: '560px', onClose: () => { M.series = null; } });
+    },
+
+    pips(sr, side) {
+      return `<span class="pips">${[0, 1, 2].map((k) => { const r = sr.results[k]; const c = r === undefined ? '' : r === -1 ? 'd' : r === side ? 'w' : 'l'; return `<i class="${c}"></i>`; }).join('')}</span>`;
     },
 
     vsSplash() {
       const sr = M.series, k = sr.round;
-      const a = sr.mine[k], b = sr.theirs[k];
+      const a = sr.mine[k], b = sr.theirs[k], last = sr.results[k - 1];
       BB.ui.open((sheet) => {
         sheet.classList.add('vs-sheet');
-        sheet.innerHTML = `<div class="vs-round">ROUND ${k + 1} <span>${sr.score[0]} - ${sr.score[1]}</span></div>
-          <div class="vs-row"><div class="vs-side me"><img src="${BB.icon(a, 160)}" alt=""><b style="color:${BB.itemColor(a)}">${esc(BB.ITEM[a].name)}</b><i>YOU</i></div>
+        sheet.innerHTML = `${k > 0 ? `<div class="vs-last ${last === 0 ? 'w' : last === 1 ? 'l' : 'd'}">Round ${k}: ${last === 0 ? (sr.spectate ? esc(sr.meName) + ' wins' : 'You win') : last === 1 ? esc(sr.foeName) + ' wins' : 'Draw'}</div>` : ''}
+          <div class="vs-round">ROUND ${k + 1} <small>of 3</small></div>
+          <div class="vs-score">${M.pips(sr, 0)}<b>${sr.score[0]} - ${sr.score[1]}</b>${M.pips(sr, 1)}</div>
+          <div class="vs-row"><div class="vs-side me"><img src="${BB.icon(a, 160)}" alt=""><b style="color:${BB.itemColor(a)}">${esc(BB.ITEM[a].name)}</b><i>${sr.spectate ? esc(sr.meName) : 'YOU'}</i></div>
           <div class="vs-x">VS</div>
-          <div class="vs-side foe"><img src="${BB.icon(b, 160)}" alt=""><b style="color:${BB.itemColor(b)}">${esc(BB.ITEM[b].name)}</b><i>RIVAL</i></div></div>
+          <div class="vs-side foe"><img src="${BB.icon(b, 160)}" alt=""><b style="color:${BB.itemColor(b)}">${esc(BB.ITEM[b].name)}</b><i>${esc(sr.foeName)}</i></div></div>
           <div class="vs-map">${esc(BB.MAP[sr.maps[k]].name)}</div>`;
         const go = document.createElement('button'); go.className = 'btn primary vs-go'; go.innerHTML = BB.ICON.play + ' Fight!';
         go.onclick = () => { BB.audio.play('start'); BB.ui.onClose = null; BB.ui.close(); M.pvpFight(); };
         sheet.appendChild(go);
-      }, { width: '560px' });
+      }, { width: '560px', onClose: () => { M.series = null; BB.app.toMenu(); } });
     },
 
     pvpFight() {
       const sr = M.series, k = sr.round, app = BB.app;
       app.event = {
-        kind: 'pvp3', seed: (sr.seed + k * 7919) | 0, map: sr.maps[k],
+        kind: 'pvp3', spectate: !!sr.spectate, seed: (sr.seed + k * 7919) | 0, map: sr.maps[k],
         teams: [[{ id: sr.mine[k], hp: 100, scale: 1, ov: {}, slot: 0 }], [{ id: sr.theirs[k], hp: 100, scale: 1, ov: {}, slot: 1 }]],
         onOver: (w) => M.pvpRound(w),
       };
@@ -548,36 +634,98 @@
     pvpRound(w) {
       const sr = M.series, app = BB.app;
       app.event = null;
+      if (!sr) { app.toMenu(); return; }
       sr.results.push(w);
       if (w === 0) sr.score[0]++; else if (w === 1) sr.score[1]++;
       sr.round++;
-      const done = sr.score[0] >= 2 || sr.score[1] >= 2 || sr.round >= 3;
-      if (!done) { BB.audio.play(w === 0 ? 'win' : 'lose'); M.vsSplash(); return; }
+      // every round is played, even when the series is already decided
+      if (sr.round < 3) { BB.audio.play(w === 0 ? 'win' : 'lose'); M.vsSplash(); return; }
+      if (sr.spectate) { M.series = null; M.pvpResultScreen(sr.view); return; }
       const pv = M.pvpData();
       const won = sr.score[0] > sr.score[1], draw = sr.score[0] === sr.score[1];
-      const exp = 1 / (1 + Math.pow(10, (sr.foeRating - pv.rating) / 400));
-      const delta = draw ? 0 : Math.round(40 * ((won ? 1 : 0) - exp));
-      pv.rating = Math.max(0, pv.rating + delta);
-      if (won) pv.w++; else if (!draw) pv.l++;
-      const coinsWon = won ? 150 : draw ? 60 : 40;
+      const delta = M.applyRating(pv, sr.foeRating, won ? 1 : draw ? 0.5 : 0);
+      M.pushHist(pv, sr.foeName, sr.score[0] + '-' + sr.score[1], delta, won ? 1 : draw ? 0 : -1);
+      const coinsWon = won ? 150 : draw ? 80 : 50;
       BB.save.data.coins += coinsWon; BB.save.write(); app.refreshCoins();
       BB.audio.play(won ? 'win' : 'lose');
       if (won) BB.sdk.happytime();
+      M.seriesEnd(sr, { won, draw, delta, coinsWon, canReply: true });
+    },
+
+    applyRating(pv, foe, score) {
+      const exp = 1 / (1 + Math.pow(10, (foe - pv.rating) / 400));
+      const delta = Math.round(40 * (score - exp));
+      pv.rating = Math.max(0, pv.rating + delta);
+      if (score === 1) pv.w++; else if (score === 0) pv.l++; else pv.d++;
+      return delta;
+    },
+    pushHist(pv, n, s, d, r) { pv.hist.unshift({ n, s, d, r }); pv.hist.length = Math.min(pv.hist.length, 5); },
+
+    seriesEnd(sr, o) {
+      const pv = M.pvpData();
       BB.ui.open((sheet) => {
         const body = document.createElement('div'); body.className = 'sh-body';
-        body.innerHTML = `<div class="result"><div class="r-t" style="color:${won ? '#35d047' : draw ? '#ffd23f' : '#f0545a'}">${won ? 'Victory!' : draw ? 'Draw!' : 'Defeat'}</div>
-          <div class="series">${sr.results.map((r, i) => `<div class="se ${r === 0 ? 'w' : r === 1 ? 'l' : 'd'}"><img src="${BB.icon(sr.mine[i])}" alt=""><span>${r === 0 ? 'W' : r === 1 ? 'L' : 'D'}</span><img src="${BB.icon(sr.theirs[i])}" alt=""></div>`).join('')}</div>
-          <div class="pvp-rating">${pv.rating} <small class="${delta >= 0 ? 'up' : 'down'}">${delta >= 0 ? '+' : ''}${delta}</small></div>
-          <div class="r-sub">${M.rankName(pv.rating)} · ${pv.w} W ${pv.l} L</div>
-          <div class="r-coins">+${coin(coinsWon)}</div></div>`;
+        body.innerHTML = `<div class="result"><div class="r-t" style="color:${o.won ? '#35d047' : o.draw ? '#ffd23f' : '#f0545a'}">${o.won ? 'Victory!' : o.draw ? 'Draw!' : 'Defeat'}</div>
+          <div class="r-sub">${o.title || 'vs ' + esc(sr.foeName)} · <b>${sr.score[0]} - ${sr.score[1]}</b></div>
+          <div class="series">${sr.results.map((r, i) => `<div class="se ${r === 0 ? 'w' : r === 1 ? 'l' : 'd'}"><img src="${BB.icon(sr.mine[i])}" alt=""><span>R${i + 1} · ${r === 0 ? 'WIN' : r === 1 ? 'LOSS' : 'DRAW'}<small>${esc(BB.MAP[sr.maps[i]].name)}</small></span><img src="${BB.icon(sr.theirs[i])}" alt=""></div>`).join('')}</div>
+          <div class="pvp-rating">${pv.rating} <small class="${o.delta >= 0 ? 'up' : 'down'}">${o.delta >= 0 ? '+' : ''}${o.delta}</small></div>
+          <div class="r-sub">${M.rankHtml(pv.rating)} · ${pv.w} W ${pv.d} D ${pv.l} L</div>
+          ${o.coinsWon ? `<div class="r-coins">+${coin(o.coinsWon)}</div>` : ''}</div>`;
         sheet.appendChild(body);
-        const foot = document.createElement('div'); foot.className = 'sh-foot';
-        const re = document.createElement('button'); re.className = 'btn primary'; re.textContent = 'Send a rematch';
-        re.onclick = () => { BB.ui.onClose = null; BB.ui.close(); M.pvpCreated(sr.mine); };
+        const foot = document.createElement('div'); foot.className = 'sh-foot pvp-foot';
+        if (o.canReply) {
+          const send = document.createElement('button'); send.className = 'btn blue'; send.textContent = 'Send result to ' + sr.foeName;
+          send.onclick = async () => {
+            BB.audio.play('click');
+            const code = M.encodeR(sr, await M.myName());
+            const link = BB.sdk.inviteLink({ pvp3r: code });
+            BB.sdk.showInvite({ pvp3r: code });
+            if (link) { try { await navigator.clipboard.writeText(link); BB.ui.toast('Result link copied! Send it to ' + sr.foeName); } catch (e) { BB.ui.toast('Use the invite button to send the result'); } }
+            else BB.ui.toast('Result links only work on CrazyGames');
+          };
+          foot.append(send);
+        }
+        if (o.watch) {
+          const wb = document.createElement('button'); wb.className = 'btn blue'; wb.innerHTML = BB.ICON.play + ' Watch the series';
+          wb.onclick = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); o.watch(); };
+          foot.append(wb);
+        }
+        const re = document.createElement('button'); re.className = 'btn primary'; re.textContent = 'New challenge';
+        re.onclick = () => { BB.sdk.hideInvite(); BB.ui.onClose = null; BB.ui.close(); M.series = null; BB.app.toMenu(); M.pick3('Your PvP Squad', 'Pick 3 different balls in fight order.', (ids) => M.pvpCreated(ids)); };
         const ok = document.createElement('button'); ok.className = 'btn green'; ok.textContent = 'Menu';
-        ok.onclick = () => { M.series = null; BB.ui.onClose = null; BB.ui.close(); BB.sdk.maybeMidgame().then(() => BB.app.toMenu()); };
+        ok.onclick = () => { BB.sdk.hideInvite(); M.series = null; BB.ui.onClose = null; BB.ui.close(); BB.sdk.maybeMidgame().then(() => BB.app.toMenu()); };
         foot.append(re, ok); sheet.appendChild(foot);
-      }, { width: '440px', onClose: () => { M.series = null; BB.app.toMenu(); } });
+      }, { width: '460px', onClose: () => { BB.sdk.hideInvite(); M.series = null; BB.app.toMenu(); } });
+    },
+
+    // The challenger opens the result link: apply the rating once, show the series, offer a replay.
+    pvpResult(r) {
+      const pv = M.pvpData();
+      const score = [r.results.filter((x) => x === 0).length, r.results.filter((x) => x === 1).length];
+      const won = score[0] > score[1], draw = score[0] === score[1];
+      const view = { mine: r.mine, theirs: r.theirs, maps: r.maps, seed: r.seed, foeName: r.name, foeRating: r.rating, results: r.results, score, won, draw, delta: 0, coinsWon: 0 };
+      if (!pv.seen.includes(r.seed)) {
+        pv.seen.unshift(r.seed); pv.seen.length = Math.min(pv.seen.length, 30);
+        view.delta = M.applyRating(pv, r.rating, won ? 1 : draw ? 0.5 : 0);
+        view.coinsWon = won ? 150 : draw ? 80 : 50;
+        BB.save.data.coins += view.coinsWon;
+        M.pushHist(pv, r.name, score[0] + '-' + score[1], view.delta, won ? 1 : draw ? 0 : -1);
+        BB.save.write(); BB.app.refreshCoins();
+        if (won) BB.sdk.happytime();
+      }
+      M.pvpResultScreen(view);
+    },
+    pvpResultScreen(v) {
+      BB.app.toMenu();
+      M.seriesEnd(v, {
+        won: v.won, draw: v.draw, delta: v.delta, coinsWon: v.coinsWon, title: esc(v.foeName) + ' answered your challenge',
+        // replay: the receiver was team 0 in every fight, so keep that order for identical results
+        watch: () => {
+          M.series = { spectate: true, view: Object.assign({}, v, { delta: 0, coinsWon: 0 }), meName: v.foeName, foeName: 'You',
+            mine: v.theirs, theirs: v.mine, maps: v.maps, seed: v.seed, round: 0, score: [0, 0], results: [] };
+          M.lineup();
+        },
+      });
     },
 
     // ------------------------------------------------------------- Gauntlet

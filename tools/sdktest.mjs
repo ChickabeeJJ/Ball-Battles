@@ -109,13 +109,32 @@ const pv = await browser.newPage({ viewport: { width: 1000, height: 560 } });
 pv.on('pageerror', (e) => errs.push('pvp: ' + e.message));
 await pv.route('**/crazygames-sdk-v3.js', (r) => r.fulfill({ contentType: 'text/javascript', body: MOCK.replace("getInviteParam: (k) => (k === 'pvp' ? window.__invite || null : null),", "getInviteParam: (k) => (k === 'pvp3' ? " + JSON.stringify(code) + " : null),") }));
 await pv.goto(BASE + '/index.html');
-await pv.waitForSelector('text=Challenge Received', { timeout: 8000 });
+await pv.waitForSelector('text=CHALLENGE RECEIVED', { timeout: 8000 });
+await pv.click('text=Pick your squad');
 for (let i = 3; i < 6; i++) await pv.click(`.grid .tile >> nth=${i}`);
 await pv.click('text=Confirm squad');
+check('PvP lineup revealed after locking in', await pv.isVisible('.lu-row'));
+await pv.click('text=Start round 1');
 await pv.click('.vs-go');
 await pv.waitForTimeout(300);
 check('challenge link opens a PvP series battle', await pv.evaluate(() => BB.app.state === 'battle' && BB.app.event && BB.app.event.kind === 'pvp3'));
 check('PvP round uses the challenge seed', (await pv.evaluate(() => BB.app.sim.cfg.seed)) === (Number(code.split('~')[2]) | 0));
+// play the whole series headlessly fast: all 3 rounds must run even if one side already has 2 wins
+const rounds = await pv.evaluate(async () => {
+  let n = 0;
+  for (let guard = 0; guard < 3; guard++) {
+    while (!BB.app.sim.over) BB.app.sim.step(1 / 120);
+    n++;
+    BB.app.onOver();
+    await new Promise((r) => setTimeout(r, 50));
+    const go = document.querySelector('.vs-go');
+    if (!go) break;
+    go.click();
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  return { n, final: !!document.querySelector('.pvp-foot'), res: BB.meta.data().pvp.hist.length };
+});
+check('PvP series plays all 3 rounds', rounds.n === 3 && rounds.final && rounds.res === 1);
 
 // Standalone (SDK missing) still works
 const p2 = await browser.newPage();

@@ -20,6 +20,7 @@ The game also runs without the SDK (opened from disk, other hosts, ad blockers).
 | Specials (21) | Fibonacci, Speedy, Grower, Spiky, Gravitron, Splodey, Orbital, Duplicator, Vampire |
 | Iridescent (1) | **Kami (神)**: 25,000 coins. Locked at 1 HP; Divine Grace dodges every attack while charged (4 charges, refills over time). Three divine arts on cooldowns with anime cut-ins (Seraph Beam, Golden Gates, Heaven's Arsenal) and its own finisher cutscene. Logic and art live in `js/kami.js`. |
 | Modes | 1v1, 2v2, 3v3, Free For All |
+| PvP (CrazyGames) | Async 3-ball series via invite links. Each side picks 3 different balls in order; the receiver picks blind, then lineups are revealed; all 3 rounds play (1v1, 2v2, 3v3 by slot) and most wins takes it. Seeded fights replay identically on both screens; a result link sends the outcome (and a replay) back to the challenger. Elo rating with ranks. |
 | Maps | Classic, Large, Bouncy (gravity), Pillars, Saws, Shrinking, Hot Potato, Meteors |
 | Per ball | Health, size, and overrides for damage, spin and speed |
 | Settings | Sound, dark mode, hit freeze, parry freeze, damage numbers, impact frames, finisher (incl. Kami's), ability text, overtime bonus, reverse Team Two spin, vibration |
