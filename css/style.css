@@ -593,3 +593,5 @@ body.dark { background: radial-gradient(ellipse at 50% 0%, #2a2b33, #17181c 70%)
 .series { display: flex; flex-direction: column; gap: 6px; width: 100%; }
 .se { display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; background: #3c3c42; border: 2px solid #111; border-radius: 4px; padding: 4px 8px; font-family: var(--num); font-size: 18px; }
 .se img { width: 36px; height: 36px; } .se.w span { color: #35d047; } .se.l span { color: #f0545a; } .se.d span { color: #ffd23f; }
+/* pause menu: Quit spans the full row so the grid stays balanced */
+.pz-grid .pz-btn.red { grid-column: 1 / -1; justify-content: center; }

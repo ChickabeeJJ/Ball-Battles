@@ -605,7 +605,7 @@
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
     // camera: punch toward the hit with a slight dutch angle
     const zoom = (k, tilt) => { ctx.translate(cx, cy); ctx.rotate(tilt); ctx.scale(k, k); ctx.translate(-cx, -cy); };
-    const phase = imp.mini ? (p < 0.6 ? 'B' : 'S') : p < 0.14 ? 'A' : p < 0.3 ? 'B' : p < 0.4 ? 'C' : p < 0.62 ? 'D' : p < 0.78 ? 'E' : 'F';
+    const phase = !imp.ko ? 'E' : p < 0.14 ? 'A' : p < 0.3 ? 'B' : p < 0.4 ? 'C' : p < 0.62 ? 'D' : p < 0.78 ? 'E' : 'F';
     const tilt = (imp.seed % 2 ? 1 : -1) * 0.05;
 
     if (phase === 'A') {

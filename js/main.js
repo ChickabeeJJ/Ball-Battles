@@ -340,20 +340,20 @@
       if (App.event) { App.event.onOver(w, sim); BB.save.write(); return; }
       let title, sub, icon = null, coins;
       if (w < 0) {
-        title = 'Draw!'; sub = 'Everyone got knocked out'; coins = 20;
+        title = 'Draw!'; sub = 'Everyone got knocked out!'; coins = 50;
         BB.audio.play('lose');
       } else {
         const winners = sim.balls.filter((b) => b.main && b.team === w);
         if (App.pvp || App.event || mode.teams[0].length === 1) { title = winners[0].def.name + ' Wins!'; icon = winners[0].def.id; }
         else { title = BB.TEAMS[w].name + ' Team Wins!'; icon = winners[0].def.id; }
         if (w === 0) {
-          coins = Math.round(50 * (save.setup.control ? 1.5 : 1));
-          sub = save.setup.control ? 'You won! Control bonus x1.5' : 'Your team won!';
+          coins = 50;
+          sub = 'What a fight!';
           save.stats.wins++;
           BB.audio.play('win');
         } else {
-          coins = 15;
-          sub = 'Your team lost. Try another weapon!';
+          coins = 50;
+          sub = 'What a fight!';
           BB.audio.play('lose');
         }
       }
@@ -404,11 +404,13 @@
             // With the setting on, every hit gets an impact frame: big hits/crits/K.O.s get the full
             // sequence, small hits a short ink flash (throttled so rapid hits stay readable).
             if (BB.save.data.settings.impact) {
-              const big = e.amt >= 4 || e.crit || e.amt >= 99;
+              // K.O.: the full anime cut. Other hits: just the short black cut, and ~30% fewer of them.
               const ko = e.amt >= 99;
-              if (ko || (big && !(App.impact && !App.impact.mini)) || (!App.impact && !(App.impactCd > 0))) {
-                App.impact = { t: 0, dur: ko ? 1.0 : big ? 0.72 : 0.16, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0, ko, mini: !big };
-                App.impactCd = big ? 0.2 : 0.3;
+              if (ko) {
+                App.impact = { t: 0, dur: 1.0, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0, ko: true };
+              } else if (!App.impact && !(App.impactCd > 0) && Math.random() < 0.7) {
+                App.impact = { t: 0, dur: 0.18, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0, ko: false };
+                App.impactCd = 0.45;
               }
             }
             break;
