@@ -314,10 +314,11 @@
   });
   add({
     id: 'pan', name: 'Frying Pan', cat: 'weapon', rarity: 'rare', color: '#e67e22',
-    desc: 'BONK! Stuns the enemy weapon for a moment. +0.5 damage every hit.',
+    desc: 'BONK! Freezes the enemy in place for 1s. +0.5 damage and +0.1s stun every hit.',
     base: { damage: 1.5, spin: 170, len: 40, width: 22 }, melee: true, blocks: true, 
-    onHit(sim, b, w, t) { if (t) t.stunT = 0.7; w.damage += 0.5; },
-    stats: (w) => ['Damage: ' + fmt(w.damage), 'Stun: 0.7s'],
+    init(w) { w.stun = 1; },
+    onHit(sim, b, w, t) { if (t) t.stunT = Math.max(t.stunT, w.stun); w.damage += 0.5; w.stun = Math.min(2, w.stun + 0.1); },
+    stats: (w) => ['Damage: ' + fmt(w.damage), 'Stun: ' + fmt(w.stun) + 's'],
   });
   add({
     id: 'trident', name: 'Trident', cat: 'weapon', rarity: 'epic', color: '#1abc9c',

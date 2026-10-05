@@ -34,9 +34,10 @@
     base: { damage: 2, spin: 115, len: 84, width: 14 }, 
     onHit(sim, b, w) { w.damage += 1; }, stats: dmgStat }, melee));
   add(Object.assign({ id: 'mace', name: 'Mace', cat: 'weapon', rarity: 'rare', color: '#8e6e53',
-    desc: 'Spiked head stuns the enemy weapon briefly. +0.5 damage every hit.',
+    desc: 'Spiked head freezes the enemy in place for 0.7s. +0.5 damage and +0.08s stun every hit.',
     base: { damage: 2, spin: 150, len: 42, width: 18 }, 
-    onHit(sim, b, w, t) { if (t) t.stunT = 0.45; w.damage += 0.5; }, stats: dmgStat }, melee));
+    init(w) { w.stun = 0.7; },
+    onHit(sim, b, w, t) { if (t) t.stunT = Math.max(t.stunT, w.stun); w.damage += 0.5; w.stun = Math.min(1.6, w.stun + 0.08); }, stats: (w) => ['Damage: ' + BB.fmt(w.damage), 'Stun: ' + BB.fmt(w.stun) + 's'] }, melee));
   add(Object.assign({ id: 'club', name: 'Club', cat: 'weapon', rarity: 'common', color: '#a0522d',
     desc: 'Simple and brutal. Massive knockback, +1 damage every hit.',
     base: { damage: 1, spin: 160, len: 44, width: 16 }, knock: 440,

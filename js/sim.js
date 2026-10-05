@@ -21,11 +21,11 @@
     };
   }
 
-  const TRACK = ['damage', 'spin', 'len', 'width', 'arrows', 'n', 'orbs', 'moons', 'crit', 'burn', 'reload', 'heal', 'wave', 'zap', 'applied', 'knock'];
+  const TRACK = ['damage', 'spin', 'len', 'width', 'arrows', 'n', 'orbs', 'moons', 'crit', 'burn', 'reload', 'heal', 'wave', 'zap', 'applied', 'knock', 'stun'];
   const LABEL = {
     damage: (d) => (d > 0 ? '+' + BB.fmt(d) + ' DMG' : null), spin: 'SPIN UP', len: 'LONGER', width: 'BIGGER',
     arrows: '+1 ARROW', n: (d) => (Math.floor(d * 2) >= 1 || d >= 1 ? '+1 SHOT' : 'CHARGING'), orbs: '+ORB', moons: '+MOON',
-    crit: 'CRIT CHANCE UP', burn: 'HOTTER FLAME', reload: 'FASTER RELOAD', heal: 'MORE HEALING', wave: 'LOUDER', zap: 'ZAP UP', applied: null, knock: 'MORE KNOCKBACK',
+    crit: 'CRIT CHANCE UP', burn: 'HOTTER FLAME', reload: 'FASTER RELOAD', heal: 'MORE HEALING', wave: 'LOUDER', zap: 'ZAP UP', applied: null, knock: 'MORE KNOCKBACK', stun: 'LONGER STUN',
   };
 
   class Sim {
@@ -432,7 +432,14 @@
         }
         const sp = Math.hypot(b.vx, b.vy);
         if (sp > 1400) { b.vx *= 1400 / sp; b.vy *= 1400 / sp; }
-        b.x += b.vx * dt; b.y += b.vy * dt;
+        if (b.stunT > 0) {
+          // stunned balls freeze in place; their momentum resumes when the stun wears off
+          if (!b.stunV) b.stunV = [b.vx, b.vy];
+          b.vx = 0; b.vy = 0;
+        } else {
+          if (b.stunV) { b.vx = b.stunV[0]; b.vy = b.stunV[1]; b.stunV = null; }
+          b.x += b.vx * dt; b.y += b.vy * dt;
+        }
         this.walls(b);
         for (const o of this.obstacles) this.obstacleHit(b, o);
       }
