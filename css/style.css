@@ -595,3 +595,69 @@ body.dark { background: radial-gradient(ellipse at 50% 0%, #2a2b33, #17181c 70%)
 .se img { width: 36px; height: 36px; } .se.w span { color: #35d047; } .se.l span { color: #f0545a; } .se.d span { color: #ffd23f; }
 /* pause menu: Quit spans the full row so the grid stays balanced */
 .pz-grid .pz-btn.red { grid-column: 1 / -1; justify-content: center; }
+
+/* ================================================================ mobile v2 */
+.num { font-family: var(--num); }
+.sh-body { min-height: 0; }
+.sheet { max-height: calc(100% - 0px); }
+/* stat lines: always side by side, truncate instead of wrapping into a stack */
+.stat-row:not(.team) { flex-wrap: nowrap; }
+.stat-row:not(.team) .st { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.stat-row:not(.team) .st .hpbar { width: min(170px, 100%); }
+
+/* small portrait phones */
+html.cport #topbar { height: 46px; padding: 0 10px; }
+html.cport .matchup { height: 34px; }
+html.cport .stat-row { font-size: 12px; min-height: 40px; }
+html.cport .slot .dot { display: none; }
+html.cport .slot .sl-n { font-size: 15px; }
+html.cport .slot img { width: 28px; height: 28px; }
+html.cport #menuPanel .slots { gap: 6px; }
+html.cport .feat { font-size: 14px; gap: 4px; }
+
+/* phone landscape: arena fills the height, top bar sits over the side panel */
+html.cland #app { flex-direction: row; }
+html.cland #topbar { position: absolute; top: 6px; right: 10px; left: auto; width: var(--panelw); height: 40px; padding: 0; z-index: 5; }
+html.cland #topbar .icon-btn { width: 38px; height: 38px; }
+html.cland .coins { min-width: 0; font-size: 15px; padding: 2px 10px 2px 3px; }
+html.cland #stage { flex-direction: row; align-items: center; justify-content: center; gap: 14px; padding: 6px 10px; height: 100%; }
+html.cland #arenaCol { gap: 3px; }
+html.cland .matchup { height: 28px; }
+html.cland .stat-row { font-size: 11px; min-height: 30px; }
+html.cland .stat-row .hpbar { height: 13px; }
+html.cland .stat-row .hpbar b { font-size: 10px; line-height: 9px; }
+html.cland #panel { width: var(--panelw); max-width: none; padding-top: 50px; justify-content: center; height: 100%; }
+html.cland #menuPanel { padding: 8px; gap: 7px; }
+html.cland #menuPanel::before { display: none; }
+html.cland .slot { padding: 4px 6px; gap: 6px; }
+html.cland .slot img { width: 26px; height: 26px; }
+html.cland .slot .sl-n { font-size: 14px; }
+html.cland .slot .sl-s, html.cland .slot .dot { display: none; }
+html.cland .slots .vs-mid { font-size: 16px; }
+html.cland .opt { min-height: 36px; padding: 2px; }
+html.cland .opt-k { font-size: 9px; } html.cland .opt-v { font-size: 13px; }
+html.cland #menuPanel .big-btn { font-size: 28px; padding: 0; }
+html.cland #menuPanel .big-btn::after { display: none; }
+html.cland .feat-row { gap: 6px; }
+html.cland .feat { min-height: 36px; font-size: 13px; gap: 4px; padding: 0 4px; min-width: 0; }
+html.cland .feat-ic .ico { width: 16px; height: 16px; }
+html.cland .modal { padding: 6px; }
+html.cland .sh-head { padding: 6px 10px; } html.cland .sh-title { font-size: 20px; }
+html.cland .sh-body { padding: 8px; gap: 8px; }
+html.cland .sh-foot { padding: 6px 10px; }
+html.cland .btn { min-height: 40px; font-size: 15px; padding: 6px 10px; }
+html.cland .x-btn { width: 34px; height: 34px; }
+html.cland .pz-head { padding: 6px; } html.cland .pz-title { font-size: 30px; }
+html.cland .pz-fighters { grid-template-columns: 1fr 1fr; }
+html.cland .pz-f { padding: 4px; } html.cland .pz-f img { width: 28px; height: 28px; } html.cland .pz-fs { display: none; }
+html.cland .pz-btn { min-height: 40px; font-size: 15px; } html.cland .pz-main { min-height: 44px; font-size: 18px; }
+html.cland .pz-hint { display: none; }
+html.cland .grid { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); }
+html.cland .daily { grid-template-columns: repeat(7, 1fr); } html.cland .day.big { grid-column: auto; }
+html.cland .tut-card { padding: 10px; } html.cland .tut-t { font-size: 22px; }
+html.cland .banner { font-size: calc(var(--arena) * 0.16); }
+/* mid-battle the panel is empty: hide it so the arena centres and grows */
+.is-battle #panel { display: none !important; }
+html.cland .is-battle #stage { padding-top: 6px; }
+html.cland .is-battle #topbar { left: 10px; width: auto; }
+.is-battle #stage { justify-content: center; }

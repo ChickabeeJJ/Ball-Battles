@@ -114,11 +114,24 @@
       // UI scale so menus are not phone-sized on big screens (CSS zoom on the chrome around the arena).
       const ui = land ? BB.clamp(Math.min(vh / 760, vw / 1350), 1, 1.7) : BB.clamp(Math.min(vw / 440, vh / 900), 1, 2);
       document.documentElement.style.setProperty('--ui', ui);
-      const top = (land && vh <= 520 ? 44 : 52) * ui;
       const teamMode = App.mode().teams[0].length > 1 || App.mode().teams.length > 2;
-      const header = 46 * ui, stats = (teamMode ? 96 : 58) * ui;
+      // Phone landscape: the top bar moves over the side panel so the arena gets the full height.
+      const cland = land && vh <= 500;
+      document.documentElement.classList.toggle('cland', cland);
+      document.documentElement.classList.toggle('cport', !land && vw <= 430);
+      const top = cland ? 0 : (land && vh <= 520 ? 44 : 52) * ui;
+      const header = (cland ? 30 : 46) * ui, stats = (cland ? (teamMode ? 52 : 34) : (teamMode ? 96 : 58)) * ui;
       let S;
-      if (land) {
+      const inBattle = App.state === 'battle';
+      if (inBattle) {
+        // nothing to show beside the arena mid-fight: give it the whole screen
+        const t2 = cland ? 0 : top;
+        S = Math.min(vh - t2 - header - stats - 16, vw - 24);
+      } else if (cland) {
+        S = Math.min(vh - header - stats - 14, vw * 0.52);
+        const pw = Math.max(240, Math.min(420, vw - S - 44));
+        document.documentElement.style.setProperty('--panelw', pw + 'px');
+      } else if (land) {
         const pw = BB.clamp(Math.round(vw * 0.32 / ui), 250, 400);
         document.documentElement.style.setProperty('--panelw', pw + 'px');
         S = Math.min(vh - top - header - stats - 14, vw - pw * ui - 28 - 40);
@@ -408,7 +421,7 @@
               const ko = e.amt >= 99;
               if (ko) {
                 App.impact = { t: 0, dur: 1.0, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0, ko: true };
-              } else if (!App.impact && !(App.impactCd > 0) && Math.random() < 0.7) {
+              } else if (!App.impact && !(App.impactCd > 0) && Math.random() < 0.8) {
                 App.impact = { t: 0, dur: 0.18, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0, ko: false };
                 App.impactCd = 0.45;
               }

@@ -278,7 +278,7 @@
         ];
         for (const [k, n, sub] of toggles) {
           const f = el('div', 'field');
-          f.innerHTML = `<div><div class="f-k">${n}</div>${sub ? `<div class="f-s">${sub}</div>` : ''}</div>`;
+          f.innerHTML = `<div><div class="f-k">${n.replace(/(\d+)/g, '<span class="num">$1</span>')}</div>${sub ? `<div class="f-s">${sub}</div>` : ''}</div>`;
           const t = el('button', 'toggle' + (st[k] ? ' on' : ''));
           t.setAttribute('aria-label', n);
           t.onclick = () => { BB.audio.play('click'); st[k] = !st[k]; t.classList.toggle('on', st[k]); BB.save.write(); app.applySettings(); };
