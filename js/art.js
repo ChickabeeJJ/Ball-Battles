@@ -139,6 +139,20 @@
       ctx.setLineDash([12, 14]); ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(123,92,255,0.35)';
       ctx.beginPath(); ctx.arc(0, 0, 176 * b.scale, 0, TAU); ctx.stroke(); ctx.setLineDash([]); ctx.restore();
     }
+    if (id === 'splodey' && w.bombs) {
+      // mini bombs on the floor: body, cap, fuse spark; they blink red as they are about to blow
+      for (const k of w.bombs) {
+        const br = 9 * b.scale, hot = k.t < 0.45 && Math.floor(sim.t * 14) % 2 === 0;
+        ctx.save(); ctx.translate(k.x, k.y);
+        ctx.beginPath(); ctx.ellipse(1, br * 0.7, br * 0.95, br * 0.4, 0, 0, TAU); ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.fill();
+        ctx.beginPath(); ctx.arc(0, 0, br, 0, TAU); ctx.fillStyle = hot ? '#e23b3b' : '#2d2d33'; ctx.fill(); ctx.lineWidth = lw * 0.8; ctx.strokeStyle = OUT; ctx.stroke();
+        ctx.beginPath(); ctx.arc(-br * 0.35, -br * 0.35, br * 0.28, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fill();
+        ctx.fillStyle = '#8d969f'; ctx.fillRect(-br * 0.3, -br * 1.25, br * 0.6, br * 0.4);
+        ctx.beginPath(); ctx.moveTo(0, -br * 1.25); ctx.quadraticCurveTo(br * 0.4, -br * 1.8, br * 0.7, -br * 1.6); ctx.strokeStyle = '#d9a066'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.beginPath(); ctx.arc(br * 0.7, -br * 1.6, 2.5 + Math.sin(sim.t * 30) * 0.8, 0, TAU); ctx.fillStyle = '#ffd23f'; ctx.fill();
+        ctx.restore();
+      }
+    }
     if (id === 'spiky') {
       const n = 10 + Math.min(w.hits, 14), len = 9 * b.scale + Math.min(w.damage, 12);
       ctx.beginPath();
@@ -179,40 +193,89 @@
     const r = b.r;
     if (showTeam) { ctx.beginPath(); ctx.arc(0, 0, r + 5, 0, TAU); ctx.lineWidth = 5; ctx.strokeStyle = tm.fill; ctx.stroke(); }
     // body
-    // mastery skins (Classic / Shadow / Neon / Gold)
+    // mastery skins: each is its own material, not a recolour
+    //   Classic - painted ball   Shadow - smoky obsidian   Neon - dark glass with glowing circuits   Gold - engraved polished metal
     const skin = b.main && BB.meta && BB.meta.skinOf ? BB.meta.skinOf(id) : 'classic';
+    const T = sim.t;
+    if (skin === 'shadow') {
+      // smoke trailing behind the motion (drawn under the body)
+      const sp = Math.hypot(b.vx, b.vy) || 1, ux = -b.vx / sp, uy = -b.vy / sp;
+      for (let k = 0; k < 4; k++) {
+        const ph = (T * 1.6 + k * 0.25) % 1, d = r * (0.5 + ph * 1.4), wob = Math.sin(T * 5 + k * 2) * r * 0.25;
+        ctx.beginPath(); ctx.arc(ux * d - uy * wob, uy * d + ux * wob, r * (0.55 - ph * 0.3), 0, TAU);
+        ctx.fillStyle = 'rgba(20,14,30,' + (0.35 * (1 - ph)) + ')'; ctx.fill();
+      }
+    }
+    if (skin === 'neon') {
+      const gl = ctx.createRadialGradient(0, 0, r * 0.8, 0, 0, r * 1.6);
+      gl.addColorStop(0, rgba(col, 0.45 + 0.15 * Math.sin(T * 4))); gl.addColorStop(1, rgba(col, 0));
+      ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(0, 0, r * 1.6, 0, TAU); ctx.fill();
+    }
     ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU);
     const g = ctx.createRadialGradient(-r * 0.35, -r * 0.4, r * 0.1, 0, 0, r * 1.05);
-    if (skin === 'shadow') { g.addColorStop(0, shade(col, -0.25)); g.addColorStop(0.6, shade(col, -0.62)); g.addColorStop(1, '#0b0b10'); }
-    else if (skin === 'gold') { g.addColorStop(0, '#fff6c2'); g.addColorStop(0.45, '#f2c230'); g.addColorStop(1, '#8a5a00'); }
+    if (skin === 'shadow') { g.addColorStop(0, shade(col, -0.55)); g.addColorStop(0.5, '#15121c'); g.addColorStop(1, '#050408'); }
+    else if (skin === 'neon') { g.addColorStop(0, '#2a2b3a'); g.addColorStop(0.6, '#15161f'); g.addColorStop(1, '#0a0a10'); }
+    else if (skin === 'gold') { g.addColorStop(0, '#fff6c2'); g.addColorStop(0.35, '#f6c431'); g.addColorStop(0.75, '#c8901a'); g.addColorStop(1, '#7a4f06'); }
     else { g.addColorStop(0, shade(col, 0.28)); g.addColorStop(0.55, col); g.addColorStop(1, shade(col, -0.28)); }
-    if (skin === 'neon') { ctx.save(); ctx.shadowColor = col; ctx.shadowBlur = r * 0.9; ctx.fillStyle = g; ctx.fill(); ctx.restore(); }
-    else { ctx.fillStyle = g; ctx.fill(); }
+    ctx.fillStyle = g; ctx.fill();
     ctx.save(); ctx.clip();
-    // soft specular highlight + bounce light along the lower rim (no outline)
-    const hl = ctx.createRadialGradient(-r * 0.34, -r * 0.42, 0, -r * 0.34, -r * 0.42, r * 0.5);
-    hl.addColorStop(0, 'rgba(255,255,255,0.75)'); hl.addColorStop(0.45, 'rgba(255,255,255,0.28)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
-    ctx.fillStyle = hl; ctx.beginPath(); ctx.ellipse(-r * 0.32, -r * 0.4, r * 0.5, r * 0.36, -0.6, 0, TAU); ctx.fill();
-    const rim = ctx.createRadialGradient(r * 0.2, r * 0.25, r * 0.55, 0, 0, r);
-    rim.addColorStop(0, 'rgba(0,0,0,0)'); rim.addColorStop(0.75, 'rgba(0,0,0,0.12)'); rim.addColorStop(1, 'rgba(255,255,255,0.18)');
-    ctx.fillStyle = rim; ctx.fillRect(-r, -r, r * 2, r * 2);
+    if (skin === 'shadow') {
+      // faint coloured ember-glow pooling at the bottom of the obsidian
+      const eg = ctx.createRadialGradient(0, r * 0.9, 0, 0, r * 0.9, r * 1.1);
+      eg.addColorStop(0, rgba(col, 0.55)); eg.addColorStop(1, rgba(col, 0));
+      ctx.fillStyle = eg; ctx.fillRect(-r, -r, r * 2, r * 2);
+      const hl = ctx.createRadialGradient(-r * 0.34, -r * 0.42, 0, -r * 0.34, -r * 0.42, r * 0.4);
+      hl.addColorStop(0, 'rgba(210,200,255,0.35)'); hl.addColorStop(1, 'rgba(210,200,255,0)');
+      ctx.fillStyle = hl; ctx.fillRect(-r, -r, r * 2, r * 2);
+    } else if (skin === 'neon') {
+      // circuit rings + traces in the ball's colour
+      const pulse = 0.65 + 0.35 * Math.sin(T * 4);
+      ctx.save(); ctx.shadowColor = col; ctx.shadowBlur = r * 0.35; ctx.strokeStyle = shade(col, 0.35); ctx.lineCap = 'round';
+      ctx.globalAlpha = pulse; ctx.lineWidth = Math.max(2, r * 0.09);
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.8, 0, TAU); ctx.stroke();
+      ctx.lineWidth = Math.max(1.2, r * 0.045); ctx.globalAlpha = pulse * 0.8;
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.55, T * 1.5, T * 1.5 + 4); ctx.stroke();
+      for (let k = 0; k < 3; k++) { const a = k * 2.094 + 0.5; ctx.beginPath(); ctx.moveTo(Math.cos(a) * r * 0.58, Math.sin(a) * r * 0.58); ctx.lineTo(Math.cos(a) * r * 0.78, Math.sin(a) * r * 0.78); ctx.stroke(); ctx.beginPath(); ctx.arc(Math.cos(a) * r * 0.58, Math.sin(a) * r * 0.58, r * 0.05, 0, TAU); ctx.fillStyle = shade(col, 0.5); ctx.fill(); }
+      ctx.restore();
+      // glass reflection
+      ctx.fillStyle = 'rgba(255,255,255,0.14)'; ctx.beginPath(); ctx.ellipse(-r * 0.3, -r * 0.5, r * 0.45, r * 0.18, -0.4, 0, TAU); ctx.fill();
+    } else if (skin === 'gold') {
+      // engraved band, polished highlight, and a light sweep every few seconds
+      ctx.strokeStyle = 'rgba(122,79,6,0.6)'; ctx.lineWidth = Math.max(1.5, r * 0.06);
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.74, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,246,194,0.5)'; ctx.lineWidth = Math.max(1, r * 0.03);
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.68, 0, TAU); ctx.stroke();
+      const hl = ctx.createRadialGradient(-r * 0.34, -r * 0.42, 0, -r * 0.34, -r * 0.42, r * 0.45);
+      hl.addColorStop(0, 'rgba(255,255,255,0.9)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = hl; ctx.fillRect(-r, -r, r * 2, r * 2);
+      const sw = ((T * 0.45) % 1) * 4 - 1.5;
+      if (sw > -1.2 && sw < 1.2) {
+        ctx.save(); ctx.rotate(-0.7);
+        const sg = ctx.createLinearGradient(sw * r - r * 0.3, 0, sw * r + r * 0.3, 0);
+        sg.addColorStop(0, 'rgba(255,255,255,0)'); sg.addColorStop(0.5, 'rgba(255,255,255,0.75)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = sg; ctx.fillRect(-r * 1.5, -r * 1.5, r * 3, r * 3); ctx.restore();
+      }
+    } else {
+      // soft specular highlight + bounce light along the lower rim (no outline)
+      const hl = ctx.createRadialGradient(-r * 0.34, -r * 0.42, 0, -r * 0.34, -r * 0.42, r * 0.5);
+      hl.addColorStop(0, 'rgba(255,255,255,0.75)'); hl.addColorStop(0.45, 'rgba(255,255,255,0.28)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = hl; ctx.beginPath(); ctx.ellipse(-r * 0.32, -r * 0.4, r * 0.5, r * 0.36, -0.6, 0, TAU); ctx.fill();
+      const rim = ctx.createRadialGradient(r * 0.2, r * 0.25, r * 0.55, 0, 0, r);
+      rim.addColorStop(0, 'rgba(0,0,0,0)'); rim.addColorStop(0.75, 'rgba(0,0,0,0.12)'); rim.addColorStop(1, 'rgba(255,255,255,0.18)');
+      ctx.fillStyle = rim; ctx.fillRect(-r, -r, r * 2, r * 2);
+    }
     if (b.slowT > 0) { ctx.fillStyle = 'rgba(191,233,255,0.55)'; ctx.fillRect(-r, -r, r * 2, r * 2); }
     if (b.paintT > 0) { ctx.fillStyle = 'rgba(255,60,120,0.7)'; for (const [px, py, pr] of [[-0.3, 0.2, 0.45], [0.35, -0.1, 0.35], [0.05, 0.5, 0.28]]) { ctx.beginPath(); ctx.arc(px * r, py * r, pr * r, 0, TAU); ctx.fill(); } }
     if (b.flash > 0) { ctx.fillStyle = 'rgba(255,255,255,' + Math.min(1, b.flash * 9) + ')'; ctx.fillRect(-r, -r, r * 2, r * 2); }
     ctx.restore();
     ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU);
-    ctx.lineWidth = lw * (b.main ? 1.5 : 1.1); ctx.strokeStyle = OUT; ctx.stroke();
-    if (skin === 'shadow') { ctx.beginPath(); ctx.arc(0, 0, r - lw, Math.PI * 1.05, Math.PI * 1.7); ctx.strokeStyle = shade(col, 0.2); ctx.lineWidth = 3; ctx.stroke(); }
-    else if (skin === 'neon') { ctx.beginPath(); ctx.arc(0, 0, r + 1, 0, TAU); ctx.strokeStyle = shade(col, 0.55); ctx.lineWidth = 3; ctx.stroke(); }
-    else if (skin === 'gold') {
-      ctx.fillStyle = '#fffbe0';
-      for (let k = 0; k < 3; k++) { const a = sim.t * 1.6 + k * 2.1, d = r * 0.75, x = Math.cos(a) * d, y = Math.sin(a) * d, s2 = r * (0.1 + 0.05 * Math.sin(sim.t * 7 + k)); ctx.beginPath(); ctx.moveTo(x, y - s2 * 2); ctx.lineTo(x + s2 * 0.5, y); ctx.lineTo(x, y + s2 * 2); ctx.lineTo(x - s2 * 0.5, y); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(x - s2 * 2, y); ctx.lineTo(x, y + s2 * 0.5); ctx.lineTo(x + s2 * 2, y); ctx.lineTo(x, y - s2 * 0.5); ctx.closePath(); ctx.fill(); }
-    }
+    ctx.lineWidth = lw * (b.main ? 1.5 : 1.1); ctx.strokeStyle = skin === 'gold' ? '#4a2f02' : OUT; ctx.stroke();
+    if (skin === 'neon') { ctx.save(); ctx.shadowColor = col; ctx.shadowBlur = r * 0.5; ctx.beginPath(); ctx.arc(0, 0, r - lw * 0.4, 0, TAU); ctx.strokeStyle = shade(col, 0.45); ctx.lineWidth = Math.max(2, r * 0.07); ctx.stroke(); ctx.restore(); }
     // status rings
     if (b.burnT > 0) { ctx.beginPath(); ctx.arc(0, 0, r + 2, 0, TAU); ctx.strokeStyle = 'rgba(255,122,26,0.85)'; ctx.lineWidth = 3; ctx.stroke(); }
     if (b.poison > 0) { ctx.beginPath(); ctx.arc(0, 0, r - 4, 0, TAU); ctx.strokeStyle = 'rgba(155,77,255,0.9)'; ctx.lineWidth = 3; ctx.stroke(); }
     if (b.main && b.hp / b.maxHp < 0.25) { ctx.beginPath(); ctx.arc(0, 0, r + 9, 0, TAU); ctx.strokeStyle = 'rgba(226,59,59,' + (0.35 + 0.35 * Math.sin(sim.t * 10)) + ')'; ctx.lineWidth = 3; ctx.stroke(); }
-    if (id === 'splodey') { ctx.beginPath(); ctx.arc(0, 0, r + 5, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - w.timer / 3)); ctx.strokeStyle = '#ff6a1f'; ctx.lineWidth = 4; ctx.stroke(); }
+    if (id === 'splodey') { ctx.beginPath(); ctx.arc(0, 0, r + 5, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - Math.max(0, w.timer) / (w.fuse || 1.1))); ctx.strokeStyle = '#ff6a1f'; ctx.lineWidth = 4; ctx.stroke(); }
     ctx.restore();
 
     // stun stars

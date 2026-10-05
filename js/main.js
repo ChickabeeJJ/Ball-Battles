@@ -165,7 +165,7 @@
       document.documentElement.classList.toggle('cland', cland);
       document.documentElement.classList.toggle('cport', !land && vw <= 430);
       const top = cland ? 0 : (land && vh <= 520 ? 44 : 52) * ui;
-      const header = (cland ? 30 : 46) * ui, stats = (cland ? (teamMode ? 52 : 34) : (teamMode ? 96 : 58)) * ui;
+      const header = (cland ? 30 : 46) * ui, stats = (cland ? (teamMode ? 50 : 34) : (teamMode ? 70 : 58)) * ui;
       let S;
       const inBattle = App.state === 'battle';
       if (inBattle) {
@@ -181,7 +181,7 @@
         document.documentElement.style.setProperty('--panelw', pw + 'px');
         S = Math.min(vh - top - header - stats - 14, vw - pw * ui - 28 - 40);
       } else {
-        const panel = (teamMode ? 330 : 270) * ui;
+        const panel = (teamMode ? 300 : 270) * ui;
         S = Math.min(vw - 24, vh - top - header - stats - 12 - panel);
       }
       S = Math.max(150, Math.floor(S));
@@ -279,6 +279,17 @@
       const mains = sim.balls.filter((b) => b.main);
       const one = mains.length === 2;
       let html = '';
+      if (!one) {
+        // team modes: a compact roster, one column per team, one slim line per ball
+        const teams = [...new Set(mains.map((b) => b.team))].sort();
+        html = teams.map((t) => `<div class="tcol" style="--tc:${BB.TEAMS[t].fill}">` + mains.filter((b) => b.team === t).map((b) => {
+          const pct = Math.max(0, Math.min(100, (b.hp / b.maxHp) * 100)).toFixed(1), key = (sim.stats(b)[0] || '').replace(/^[^:]+: /, '');
+          const grace = b.def.kami ? `<i class="tgr" style="width:${Math.round(b.w.grace)}%"></i>` : '';
+          return `<div class="tr${b.alive ? '' : ' out'}" title="${b.def.name}"><img src="${BB.icon(b.def.id)}" alt=""><span class="hpbar"><i style="width:${pct}%;background:${BB.TEAMS[t].fill}"></i><b>${Math.ceil(b.hp)}</b>${grace}</span><em>${key}</em></div>`;
+        }).join('') + '</div>').join('');
+        if (force || html !== App._lastStats) { App._lastStats = html; row.innerHTML = html; row.classList.add('team'); row.dataset.n = teams.length; }
+        return;
+      }
       for (const b of mains) {
         const lines = sim.stats(b);
         const txt = (one ? '' : b.def.name + ': ') + (lines.join(' · ') || '');

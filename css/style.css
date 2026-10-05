@@ -911,3 +911,43 @@ button.sq-s { cursor: pointer; color: #fff; } button.sq-s:hover { border-color: 
 @media (max-width: 520px) { .pf-grid { grid-template-columns: repeat(2, 1fr); } .pf-hero .pf-pic { width: 64px; height: 64px; } .pf-id .pf-name { font-size: 22px; } }
 .pf-sheet .sh-body > * { flex-shrink: 0; }
 .pf-hero { min-height: 112px; }
+
+/* ================================================================ mastery reward track + skin swatches v2 */
+.m-track { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; }
+.mt { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; background: #2a2a30; border: 2px solid #111; border-radius: 6px; opacity: .55; }
+.mt em { font-style: normal; font-family: var(--num); font-size: 12px; color: #d6c8e6; }
+.mt span { font-family: var(--num); font-size: 11px; color: #ffd23f; }
+.mt small { font-size: 9px; color: #fff; line-height: 1; }
+.mt .sw { width: 18px; height: 18px; }
+.mt-coin { width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff3a0, #f6c431 55%, #b07f10); border: 2px solid #111; display: block; }
+.mt.got { opacity: 1; background: #2f3a2c; border-color: #35d047; }
+.mt.got em { color: #35d047; }
+.mt.next { opacity: 1; border-color: #ffd23f; box-shadow: 0 0 0 2px rgba(255,210,63,.3); animation: mtPulse 1.6s ease-in-out infinite; }
+@keyframes mtPulse { 50% { box-shadow: 0 0 0 4px rgba(255,210,63,.15); } }
+@media (max-width: 520px) { .m-track { grid-template-columns: repeat(5, 1fr); } }
+.sw-shadow { background: radial-gradient(circle at 50% 95%, rgba(162,89,255,.7), transparent 55%), radial-gradient(circle at 35% 35%, #3a3046, #15121c 55%, #050408); }
+.sw-neon { background: radial-gradient(circle, #15161f 50%, transparent 52%), radial-gradient(circle, #ff6fd8 0 62%, #15161f 64%); box-shadow: 0 0 8px 1px #ff6fd8; }
+.sw-gold { background: radial-gradient(circle at 35% 35%, #fff6c2, #f6c431 40%, #c8901a 70%, #7a4f06); box-shadow: inset 0 0 0 3px rgba(122,79,6,.45); }
+
+/* ================================================================ team-mode roster (compact) */
+.stat-row.team { display: grid !important; grid-template-columns: 1fr 1fr; gap: 3px 12px; align-items: start; min-height: 0; }
+.stat-row.team[data-n="3"], .stat-row.team[data-n="4"] { grid-template-columns: 1fr 1fr; }
+.stat-row.team .tcol { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding-left: 6px; border-left: 4px solid var(--tc); }
+.stat-row.team .tr { display: grid; grid-template-columns: 18px minmax(60px, 1fr) auto; align-items: center; gap: 5px; min-width: 0; height: 18px; }
+.stat-row.team .tr.out { opacity: .35; }
+.stat-row.team .tr img { width: 18px; height: 18px; }
+.stat-row.team .tr .hpbar { width: 100% !important; height: 14px !important; position: relative; }
+.stat-row.team .tr .hpbar b { font-size: 10px !important; line-height: 10px !important; }
+.stat-row.team .tr .tgr { position: absolute; left: 0; bottom: 0; height: 3px; background: #9fe8ff; }
+.stat-row.team .tr em { font-style: normal; font-size: 11px; color: var(--tc); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70px; text-shadow: 1px 1px 0 var(--line), -1px 1px 0 var(--line), 1px -1px 0 var(--line), -1px -1px 0 var(--line); }
+html.cland .stat-row.team .tr { height: 14px; } html.cland .stat-row.team .tr .hpbar { height: 11px !important; } html.cland .stat-row.team .tr img { width: 14px; height: 14px; }
+html.cland .stat-row.team .tr { grid-template-columns: 14px minmax(50px, 1fr) auto; }
+/* team-mode fighter panel: tighter cards so the panel doesn't push the arena off screen */
+.slots.compact .team-col { gap: 4px; }
+.slots.compact .slot .sl-s { font-size: 10px; }
+html.cport .slots.compact .slot { padding: 3px 6px; border-width: 2px; }
+html.cport .slots.compact .slot img { width: 22px; height: 22px; }
+html.cport .slots.compact .slot .sl-n { font-size: 13px; }
+html.cport .slots.compact .slot .sl-s { display: none; }
+html.cport .slots.compact .vs-mid { font-size: 14px; }
+html.cland .slots.compact .slot .sl-s { display: none; }

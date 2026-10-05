@@ -826,8 +826,13 @@
     }
 
     // Stat lines shown under the arena for a ball.
+    // Damage figures include the ball's balance multiplier and the overtime bonus, so the readout
+    // matches what a hit actually deals.
     stats(b) {
-      return b.def.stats ? b.def.stats(b.w, b, this) : [];
+      const lines = b.def.stats ? b.def.stats(b.w, b, this) : [];
+      const f = (BB.BALANCE[b.def.id] || 1) * (this.dmgMul || 1);
+      if (Math.abs(f - 1) < 0.005) return lines;
+      return lines.map((l) => l.replace(/^((?:Damage|Hit dmg|Blast|Melee|Wave|Fireball|Zap|Burn): )([\d.]+)/, (m, k, v) => k + BB.fmt(Math.round(Number(v) * f * 10) / 10)));
     }
   }
 

@@ -183,7 +183,12 @@
         const draw = () => M.drawSkinPreview(body.querySelector('.m-prev'), id);
         M.bindSkins(body, id, draw);
         requestAnimationFrame(draw);
-        body.appendChild(Object.assign(document.createElement('div'), { className: 'f-s', textContent: 'Level rewards: ' + M.MXP.slice(1).map((_, k) => 'Lv' + (k + 2) + ' +' + 40 * (k + 2)).join(' · ') + ' coins' }));
+        // reward track: one card per level, coins + any skin it unlocks
+        const lvNow = M.level(id);
+        body.insertAdjacentHTML('beforeend', `<div class="section-t">Level rewards</div><div class="m-track">${M.MXP.slice(1).map((_, k) => {
+          const lv = k + 2, sk = M.SKINS.find((x) => x.lvl === lv), st = lv <= lvNow ? 'got' : lv === lvNow + 1 ? 'next' : '';
+          return `<div class="mt ${st}"><em>Lv${lv}</em>${sk ? `<i class="sw sw-${sk.id}"></i><small>${sk.name}</small>` : '<i class="mt-coin"></i>'}<span>+${40 * lv}</span></div>`;
+        }).join('')}</div>`);
       }, { width: '440px' });
     },
     drawSkinPreview(cv, id) {

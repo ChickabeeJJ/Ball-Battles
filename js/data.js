@@ -288,16 +288,30 @@
   });
   add({
     id: 'splodey', name: 'Splodey', cat: 'special', rarity: 'epic', color: '#3a3a44',
-    desc: 'Explodes every 3 seconds. Blasts get +1 damage every hit.',
-    base: { damage: 2 }, contact: true,
-    init(w) { w.timer = 3; },
+    desc: 'Drops mini bombs as it rolls. They blow up after a short fuse, or right away when an enemy gets close. Every hit adds blast damage and more bombs per drop.',
+    base: { damage: 3 }, contact: true,
+    init(w) { w.timer = 0.8; w.bombs = []; w.n = 1; w.fuse = 1.35; },
     contactDamage: () => 1,
     update(sim, b, w, dt) {
       w.timer -= dt;
-      if (w.timer <= 0) { w.timer = 3; sim.explode(b, b.x, b.y, b.r * 4.2, w.damage); }
+      if (w.timer <= 0) {
+        w.timer = w.fuse;
+        for (let i = 0; i < Math.floor(w.n); i++) {
+          const a = sim.rng() * Math.PI * 2, d = b.r * (0.3 + sim.rng() * 0.9);
+          w.bombs.push({ x: b.x + Math.cos(a) * d, y: b.y + Math.sin(a) * d, t: 1.4, max: 1.4 });
+        }
+        sim.emit({ type: 'build', x: b.x, y: b.y });
+      }
+      for (const k of w.bombs) {
+        k.t -= dt;
+        // proximity fuse: an enemy rolling over a bomb sets it off almost at once
+        if (k.t > 0.12) for (const e of sim.balls) if (e.alive && e.team !== b.team && (e.x - k.x) ** 2 + (e.y - k.y) ** 2 < (e.r + 14 * b.scale) ** 2) { k.t = 0.12; break; }
+        if (k.t <= 0 && !k.done) { k.done = true; sim.explode(b, k.x, k.y, 64 * b.scale, w.damage); }
+      }
+      if (w.bombs.some((k) => k.done)) w.bombs = w.bombs.filter((k) => !k.done);
     },
-    onHit(sim, b, w) { w.damage += 1; },
-    stats: (w) => ['Blast: ' + fmt(w.damage)],
+    onHit(sim, b, w) { w.damage += 0.5; w.n = Math.min(w.n + 0.25, 3); },
+    stats: (w) => ['Blast: ' + fmt(w.damage), 'Bombs: ' + Math.floor(w.n)],
   });
   add({
     id: 'orbital', name: 'Orbital', cat: 'special', rarity: 'epic', color: '#3d8bf2',
