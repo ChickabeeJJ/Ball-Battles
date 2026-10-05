@@ -621,8 +621,9 @@
       window.addEventListener('contextmenu', (e) => e.preventDefault());
       window.addEventListener('pointerdown', () => BB.audio.unlock(), { capture: true });
       document.addEventListener('visibilitychange', () => {
+        // no auto-pause: switching tabs just mutes, and the battle resumes where it was
         App.applyAudio();
-        if (document.hidden) App.pause();
+        App.last = performance.now();
       });
       window.addEventListener('wheel', (e) => { if (!e.target.closest || !e.target.closest('.sh-body')) e.preventDefault(); }, { passive: false });
 

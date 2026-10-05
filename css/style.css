@@ -741,7 +741,7 @@ html.touch .br-e { font-size: 11px; }
 .lx-ball { position: absolute; top: 50%; width: 90px; height: 90px; margin-top: -45px; }
 .lx-ball.l { left: 50%; animation: lxL 1.75s both; }
 .lx-ball.r { right: 50%; animation: lxR 1.75s both; }
-.lx-spin { position: absolute; inset: 0; border-radius: 50%; border: 5px solid #0a0a0a; box-shadow: inset -12px -14px 0 rgba(0,0,0,.25), inset 8px 8px 0 rgba(255,255,255,.18), 0 10px 30px rgba(0,0,0,.6); }
+.lx-spin { position: absolute; inset: 0; border-radius: 50%; border: 5px solid #0a0a0a; box-shadow: inset 8px 8px 0 rgba(255,255,255,.18); }
 .lx-ball.l .lx-spin { background: radial-gradient(circle at 35% 30%, #d9dde2, #9aa0a6 55%, #5d6268); animation: lxSpinL 1.75s cubic-bezier(.3,0,.3,1) both; }
 .lx-ball.r .lx-spin { background: radial-gradient(circle at 35% 30%, #ff9a90, #e8473f 55%, #9c2128); animation: lxSpinR 1.75s cubic-bezier(.3,0,.3,1) both; }
 .lx-spin b { position: absolute; top: 50%; left: 70px; height: 12px; margin-top: -6px; width: 74px; border: 3px solid #0a0a0a; border-radius: 2px 14px 14px 2px; background: linear-gradient(#f4f6f8, #aeb4ba); transform-origin: -25px 50%; }

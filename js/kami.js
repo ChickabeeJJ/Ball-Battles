@@ -8,7 +8,9 @@
   BB.RARITY.iridescent = { name: 'Iridescent', color: '#d7b8ff', price: 25000 };
 
   // Divine Grace: every attack is dodged while the bar holds at least one charge.
-  const GRACE = { max: 100, cost: 25, dotCost: 12, regen: 9, iframe: 0.3 };
+  // Recharge scales with how full the bar is and stops completely at 20% or below.
+  const GRACE = { max: 100, cost: 25, dotCost: 12, regen: 14, floor: 20, iframe: 0.3 };
+  const regenRate = (g) => (g <= GRACE.floor ? 0 : GRACE.regen * (g / GRACE.max));
   const AB = {
     beam: { name: 'Seraph Beam', cd: 10, first: 3.5, wind: 1.0, end: 1.85, dmg: 20 },
     gate: { name: 'Golden Gates', cd: 14, first: 7, jail: 2.8, end: 3.1, tick: 2, slam: 10 },
@@ -120,16 +122,18 @@
 
   const kami = {
     id: 'kami', name: 'Kami', cat: 'special', rarity: 'iridescent', color: '#f6e7b0', price: 25000,
-    desc: 'A god in ball form. Locked at 1 HP, but Divine Grace dodges every attack while charged and refills over time. Casts Seraph Beam, Golden Gates and Heaven\'s Arsenal.',
+    desc: 'A god in ball form. Locked at 1 HP, but Divine Grace teleports it away from every attack while charged; the bar refills slower as it drains and stops at 20%. Casts Seraph Beam, Golden Gates and Heaven\'s Arsenal.',
     base: { damage: 2, spin: 160, len: 52, width: 10, gap: 4 },
     melee: true, blocks: true, kami: true, fixedHp: 1, knock: 240,
     init(w, b) {
       w.grace = GRACE.max; w.iframe = 0; w.gcd = 0; w.cast = null;
       w.cool = { beam: AB.beam.first, gate: AB.gate.first, rain: AB.rain.first };
-      b.ghosts = [];
+      b.ghosts = []; b.tps = [];
     },
     update(sim, b, w, dt) {
-      w.grace = Math.min(GRACE.max, w.grace + GRACE.regen * dt);
+      w.grace = Math.min(GRACE.max, w.grace + regenRate(w.grace) * dt);
+      for (const tp of b.tps) tp.t -= dt;
+      if (b.tps.length && b.tps[0].t <= 0) b.tps = b.tps.filter((tp) => tp.t > 0);
       if (w.iframe > 0) w.iframe -= dt;
       // while Grace holds a charge, no status effect sticks
       if (w.grace >= GRACE.cost) { b.stunT = 0; b.slowT = 0; b.paintT = 0; b.poison = 0; b.burnT = 0; b.burnLvl = 0; }
@@ -152,15 +156,19 @@
       if (w.grace < cost) return false;
       w.grace -= cost; w.iframe = GRACE.iframe;
       if (dot) { sim.fxNum(b.x, b.y - b.r - 4, 'MISS', '#bfefff'); return true; }
-      // blink sideways out of the attack, leaving an afterimage
-      let dx, dy;
-      if (src && src !== b && src.x != null) { dx = b.x - src.x; dy = b.y - src.y; }
-      else { const a = sim.rng() * TAU; dx = Math.cos(a); dy = Math.sin(a); }
-      const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
-      const side = sim.rng() < 0.5 ? 1 : -1, step = b.r * 1.7, lim = sim.W / 2 - b.r;
+      // teleport: try a handful of spots and vanish to the one farthest from every enemy
+      const lim = sim.W / 2 - b.r - 6, foes = sim.balls.filter((e) => e.alive && e.team !== b.team);
+      let bx = b.x, by = b.y, best = -1;
+      for (let i = 0; i < 10; i++) {
+        const x = (sim.rng() * 2 - 1) * lim, y = (sim.rng() * 2 - 1) * lim;
+        if (sim.obstacles.some((o) => (x - o.x) ** 2 + (y - o.y) ** 2 < (o.r + b.r + 8) ** 2)) continue;
+        let near = Infinity;
+        for (const e of foes) near = Math.min(near, (x - e.x) ** 2 + (y - e.y) ** 2);
+        if (near > best) { best = near; bx = x; by = y; }
+      }
       b.ghosts.push({ x: b.x, y: b.y, t: 0.45 });
-      b.x = clamp(b.x + (-dy * side * 0.8 + dx * 0.6) * step, -lim, lim);
-      b.y = clamp(b.y + (dx * side * 0.8 + dy * 0.6) * step, -lim, lim);
+      b.tps.push({ fx: b.x, fy: b.y, tx: bx, ty: by, t: 0.45 });
+      b.x = bx; b.y = by;
       if (b.jail) { b.jail.x = b.x; b.jail.y = b.y; }
       if (!sim.preview) sim.fxTag(b.x, b.y - b.r - 22, 'DODGE', '#bfefff');
       sim.emit({ type: 'kami', k: 'dodge', x: b.x, y: b.y });
@@ -337,12 +345,13 @@
   BB.drawBallArt = function (ctx, sim, b, lw, R) {
     if (!b.def.kami) return baseBall(ctx, sim, b, lw, R);
     const w = b.w, r = b.r, t = sim.t, c = w.cast;
-    // afterimages
+    // vanishing afterimage: squeezes into a vertical slit of light
     for (const g of b.ghosts || []) {
-      const a = clamp(g.t / 0.45, 0, 1);
-      ctx.save(); ctx.globalAlpha = a * 0.55;
-      ctx.beginPath(); ctx.arc(g.x, g.y, r * (1 + (1 - a) * 0.25), 0, TAU);
-      ctx.fillStyle = '#d9f6ff'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#9fe8ff'; ctx.stroke();
+      const k = 1 - clamp(g.t / 0.45, 0, 1), sx = Math.max(0.02, 1 - k * 1.6), sy = 1 + k * 1.4;
+      ctx.save(); ctx.translate(g.x, g.y); ctx.scale(sx, sy); ctx.globalAlpha = 1 - k * 0.6;
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU);
+      const gg = ctx.createRadialGradient(0, 0, 0, 0, 0, r); gg.addColorStop(0, '#ffffff'); gg.addColorStop(1, '#bfefff');
+      ctx.fillStyle = gg; ctx.fill(); ctx.lineWidth = 2 / sx; ctx.strokeStyle = '#9fe8ff'; ctx.stroke();
       ctx.restore();
     }
     // aura
@@ -368,7 +377,7 @@
     ctx.save(); ctx.lineCap = 'round';
     ctx.beginPath(); ctx.arc(b.x, b.y, RR, 0, TAU); ctx.strokeStyle = 'rgba(30,40,60,0.35)'; ctx.lineWidth = 5; ctx.stroke();
     ctx.beginPath(); ctx.arc(b.x, b.y, RR, -Math.PI / 2, -Math.PI / 2 + TAU * gk);
-    ctx.strokeStyle = w.grace >= GRACE.cost ? '#9fe8ff' : '#ff8a8a'; ctx.lineWidth = 4; ctx.stroke();
+    ctx.strokeStyle = w.grace >= GRACE.cost ? '#9fe8ff' : w.grace <= GRACE.floor ? '#8a8f99' : '#ff8a8a'; ctx.lineWidth = 4; ctx.stroke();
     ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 1.5; ctx.stroke();
     for (let i = 0; i < 4; i++) {
       const a = -Math.PI / 2 + (i * TAU) / 4;
@@ -417,6 +426,30 @@
   function worldFx(ctx, sim) {
     const t = sim.t;
     for (const b of sim.balls) {
+      // teleport dodge: light pillar where it was, streak, and an arrival burst
+      for (const tp of b.tps || []) {
+        const k = 1 - clamp(tp.t / 0.45, 0, 1), r = b.r;
+        ctx.save();
+        const pa = Math.max(0, 1 - k * 1.8);
+        if (pa > 0) {
+          const pg = ctx.createLinearGradient(tp.fx - r, 0, tp.fx + r, 0);
+          pg.addColorStop(0, 'rgba(159,232,255,0)'); pg.addColorStop(0.5, 'rgba(255,255,255,' + 0.9 * pa + ')'); pg.addColorStop(1, 'rgba(159,232,255,0)');
+          ctx.fillStyle = pg; ctx.fillRect(tp.fx - r * 0.6, tp.fy - r * 4, r * 1.2, r * 8);
+        }
+        if (k < 0.35) {
+          ctx.globalAlpha = 1 - k / 0.35; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(tp.fx, tp.fy); ctx.lineTo(tp.tx, tp.ty);
+          ctx.strokeStyle = 'rgba(159,232,255,0.6)'; ctx.lineWidth = r * 0.5; ctx.stroke();
+          ctx.strokeStyle = '#ffffff'; ctx.lineWidth = r * 0.15; ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+        ctx.beginPath(); ctx.arc(tp.tx, tp.ty, r * (1 + k * 2.4), 0, TAU);
+        ctx.strokeStyle = 'rgba(159,232,255,' + (1 - k) + ')'; ctx.lineWidth = 6 * (1 - k) + 1; ctx.stroke();
+        if (k < 0.3) { ctx.globalAlpha = 1 - k / 0.3; ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(tp.tx, tp.ty, r * 1.25, 0, TAU); ctx.fill(); }
+        ctx.globalAlpha = 1 - k;
+        for (let i = 0; i < 8; i++) { const a = i * 0.785 + k * 2, d = r * (2.2 - k * 1.4); ctx.fillStyle = '#e6fbff'; ctx.beginPath(); ctx.arc(tp.tx + Math.cos(a) * d, tp.ty + Math.sin(a) * d, 3, 0, TAU); ctx.fill(); }
+        ctx.restore();
+      }
       // Golden Gates around an imprisoned ball
       if (b.alive && b.jail) {
         const j = b.jail, k = clamp(j.t / 0.6, 0, 1), e = 1 - Math.pow(1 - k, 3), R = Math.max(b.r * 1.9, 46);
@@ -570,6 +603,8 @@
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
     const tx = -W * 0.02 + (1 - ease((p - 0.08) / 0.2)) * W * 0.5;
     ctx.save(); ctx.transform(1, 0, -0.18, 1, 0, 0);
+    // the ability name follows the Ability Text setting
+    if (BB.save && BB.save.data.settings.callouts === false) ctx.globalAlpha = 0;
     ctx.lineWidth = H * 0.06; ctx.strokeStyle = '#1d1d22'; ctx.strokeText(def.title, tx, -H * 0.04);
     const tg = ctx.createLinearGradient(0, -H * 0.16, 0, H * 0.08); tg.addColorStop(0, '#fffbe0'); tg.addColorStop(1, '#ffc93a');
     ctx.fillStyle = tg; ctx.fillText(def.title, tx, -H * 0.04);
