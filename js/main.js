@@ -133,6 +133,7 @@
     },
     applyAudio() {
       BB.audio.volume = BB.save.data.settings.sound;
+      BB.music.volume = BB.save.data.settings.music != null ? BB.save.data.settings.music : 0.5;
       BB.audio.setBlocked(BB.sdk.muteAudio || BB.sdk.adPlaying || document.hidden);
     },
     refreshCoins() { $('coinCount').textContent = BB.save.data.coins; if (BB.meta) BB.meta.refreshBadges(); },

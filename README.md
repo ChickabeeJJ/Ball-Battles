@@ -88,4 +88,4 @@ node tools/seeds.js       # finds seeds whose battles end with a K.O. inside a c
 
 ## Credits
 
-Fonts: Anton, Pixelify Sans and Lilita One, all SIL Open Font License (`fonts/`). All art and sound are generated in code.
+Music: "Arcade Groove" (two tracks, `music/`), provided by the game owner. Fonts: Anton, Pixelify Sans and Lilita One, all SIL Open Font License (`fonts/`). All art and sound are generated in code.

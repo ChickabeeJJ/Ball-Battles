@@ -272,6 +272,13 @@
         r.onchange = () => { BB.save.write(); BB.audio.play('hit', { amt: 4 }); };
         vol.appendChild(r);
         body.appendChild(vol);
+        const mus = el('div', 'field');
+        mus.innerHTML = '<div class="f-k">Music</div>';
+        const mr = el('input'); mr.type = 'range'; mr.min = 0; mr.max = 1; mr.step = 0.05; mr.value = st.music != null ? st.music : 0.5;
+        mr.oninput = () => { st.music = Number(mr.value); BB.music.setVolume(st.music); BB.music.start(); };
+        mr.onchange = () => BB.save.write();
+        mus.appendChild(mr);
+        body.appendChild(mus);
         const toggles = [
           ['dark', 'Dark Mode', ''],
           ['hitlag', 'Hit Freeze', 'Tiny pause on big hits'],

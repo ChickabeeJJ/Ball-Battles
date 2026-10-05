@@ -22,6 +22,7 @@
   A.unlock = function () {
     const c = ensure();
     if (c && c.state === 'suspended') c.resume().catch(() => {});
+    BB.music.start();
   };
 
   // `blocked` covers SDK mute, ads playing and hidden tabs.
@@ -31,7 +32,28 @@
     master.gain.setTargetAtTime(v, ctx.currentTime, 0.01);
   };
   A.setVolume = function (v) { A.volume = v; A.apply(); };
-  A.setBlocked = function (b) { A.blocked = b; A.apply(); };
+  A.setBlocked = function (b) { A.blocked = b; A.apply(); M.apply(); };
+
+  // Background music: two tracks that alternate. Streamed (not preloaded) so boot stays fast,
+  // started on the first user gesture, silenced by the same SDK mute / ad / hidden-tab rules.
+  const M = (BB.music = { volume: 0.5, el: null, i: 0, started: false });
+  const TRACKS = ['music/arcade-groove.mp3', 'music/arcade-groove-2.mp3'];
+  M.apply = function () {
+    if (!M.el) return;
+    const v = A.blocked ? 0 : M.volume * 0.5;
+    M.el.volume = v;
+    if (v > 0 && M.el.paused && M.started) M.el.play().catch(() => {});
+    else if (v === 0 && !M.el.paused) M.el.pause();
+  };
+  M.start = function () {
+    if (M.started || typeof Audio === 'undefined') return;
+    M.started = true;
+    M.el = new Audio(); M.el.preload = 'none';
+    M.el.addEventListener('ended', () => { M.i = (M.i + 1) % TRACKS.length; M.el.src = TRACKS[M.i]; M.apply(); });
+    M.el.src = TRACKS[M.i];
+    M.apply();
+  };
+  M.setVolume = function (v) { M.volume = v; M.apply(); };
 
   function ok(name, gap) {
     if (!ctx || A.blocked || A.volume <= 0 || ctx.state !== 'running') return false;

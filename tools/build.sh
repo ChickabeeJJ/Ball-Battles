@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 rm -rf dist && mkdir -p dist/game
-cp -r index.html css js fonts dist/game/
+cp -r index.html css js fonts music dist/game/
 (cd dist/game && python3 -c "
 import zipfile, os
 with zipfile.ZipFile('../ball-vs-ball.zip', 'w', zipfile.ZIP_DEFLATED) as z:
