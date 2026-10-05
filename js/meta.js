@@ -133,7 +133,8 @@
     // legacy hooks (Cup champion, star counts)
     addMastery(id) { M.addXP(id, 40); },
     stars(id) { const l = M.level(id); return l >= 10 ? 3 : l >= 6 ? 2 : l >= 3 ? 1 : 0; },
-    starHtml(id) { const l = M.level(id); return l > 1 ? `<span class="mlv${l >= 10 ? ' max' : ''}">Lv${l}</span>` : ''; },
+    // levels only show in the ball's detail panel (mastery block), never on tiles or slot names
+    starHtml() { return ''; },
     skinOf(id) { const m = M.xpData(); const s = m.skin[id]; return s && M.level(id) >= (M.SKINS.find((k) => k.id === s) || { lvl: 99 }).lvl ? s : 'classic'; },
     setSkin(id, sk) { M.xpData().skin[id] = sk; BB.save.write(); },
 

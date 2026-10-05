@@ -381,10 +381,6 @@
           b.poisonTick -= dt;
           if (b.poisonTick <= 0) { b.poisonTick = 1; this.damage(b, b.poison * 0.35 * (BB.BALANCE.flask || 1), null, { dot: true, color: '#a259ff' }); }
         }
-        if (this.t > 165 && b.alive) {
-          b.stormTick = (b.stormTick || 0) - dt;
-          if (b.stormTick <= 0) { b.stormTick = 0.5; this.damage(b, 1 + Math.floor((this.t - 165) / 15), null, { dot: true, color: '#e23b3b' }); }
-        }
         if (!b.alive) continue;
 
         const w = b.w;
@@ -542,7 +538,15 @@
       if (this.endTimer < 0) {
         const teams = new Set();
         for (const b of balls) if (b.alive && b.main) teams.add(b.team);
-        if (teams.size <= 1) {
+        // time limit (no chip damage): after 3 minutes the team with the most health left wins
+        if (teams.size > 1 && this.t > 180) {
+          const hp = {};
+          for (const b of balls) if (b.alive && b.main) hp[b.team] = (hp[b.team] || 0) + b.hp / b.maxHp;
+          const ranked = Object.entries(hp).sort((x, y) => y[1] - x[1]);
+          this.winner = ranked[0][1] - ranked[1][1] > 1e-6 ? Number(ranked[0][0]) : -1;
+          this.endTimer = 1.1;
+          this.emit({ type: 'ko', winner: this.winner, timeup: true });
+        } else if (teams.size <= 1) {
           this.winner = teams.size === 1 ? [...teams][0] : -1;
           this.endTimer = 1.1;
           this.emit({ type: 'ko', winner: this.winner });

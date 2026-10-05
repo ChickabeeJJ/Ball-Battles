@@ -875,3 +875,10 @@ button.sq-s { cursor: pointer; color: #fff; } button.sq-s:hover { border-color: 
 .se span small { display: block; font-size: 10px; color: #b9b4ac; }
 .pvp-foot { flex-wrap: wrap; } .pvp-foot .btn { flex: 1 1 45%; }
 @media (max-width: 520px) { .card-back { width: 76px; height: 96px; } .lu-b img { width: 34px; height: 34px; } .lu-b b { font-size: 13px; } }
+
+/* matchup header: equal side columns keep VS exactly centred */
+.matchup { display: grid !important; grid-template-columns: 1fr auto 1fr; justify-content: stretch; }
+.matchup .mu-side { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.matchup .mu-side.l { justify-content: flex-end; }
+.matchup .mu-side.r { justify-content: flex-start; }
+.matchup > .nm:only-child { grid-column: 1 / -1; justify-self: center; }

@@ -253,9 +253,11 @@
       const mode = App.mode();
       const name = (b) => `<img src="${BB.icon(b.def.id)}" alt=""><span class="nm" style="color:${BB.itemColor(b.def.id)}">${b.def.name}</span>`;
       const mains = sim.balls.filter((b) => b.main);
-      if (mode.id === '1v1' || mains.length === 2) m.innerHTML = name(mains[0]) + '<span class="vs">VS</span>' + name(mains[1]);
+      // the two sides get equal columns so "VS" always sits dead centre
+      const side = (cls, html) => `<span class="mu-side ${cls}">${html}</span>`;
+      if (mode.id === '1v1' || mains.length === 2) m.innerHTML = side('l', name(mains[0])) + '<span class="vs">VS</span>' + side('r', name(mains[1]));
       else if (mode.id === 'ffa') m.innerHTML = '<span class="nm" style="color:#fff">Free For All</span>';
-      else m.innerHTML = `<span class="nm" style="color:${BB.TEAMS[0].fill}">Green Team</span><span class="vs">VS</span><span class="nm" style="color:${BB.TEAMS[1].fill}">Red Team</span>`;
+      else m.innerHTML = side('l', `<span class="nm" style="color:${BB.TEAMS[0].fill}">Green Team</span>`) + '<span class="vs">VS</span>' + side('r', `<span class="nm" style="color:${BB.TEAMS[1].fill}">Red Team</span>`);
       App.fitMatchup();
     },
 
@@ -268,7 +270,9 @@
       // Fit against the space actually available (arena width + a little), not the header's own box.
       const ui = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui')) || 1;
       const avail = Math.min(window.innerWidth - 16, (App.renderer ? App.renderer.px : 400) + 40) / ui;
-      while (m.scrollWidth > avail && fs > 11) { fs -= 1; m.style.fontSize = fs + 'px'; }
+      const need = () => { const l = m.querySelector('.mu-side.l'), r = m.querySelector('.mu-side.r'), v = m.querySelector('.vs');
+        return l && r && v ? 2 * Math.max(l.scrollWidth, r.scrollWidth) + v.offsetWidth + 24 : m.scrollWidth; };
+      while (need() > avail && fs > 11) { fs -= 1; m.style.fontSize = fs + 'px'; }
       m.querySelectorAll('img').forEach((i) => { i.style.width = i.style.height = Math.round(fs * 1.1) + 'px'; });
     },
 
@@ -342,7 +346,7 @@
     },
 
     startBattle() {
-      App.slowmo = 0; App.shake = 0; App.impact = null;
+      App.slowmo = 0; App.shake = 0; App.impact = null; App.lastKO = null;
       BB.audio.unlock();
       const setup = BB.save.data.setup;
       const mode = App.mode();
@@ -473,16 +477,13 @@
           case 'pass': BB.audio.play('pass'); break;
           case 'overtime': BB.audio.play('overtime'); BB.ui.banner('OVERTIME x' + e.mul, 1000); break;
           case 'impact':
-            // With the setting on, every hit gets an impact frame: big hits/crits/K.O.s get the full
-            // sequence, small hits a short ink flash (throttled so rapid hits stay readable).
+            // Hits (any damage, even 100+) only ever get the short black cut (Impact Frames setting).
+            // The full finisher is never started here: it plays on the 'ko' event, i.e. only when
+            // the match is actually over, so a big hit, a revive or a dead mini can't trigger it.
             {
-              // K.O.: the full anime cut. Other hits: just the short black cut, and ~30% fewer of them.
-              // only a real knockout (flagged by the sim), never just a big hit
-              const ko = !!e.ko;
+              if (e.ko) { App.lastKO = { x: e.x, y: e.y }; break; }
               const st = BB.save.data.settings;
-              if (ko && st.finisher) {
-                App.impact = { t: 0, dur: 1.0, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0, ko: true };
-              } else if (!ko && st.impact && !App.impact && !(App.impactCd > 0) && Math.random() < 0.8) {
+              if (st.impact && !App.impact && !(App.impactCd > 0) && Math.random() < 0.8) {
                 App.impact = { t: 0, dur: 0.18, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0, ko: false };
                 App.impactCd = 0.45;
               }
@@ -496,7 +497,13 @@
               App.impact = { t: 0, dur: 2.8, kamiFin: true, x: 0, y: 0, seed: (Math.random() * 1e6) | 0, foe: foe ? BB.itemColor(foe.def.id) : '#e8473f' };
               BB.audio.play('kamiFinisher');
               setTimeout(() => BB.ui.banner('K.O.!', 900), 2700);
-            } else BB.ui.banner(e.winner < 0 ? 'DRAW!' : 'K.O.!', 1000);
+            } else if (e.timeup) {
+              BB.ui.banner(e.winner < 0 ? 'DRAW!' : 'TIME UP!', 1000);
+            } else {
+              BB.ui.banner(e.winner < 0 ? 'DRAW!' : 'K.O.!', 1000);
+              const at = App.lastKO || { x: 0, y: 0 };
+              if (BB.save.data.settings.finisher) App.impact = { t: 0, dur: 1.0, x: at.x, y: at.y, seed: (Math.random() * 1e6) | 0, ko: true };
+            }
             break;
         }
       }
