@@ -96,12 +96,14 @@ check('arrow keys do not scroll the page', prevented);
 // PvP: the PvP Arena replaces the Gauntlet on CrazyGames; a squad link round-trips into a series
 check('PvP button visible on CrazyGames', await page.isVisible('#btnPvp'));
 await page.click('#btnPvp');
-await page.click('text=Create a challenge');
+await page.click('.pm-btns .btn.primary');
 for (let i = 0; i < 3; i++) await page.click(`.grid .tile >> nth=${i}`);
 await page.click('text=Confirm squad');
 await page.waitForTimeout(200);
 const link = await page.inputValue('.pvp-link');
 check('PvP invite link created', /pvp3=/.test(link));
+const short = await page.textContent('.pvp-code b');
+check('PvP short code decodes back to the challenge', await page.evaluate((c) => { const d = BB.meta.readCode(c); return !!d && d.kind === 'challenge'; }, short));
 check('CrazyGames invite button shown', (await page.evaluate(() => __log.slice())).includes('showInviteButton'));
 const code = decodeURIComponent(link.split('pvp3=')[1]);
 await page.click('.x-btn');

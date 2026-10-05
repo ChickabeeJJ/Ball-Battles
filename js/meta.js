@@ -551,6 +551,81 @@
 
     ownedCount() { return BB.ITEMS.filter((i) => i.cat !== 'hidden' && BB.app.isOwned(i.id)).length; },
 
+    // ---- short codes: everything a challenge / result needs, packed into ~17-23 typeable characters
+    // (Crockford base32, no server needed). Items/maps are stored by index, so new items must be appended.
+    B32: '0123456789ABCDEFGHJKMNPQRSTVWXYZ',
+    pack(fields) {
+      let v = 0n, bits = 0;
+      for (const [val, n] of fields) { v = (v << BigInt(n)) | BigInt(val & ((1 << n) - 1 >>> 0) >>> 0); bits += n; }
+      let sum = 0; for (let t = v; t > 0n; t >>= 5n) sum = (sum + Number(t & 31n)) % 32;
+      v = (v << 5n) | BigInt(sum); bits += 5;
+      let out = '';
+      for (let i = 0; i < Math.ceil(bits / 5); i++) { out = M.B32[Number(v & 31n)] + out; v >>= 5n; }
+      return out.match(/.{1,4}/g).join('-');
+    },
+    unpack(str, sizes) {
+      const clean = String(str || '').toUpperCase().replace(/[IL]/g, '1').replace(/O/g, '0').replace(/[^0-9A-Z]/g, '');
+      const total = sizes.reduce((a, b) => a + b, 0) + 5;
+      if (clean.length !== Math.ceil(total / 5)) return null;
+      let v = 0n;
+      for (const ch of clean) { const d = M.B32.indexOf(ch); if (d < 0) return null; v = (v << 5n) | BigInt(d); }
+      const sum = Number(v & 31n); v >>= 5n;
+      let chk = 0; for (let t = v; t > 0n; t >>= 5n) chk = (chk + Number(t & 31n)) % 32;
+      if (chk !== sum) return null;
+      const out = [];
+      for (let i = sizes.length - 1; i >= 0; i--) { out[i] = Number(v & ((1n << BigInt(sizes[i])) - 1n)); v >>= BigInt(sizes[i]); }
+      return out;
+    },
+    // seed goes first so codes look random instead of starting with zeros
+    CH_SIZES: [31, 1, 8, 8, 8, 4, 4, 4, 12],
+    RS_SIZES: [31, 1, 8, 8, 8, 8, 8, 8, 4, 4, 4, 2, 2, 2, 12],
+    shortChallenge(ids, maps, seed) {
+      const ix = (id) => BB.ITEMS.findIndex((i) => i.id === id), mx = (m) => BB.MAPS.findIndex((x) => x.id === m);
+      return M.pack([[seed, 31], [0, 1], ...ids.map((id) => [ix(id), 8]), ...maps.map((m) => [mx(m), 4]), [Math.min(4095, M.pvpData().rating), 12]]);
+    },
+    shortResult(sr) {
+      const ix = (id) => BB.ITEMS.findIndex((i) => i.id === id), mx = (m) => BB.MAPS.findIndex((x) => x.id === m);
+      return M.pack([[sr.seed, 31], [1, 1], ...sr.theirs.map((id) => [ix(id), 8]), ...sr.mine.map((id) => [ix(id), 8]), ...sr.maps.map((m) => [mx(m), 4]), ...sr.results.map((r) => [r + 1, 2]), [Math.min(4095, M.pvpData().rating), 12]]);
+    },
+    // returns { kind: 'challenge', ch } | { kind: 'result', r } | null
+    readCode(str) {
+      const it = (k) => (BB.ITEMS[k] ? BB.ITEMS[k].id : null), mp = (k) => (BB.MAPS[k] ? BB.MAPS[k].id : null);
+      const c = M.unpack(str, M.CH_SIZES);
+      if (c && c[1] === 0) {
+        const ids = c.slice(2, 5).map(it), maps = c.slice(5, 8).map(mp);
+        if (M.validIds(ids) && M.validMaps(maps)) return { kind: 'challenge', ch: { ids, maps, seed: c[0] | 0, rating: c[8] || 1000, name: 'Code Rival' } };
+      }
+      const r = M.unpack(str, M.RS_SIZES);
+      if (r && r[1] === 1) {
+        const a = r.slice(2, 5).map(it), b = r.slice(5, 8).map(it), maps = r.slice(8, 11).map(mp), res = r.slice(11, 14).map((x) => x - 1);
+        if (M.validIds(a) && M.validIds(b) && M.validMaps(maps) && res.every((x) => x >= -1 && x <= 1))
+          return { kind: 'result', r: { mine: a, theirs: b, maps, seed: r[0] | 0, results: res.map((x) => (x === 0 ? 1 : x === 1 ? 0 : -1)), rating: r[14] || 1000, name: 'Code Rival' } };
+      }
+      return null;
+    },
+    enterCode() {
+      BB.ui.open((sheet) => {
+        const body = BB.ui.head(sheet, 'Enter a Code', { onX: () => M.openPvp() });
+        body.innerHTML += `<div class="f-s">Type the challenge code your friend sent you, or the result code from a challenge you created.</div>`;
+        const inp = document.createElement('input'); inp.className = 'pvp-code-in'; inp.placeholder = 'XXXX-XXXX-XXXX-XXXX'; inp.autocapitalize = 'characters'; inp.spellcheck = false; inp.maxLength = 32;
+        inp.onkeydown = (e) => { e.stopPropagation(); if (e.key === 'Enter') go.click(); };
+        inp.oninput = () => { const v = inp.value.toUpperCase().replace(/[^0-9A-Z]/g, ''); inp.value = (v.match(/.{1,4}/g) || []).join('-'); };
+        body.appendChild(inp);
+        const go = document.createElement('button'); go.className = 'btn primary pvp-go'; go.innerHTML = BB.ICON.swords + ' Go';
+        go.onclick = () => {
+          const got = M.readCode(inp.value);
+          if (!got) { BB.audio.play('lose'); BB.ui.toast('That code is not valid. Check it and try again.'); inp.classList.add('bad'); return; }
+          BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close();
+          if (got.kind === 'challenge') M.pvpReceive(got.ch); else M.pvpResult(got.r);
+        };
+        body.appendChild(go);
+        setTimeout(() => inp.focus(), 50);
+      }, { width: '440px' });
+    },
+    codeBox(code, label) {
+      return `<div class="pvp-code"><small>${label}</small><b>${code}</b></div>`;
+    },
+
     openPvp() {
       const pv = M.pvpData(), k = M.rankOf(pv.rating), next = M.RANKS[k + 1];
       const lo = M.RANKS[k][0], pct = next ? Math.max(0, Math.min(100, ((pv.rating - lo) / (next[0] - lo)) * 100)) : 100;
@@ -559,18 +634,23 @@
         body.innerHTML += `<div class="pvp-hero" style="--rc:${M.RANKS[k][2]}">${M.rankHtml(pv.rating)}<div class="pvp-rating">${pv.rating}</div>
             <div class="pvp-rankbar"><i style="width:${pct}%"></i></div>
             <div class="pvp-rec">${next ? (next[0] - pv.rating) + ' to ' + next[1] : 'Top rank'} · ${pv.w} W · ${pv.d} D · ${pv.l} L</div></div>
-          <div class="pvp-steps"><div><b>1</b><span>Pick 3 different balls in fight order</span></div><div><b>2</b><span>Send the challenge to a friend</span></div><div><b>3</b><span>All 3 rounds play. Most wins takes it</span></div></div>`;
-        const go = document.createElement('button'); go.className = 'btn primary pvp-go'; go.innerHTML = BB.ICON.swords + ' Create a challenge';
+          <div class="pvp-modes">
+            <div class="pvp-mode code"><div class="pm-h">${BB.ICON.scroll}<b>Play a Friend</b></div><span>Make a challenge and share its code or invite link. They answer with the same code.</span><div class="pm-btns"></div></div>
+            <div class="pvp-mode mm"><div class="pm-h">${BB.ICON.swords}<b>Matchmaking</b><em>SOON</em></div><span>Get matched with a random player's squad automatically.</span><button class="btn" disabled>Find a match</button></div>
+          </div>
+          <div class="pvp-steps"><div><b>1</b><span>Pick 3 different balls in fight order</span></div><div><b>2</b><span>Share the code with a friend</span></div><div><b>3</b><span>All 3 rounds play. Most wins takes it</span></div></div>`;
+        const go = document.createElement('button'); go.className = 'btn primary'; go.innerHTML = BB.ICON.swords + ' Create';
         go.onclick = () => {
           BB.audio.play('click');
           if (M.ownedCount() < 3) { BB.ui.toast('Unlock at least 3 balls to play PvP'); return; }
           M.pick3('Your PvP Squad', 'Round 1 uses your first pick, round 2 your second, round 3 your third. Your rival picks without seeing your squad.', (ids) => M.pvpCreated(ids));
         };
-        body.appendChild(go);
+        const enter = document.createElement('button'); enter.className = 'btn blue'; enter.innerHTML = BB.ICON.play + ' Enter code';
+        enter.onclick = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); M.enterCode(); };
         if (pv.hist.length) {
           body.innerHTML += `<div class="section-t">Recent series</div><div class="pvp-hist">${pv.hist.map((h) => `<div class="ph ${h.r > 0 ? 'w' : h.r < 0 ? 'l' : 'd'}"><span class="ph-r">${h.r > 0 ? 'WIN' : h.r < 0 ? 'LOSS' : 'DRAW'}</span><span class="ph-n">vs ${esc(h.n)}</span><b>${esc(h.s)}</b><small>${h.d >= 0 ? '+' : ''}${h.d}</small></div>`).join('')}</div>`;
-          body.querySelector('.pvp-go').onclick = go.onclick;
         }
+        body.querySelector('.pm-btns').append(go, enter);
       }, { width: '460px' });
     },
 
@@ -581,12 +661,17 @@
       const pv = M.pvpData();
       pv.sent.unshift(seed); pv.sent.length = Math.min(pv.sent.length, 20); BB.save.write();
       const code = M.encode3(ids, maps, seed, await M.myName());
+      const short = M.shortChallenge(ids, maps, seed);
       const link = BB.sdk.inviteLink({ pvp3: code });
       BB.sdk.showInvite({ pvp3: code });
       BB.ui.open((sheet) => {
         const body = BB.ui.head(sheet, 'Challenge Ready!');
         body.innerHTML += `<div class="squad">${ids.map((id, k) => `<div class="sq-s"><em>Round ${k + 1}</em><img src="${BB.icon(id)}" alt=""><span>${esc(BB.ITEM[id].name)}</span></div>`).join('')}</div>
-          <div class="f-s">Send this to a friend with the CrazyGames invite button or the link below. Your squad stays hidden until they lock in theirs. When they finish, they can send the result back to you.</div>`;
+          ${M.codeBox(short, 'Challenge code')}
+          <div class="f-s">Your friend opens PvP, taps <b>Enter code</b> and types this in (or use the invite link below). Your squad stays hidden until they lock in theirs, and they get a result code to send back to you.</div>`;
+        const cc = document.createElement('button'); cc.className = 'btn primary'; cc.textContent = 'Copy code';
+        cc.onclick = async () => { try { await navigator.clipboard.writeText(short); BB.ui.toast('Code copied!'); } catch (e) { BB.ui.toast(short); } };
+        body.appendChild(cc);
         const out = document.createElement('input'); out.className = 'pvp-link'; out.readOnly = true; out.value = link || 'Invites only work on CrazyGames';
         body.appendChild(out);
         const cp = document.createElement('button'); cp.className = 'btn green'; cp.textContent = 'Copy link';
@@ -712,11 +797,11 @@
           const send = document.createElement('button'); send.className = 'btn blue'; send.textContent = 'Send result to ' + sr.foeName;
           send.onclick = async () => {
             BB.audio.play('click');
-            const code = M.encodeR(sr, await M.myName());
-            const link = BB.sdk.inviteLink({ pvp3r: code });
+            const code = M.encodeR(sr, await M.myName()), short = M.shortResult(sr);
             BB.sdk.showInvite({ pvp3r: code });
-            if (link) { try { await navigator.clipboard.writeText(link); BB.ui.toast('Result link copied! Send it to ' + sr.foeName); } catch (e) { BB.ui.toast('Use the invite button to send the result'); } }
-            else BB.ui.toast('Result links only work on CrazyGames');
+            const link = BB.sdk.inviteLink({ pvp3r: code });
+            if (!foot.parentNode.querySelector('.pvp-code')) body.querySelector('.result').insertAdjacentHTML('beforeend', M.codeBox(short, 'Result code: send it back to ' + esc(sr.foeName)));
+            try { await navigator.clipboard.writeText(short); BB.ui.toast('Result code copied!'); } catch (e) { BB.ui.toast(link ? 'Use the invite button or the code' : 'Send them the result code'); }
           };
           foot.append(send);
         }

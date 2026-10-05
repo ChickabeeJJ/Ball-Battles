@@ -967,3 +967,22 @@ html.cport .is-battle .stat-row.team .tr em { font-size: 13px; }
 html.cport .stat-row:not(.team) { font-size: 14px; }
 html.cport .stat-row:not(.team), html.cport.touch .stat-row:not(.team) { font-size: 16px !important; }
 html.cport .stat-row:not(.team) .st { white-space: normal; line-height: 1.15; }
+
+/* ================================================================ PvP: code + matchmaking */
+.pvp-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pvp-mode { display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 3px solid #111; border-radius: 8px; background: #34343a; box-shadow: 0 3px 0 #111; }
+.pvp-mode.code { background: linear-gradient(160deg, #3a2a52, #2c2c34); }
+.pvp-mode.mm { background: linear-gradient(160deg, #23384a, #2c2c34); }
+.pm-h { display: flex; align-items: center; gap: 6px; color: #ffd23f; }
+.pm-h .ico { width: 20px; height: 20px; }
+.pm-h b { font-family: var(--display); font-weight: 400; font-size: 18px; color: #fff; letter-spacing: .03em; }
+.pm-h em { margin-left: auto; font-style: normal; font-family: var(--num); font-size: 10px; padding: 1px 6px; border-radius: 999px; background: #7fe3ff; color: #111; border: 2px solid #111; }
+.pvp-mode > span { font-size: 11px; color: #d6c8e6; line-height: 1.35; flex: 1; }
+.pm-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.pvp-mode .btn { min-height: 40px; font-size: 14px; padding: 6px; }
+.pvp-code { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px; border: 3px dashed #ffd23f; border-radius: 10px; background: #1e1e21; }
+.pvp-code small { font-size: 11px; color: #b9b4ac; letter-spacing: .06em; text-transform: uppercase; }
+.pvp-code b { font-family: var(--num); font-weight: 400; font-size: clamp(18px, 5.4vw, 26px); color: #ffd23f; letter-spacing: .08em; user-select: all; word-break: break-all; text-align: center; }
+.pvp-code-in { width: 100%; height: 54px; border: 3px solid #111; border-radius: 8px; background: #1e1e21; color: #ffd23f; font-family: var(--num); font-size: 22px; letter-spacing: .08em; text-align: center; text-transform: uppercase; }
+.pvp-code-in.bad { border-color: #f0545a; animation: shake .3s; }
+@media (max-width: 520px) { .pvp-modes { grid-template-columns: 1fr; } }
