@@ -156,6 +156,19 @@
       ctx.beginPath(); ctx.arc(cap.ax, cap.ay, cap.hw, 0, TAU); ctx.fillStyle = g; ctx.fill(); ctx.lineWidth = lw; ctx.strokeStyle = OUT; ctx.stroke();
     }
 
+    // knockback launch: speed streaks + dust puffs trailing the flying ball
+    if (b.flyT > 0) {
+      const sp = Math.hypot(b.vx, b.vy) || 1, ux = -b.vx / sp, uy = -b.vy / sp, k = b.flyT / 0.5;
+      ctx.save(); ctx.lineCap = 'round';
+      for (let i = -2; i <= 2; i++) {
+        const ox = -uy * i * b.r * 0.38, oy = ux * i * b.r * 0.38, L = b.r * (2.2 + (2 - Math.abs(i)) * 0.8) * k;
+        ctx.beginPath(); ctx.moveTo(b.x + ux * b.r + ox, b.y + uy * b.r + oy); ctx.lineTo(b.x + ux * (b.r + L) + ox, b.y + uy * (b.r + L) + oy);
+        ctx.strokeStyle = 'rgba(255,255,255,' + 0.85 * k + ')'; ctx.lineWidth = 5; ctx.stroke();
+        ctx.strokeStyle = 'rgba(30,30,40,' + 0.35 * k + ')'; ctx.lineWidth = 1.5; ctx.stroke();
+      }
+      for (let i = 1; i <= 3; i++) { ctx.beginPath(); ctx.arc(b.x + ux * b.r * (1.2 + i * 0.9), b.y + uy * b.r * (1.2 + i * 0.9), b.r * (0.25 + i * 0.08) * k, 0, TAU); ctx.fillStyle = 'rgba(225,215,195,' + 0.5 * k / i + ')'; ctx.fill(); }
+      ctx.restore();
+    }
     weaponTrail(ctx, b, w, col);
 
     ctx.save();
@@ -173,6 +186,7 @@
     ctx.save(); ctx.clip();
     ctx.beginPath(); ctx.ellipse(-r * 0.32, -r * 0.42, r * 0.38, r * 0.2, -0.5, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.fill();
     if (b.slowT > 0) { ctx.fillStyle = 'rgba(191,233,255,0.55)'; ctx.fillRect(-r, -r, r * 2, r * 2); }
+    if (b.paintT > 0) { ctx.fillStyle = 'rgba(255,60,120,0.7)'; for (const [px, py, pr] of [[-0.3, 0.2, 0.45], [0.35, -0.1, 0.35], [0.05, 0.5, 0.28]]) { ctx.beginPath(); ctx.arc(px * r, py * r, pr * r, 0, TAU); ctx.fill(); } }
     if (b.flash > 0) { ctx.fillStyle = 'rgba(255,255,255,' + Math.min(1, b.flash * 9) + ')'; ctx.fillRect(-r, -r, r * 2, r * 2); }
     ctx.restore();
     ctx.lineWidth = lw * (b.main ? 1.5 : 1.1); ctx.strokeStyle = OUT; ctx.stroke();

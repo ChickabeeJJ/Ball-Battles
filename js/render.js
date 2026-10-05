@@ -460,6 +460,17 @@
           ctx.globalAlpha = a;
           ctx.beginPath(); ctx.arc(f.x, f.y, BB.lerp(f.r1, f.r0, a), 0, TAU);
           ctx.lineWidth = 5 * a + 1; ctx.strokeStyle = f.c; ctx.stroke();
+        } else if (f.k === 'tag') {
+          const k = 1 - a, pop = k < 0.15 ? 0.6 + k / 0.15 * 0.5 : 1.1 - Math.min(0.1, (k - 0.15));
+          ctx.globalAlpha = Math.min(1, a * 2.2);
+          ctx.save(); ctx.translate(f.x, f.y - k * 26); ctx.scale(pop, pop);
+          ctx.font = '26px ' + NUM_FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+          const tw = ctx.measureText(f.text).width + 22, th = 34;
+          ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-tw / 2, -th / 2, tw, th, 10) : ctx.rect(-tw / 2, -th / 2, tw, th);
+          ctx.fillStyle = 'rgba(20,20,26,0.88)'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = f.c; ctx.stroke();
+          ctx.lineWidth = 5; ctx.strokeStyle = '#111'; ctx.strokeText(f.text, 0, 2);
+          ctx.fillStyle = f.c === '#ffffff' ? '#ffffff' : f.c; ctx.fillText(f.text, 0, 2);
+          ctx.restore();
         } else if (f.k === 'z') {
           ctx.globalAlpha = a;
           ctx.beginPath(); ctx.moveTo(f.x, f.y);

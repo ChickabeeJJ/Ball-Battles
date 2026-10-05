@@ -21,6 +21,13 @@
     };
   }
 
+  const TRACK = ['damage', 'spin', 'len', 'width', 'arrows', 'n', 'orbs', 'moons', 'crit', 'burn', 'reload', 'heal', 'wave', 'zap', 'applied'];
+  const LABEL = {
+    damage: (d) => (d > 0 ? '+' + BB.fmt(d) + ' DMG' : null), spin: 'SPIN UP', len: 'LONGER', width: 'BIGGER',
+    arrows: '+1 ARROW', n: (d) => (Math.floor(d * 2) >= 1 || d >= 1 ? '+1 SHOT' : 'CHARGING'), orbs: '+ORB', moons: '+MOON',
+    crit: 'CRIT CHANCE UP', burn: 'HOTTER FLAME', reload: 'FASTER RELOAD', heal: 'MORE HEALING', wave: 'LOUDER', zap: 'ZAP UP', applied: null,
+  };
+
   class Sim {
     // cfg: { seed, map, teams: [[slotCfg...]...], settings, controlSlot }
     // slotCfg: { id, hp, scale, ov: {damage, spin, speed}, slot }
@@ -194,9 +201,39 @@
       const w = attacker.w;
       w.hits++;
       const hadBurn = target && target.burnT;
+      const before = {};
+      for (const k of TRACK) before[k] = w[k];
+      const bSpeed = attacker.speedMul, bR = attacker.r;
+      const tb = target ? { stun: target.stunT, slow: target.slowT, paint: target.paintT, poison: target.poison } : null;
       if (attacker.def.onHit) attacker.def.onHit(this, attacker, w, target, dealt);
+      this.callouts(attacker, target, before, bSpeed, bR, tb, hadBurn);
       if (target && target.burnT && target.burnT !== hadBurn) target.burnPow = BB.BALANCE[attacker.def.id] || 1;
     }
+
+    // Floating labels so every ability is visible without reading its description.
+    callouts(a, t, before, bSpeed, bR, tb, hadBurn) {
+      if (this.preview) return;
+      const w = a.w, col = BB.itemColor(a.def.id), tags = [];
+      for (const k of TRACK) {
+        const d = (w[k] || 0) - (before[k] || 0);
+        if (Math.abs(d) < 1e-6 || before[k] === undefined) continue;
+        const lbl = LABEL[k];
+        if (!lbl) continue;
+        tags.push(typeof lbl === 'function' ? lbl(d, w) : lbl);
+      }
+      if (a.speedMul > bSpeed + 1e-6) tags.push('SPEED UP');
+      if (a.r > bR + 1e-6) tags.push('GROWING');
+      if (tags.length && !(a.tagCd > this.t)) { a.tagCd = this.t + 0.35; this.fxTag(a.x, a.y - a.r - 22, tags[0], col); }
+      if (t && tb && t.alive) {
+        if (t.stunT > (tb.stun || 0) + 0.01) this.fxTag(t.x, t.y + t.r + 18, 'STUNNED', '#ffd23f');
+        else if (t.slowT > (tb.slow || 0) + 0.01) this.fxTag(t.x, t.y + t.r + 18, 'FROZEN', '#7fd3ff');
+        else if (t.paintT > (tb.paint || 0) + 0.01) this.fxTag(t.x, t.y + t.r + 18, 'PAINTED', '#ff6b81');
+        else if (t.poison > (tb.poison || 0)) this.fxTag(t.x, t.y + t.r + 18, 'POISON x' + t.poison, '#a259ff');
+        else if (t.burnT && t.burnT !== hadBurn) this.fxTag(t.x, t.y + t.r + 18, 'BURNING', '#ff7a1a');
+      }
+    }
+
+    fxTag(x, y, text, c) { this.fx.push({ k: 'tag', x, y, text, c, life: 0.9, max: 0.9 }); }
 
     // Applies damage, returns the amount actually dealt.
     damage(target, amt, src, info) {
@@ -275,7 +312,7 @@
         for (let i = 0; i < n; i++) {
           const a = w.angle + (i * TAU) / n;
           const x = b.x + Math.cos(a) * R, y = b.y + Math.sin(a) * R;
-          b.caps.push({ ax: x, ay: y, bx: x, by: y, hw: mr, hit: true, block: true });
+          b.caps.push({ ax: x, ay: y, bx: x, by: y, hw: mr, hit: true, block: false });
         }
         return;
       }
@@ -347,6 +384,7 @@
         const w = b.w;
         if (b.slowT > 0) b.slowT -= dt;
         if (b.paintT > 0) b.paintT -= dt;
+        if (b.flyT > 0) b.flyT -= dt;
         if (b.stunT > 0) b.stunT -= dt;
         if (b.sq > 0) b.sq = Math.max(0, b.sq - dt * 5);
         w.prevAngle = w.angle;
@@ -513,6 +551,13 @@
       }
     }
 
+    launch(b, x, y) {
+      b.flyT = 0.5;
+      this.ring(x, y, 6, 70, '#ffffff', 0.3);
+      this.burst(x, y, 10, ['#ffffff', '#e8dcc6', '#cfc3ad'], 320, 4);
+      if (!(b.tagCd2 > this.t)) { b.tagCd2 = this.t + 0.4; this.fxTag(b.x, b.y - b.r - 22, 'KNOCKBACK!', '#ffffff'); }
+    }
+
     squash(b, ang, k) { b.sq = Math.max(b.sq, Math.min(1, k)); b.sqA = ang; }
 
     obstacleHit(b, o) {
@@ -569,6 +614,7 @@
       const kx = nx + tx * 0.7, ky = ny + ty * 0.7, kl = Math.hypot(kx, ky) || 1;
       this.knock(c, c.x - kx / kl, c.y - ky / kl, def.knock || 220);
       this.knock(a, c.x, c.y, 60);
+      if ((def.knock || 220) >= 300) this.launch(c, px, py);
       this.squash(c, Math.atan2(ky, kx), 1);
       this.onHit(a, c, dealt);
     }
@@ -664,6 +710,7 @@
             if (p.slow) e.slowT = Math.max(e.slowT, p.slow);
             const dealt = this.damage(e, p.dmg, p.owner, { x: p.x, y: p.y, lag: p.kind === 'cannonball' });
             this.knock(e, p.x - p.vx, p.y - p.vy, p.knock || 90);
+            if ((p.knock || 0) >= 250) this.launch(e, p.x, p.y);
             this.onHit(p.owner, e, dealt);
             if (!p.pierce) { p.dead = true; break; }
           }
