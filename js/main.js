@@ -19,14 +19,14 @@
     capture: /[?&]capture\b/.test(location.search),
 
     // Loader: five segments, one per real boot stage. Inside the current stage the bar keeps
-    // creeping toward the segment's end so it never sits still, and a time floor (~1.75s, the
+    // creeping toward the segment's end so it never sits still, and a time floor (~1.15s, the
     // length of the intro fight) keeps it from snapping straight to 100%. Tap or key skips.
     loader: {
       STAGES: ['Contacting the arena', 'Loading your save', 'Sharpening blades', 'Building the arena', 'Polishing balls'],
       t0: performance.now(), stage: 0, sub: 0, stageT: performance.now(), shown: 0, raf: 0, lastDone: -1,
       tick() {
         const L = App.loader, now = performance.now(), N = L.STAGES.length;
-        const tk = Math.min(1, (now - L.t0) / 1750);
+        const tk = Math.min(1, (now - L.t0) / 1150);
         const timeCap = App.capture ? 1 : 1 - Math.pow(1 - tk, 2);
         const creep = L.stage >= N ? 0 : Math.max(L.sub, 0.88 * (1 - Math.exp(-(now - L.stageT) / 600)));
         const realCap = Math.min(1, (L.stage + creep) / N);
@@ -56,12 +56,12 @@
         this.set(this.STAGES.length);
         await new Promise((r) => {
           const skip = () => { this.shown = 1; this.tick(); r(); };
-          const chk = () => (this.shown >= 1 ? setTimeout(r, 220) : requestAnimationFrame(chk));
+          const chk = () => (this.shown >= 1 ? setTimeout(r, 80) : requestAnimationFrame(chk));
           if (App.capture) { skip(); return; }
           chk(); el.addEventListener('pointerdown', skip, { once: true }); window.addEventListener('keydown', skip, { once: true });
         });
         el.classList.add('out');
-        setTimeout(() => el.remove(), 450);
+        setTimeout(() => el.remove(), 300);
       },
     },
 
@@ -72,6 +72,9 @@
       App.loader.set(1);
       BB.sdk.loadingStart();
       BB.save.load();
+      // music starts as soon as the game loads (or on the first touch if the browser blocks autoplay)
+      App.applyAudio();
+      BB.music.start();
       App.loader.set(2);
 
       try {
@@ -474,7 +477,8 @@
             // sequence, small hits a short ink flash (throttled so rapid hits stay readable).
             {
               // K.O.: the full anime cut. Other hits: just the short black cut, and ~30% fewer of them.
-              const ko = e.amt >= 99;
+              // only a real knockout (flagged by the sim), never just a big hit
+              const ko = !!e.ko;
               const st = BB.save.data.settings;
               if (ko && st.finisher) {
                 App.impact = { t: 0, dur: 1.0, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0, ko: true };

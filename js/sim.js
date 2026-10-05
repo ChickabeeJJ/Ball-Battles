@@ -259,7 +259,7 @@
       if (!(info && info.dot)) this.emit({ type: 'impact', x, y, amt: a, crit: info && info.crit });
       if (src && src.def && src !== target) src.dealt = (src.dealt || 0) + a;
       if (target.def.onDamaged && !(info && info.dot)) target.def.onDamaged(this, target, a, src, info);
-      if (target.hp <= 0.0001) { target.hp = 0; this.kill(target, src); this.emit({ type: 'impact', x: target.x, y: target.y, amt: 99 }); }
+      if (target.hp <= 0.0001) { target.hp = 0; this.kill(target, src); this.emit({ type: 'impact', x: target.x, y: target.y, amt: 99, ko: !target.alive }); }
       return a;
     }
 

@@ -42,13 +42,21 @@
     if (!M.el) return;
     const v = A.blocked ? 0 : M.volume * 0.5;
     M.el.volume = v;
-    if (v > 0 && M.el.paused && M.started) M.el.play().catch(() => {});
+    if (v > 0 && M.el.paused && M.started) M.el.play().catch(() => M.retryOnGesture());
     else if (v === 0 && !M.el.paused) M.el.pause();
+  };
+  // Browsers block sound until the page has had a user gesture. If autoplay is refused, start on
+  // the very first touch / click / key anywhere (including during the loading screen).
+  M.retryOnGesture = function () {
+    if (M.waiting) return;
+    M.waiting = true;
+    const go = () => { M.waiting = false; ['pointerdown', 'touchstart', 'keydown', 'click'].forEach((e) => window.removeEventListener(e, go, true)); M.apply(); };
+    ['pointerdown', 'touchstart', 'keydown', 'click'].forEach((e) => window.addEventListener(e, go, true));
   };
   M.start = function () {
     if (M.started || typeof Audio === 'undefined') return;
     M.started = true;
-    M.el = new Audio(); M.el.preload = 'none';
+    M.el = new Audio(); M.el.preload = 'auto';
     M.el.addEventListener('ended', () => { M.i = (M.i + 1) % TRACKS.length; M.el.src = TRACKS[M.i]; M.apply(); });
     M.el.src = TRACKS[M.i];
     M.apply();

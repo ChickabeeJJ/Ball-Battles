@@ -477,12 +477,7 @@
       g.globalAlpha = 0.18; g.globalCompositeOperation = 'soft-light';
       g.drawImage(textureCanvas(192, 7, 4, (v) => { const k = 90 + v * 165; return [k, k, k]; }), 0, 0, S, S);
       g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
-      // far cloud bank, hazy
-      g.globalAlpha = 0.55;
-      for (let i = 0; i < 7; i++) celCloud(g, -S * 0.05 + i * S * 0.18, S * 0.66 + (i % 2) * 14, S * 0.22, '#a9c3e6', '#e3eefb');
-      g.globalAlpha = 1;
-      // near clouds
-      for (const [x, y, w] of [[S * 0.2, S * 0.3, S * 0.26], [S * 0.62, S * 0.48, S * 0.2], [S * 0.12, S * 0.62, S * 0.16]]) celCloud(g, x, y, w, '#9fb6dd', '#f4f8ff');
+      // (all clouds are drawn live in paintedFloor so every one of them drifts)
       // quilted bounce mat
       const mh = S * 0.075, my = S - mh;
       const mg = g.createLinearGradient(0, my, 0, S); mg.addColorStop(0, '#5aa8ff'); mg.addColorStop(0.5, '#2f6fd0'); mg.addColorStop(1, '#1d4796');
@@ -511,9 +506,15 @@
       for (let i = 0; i < 22; i++) { const ex = (r() - 0.5) * S + Math.sin(t * 1.3 + i) * 8, ey = ((r() * S - t * (25 + r() * 35)) % S + S) % S - S / 2; ctx.beginPath(); ctx.arc(ex, ey, 1.6 + r() * 1.4, 0, TAU); ctx.fillStyle = 'rgba(255,160,70,' + (0.4 + 0.4 * r()) + ')'; ctx.fill(); }
       ctx.restore();
     } else {
-      // slow drifting foreground clouds
-      ctx.save(); ctx.globalAlpha = 0.9;
-      for (let i = 0; i < 2; i++) { const w = S * (0.14 + i * 0.05); celCloud(ctx, ((i * S * 0.6 + t * (6 + i * 4)) % (S + w * 2)) - S / 2 - w, -S * 0.3 + i * S * 0.22, w, '#a7bde2', '#ffffff'); }
+      // every cloud drifts, in three parallax layers (far = slowest), wrapping around the arena
+      const drift = (x0, speed, w) => { const span = S + w * 2; return ((((x0 + t * speed) % span) + span) % span) - S / 2 - w; };
+      ctx.save();
+      ctx.globalAlpha = 0.55;
+      for (let i = 0; i < 7; i++) celCloud(ctx, drift(i * S * 0.18, 3, S * 0.22), S * 0.16 + (i % 2) * 14, S * 0.22, '#a9c3e6', '#e3eefb');
+      ctx.globalAlpha = 1;
+      for (const [x, y, w, v] of [[S * 0.2, -S * 0.2, S * 0.26, 7], [S * 0.62, -S * 0.02, S * 0.2, 9], [S * 0.12, S * 0.12, S * 0.16, 8]]) celCloud(ctx, drift(x, v, w), y, w, '#9fb6dd', '#f4f8ff');
+      ctx.globalAlpha = 0.9;
+      for (let i = 0; i < 2; i++) { const w = S * (0.14 + i * 0.05); celCloud(ctx, drift(i * S * 0.6, 12 + i * 5, w), -S * 0.3 + i * S * 0.22, w, '#a7bde2', '#ffffff'); }
       ctx.restore();
     }
   };
