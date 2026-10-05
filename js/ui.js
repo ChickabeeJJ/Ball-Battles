@@ -35,6 +35,7 @@
 
     open(build, opts) {
       const sheet = $('sheet');
+      sheet.className = 'sheet';
       sheet.innerHTML = '';
       sheet.style.maxWidth = (opts && opts.width) || '';
       build(sheet);
@@ -316,7 +317,7 @@
           big('green pz-main', BB.ICON.play, 'Resume', () => app.resume()),
           big('primary', BB.ICON.restart, 'Restart', () => { UI.onClose = null; UI.close(); app.startBattle(); }),
           big('', BB.ICON.gear, 'Settings', () => { UI.onClose = null; UI.settings(); }),
-          big('red', BB.ICON.home, 'Quit', () => { UI.onClose = null; UI.close(); app.pvp = null; app.event = null; BB.meta.cup = null; BB.meta.gaunt = null; app.toMenu(); }),
+          big('red', BB.ICON.home, 'Quit', () => { UI.onClose = null; UI.close(); app.pvp = null; app.event = null; BB.meta.cup = null; BB.meta.gaunt = null; BB.meta.series = null; app.toMenu(); }),
         );
         body.appendChild(grid);
         // quick toggles

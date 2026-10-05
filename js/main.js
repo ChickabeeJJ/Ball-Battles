@@ -63,11 +63,19 @@
       await App.loader.done();
       BB.meta.refreshBadges();
       document.querySelectorAll('[data-ico]').forEach((e) => { e.innerHTML = BB.ICON[e.dataset.ico]; });
-      $('optPvp').classList.toggle('hidden', !App.pvpAvailable());
-      $('menuPanel').classList.toggle('has-pvp', App.pvpAvailable());
+      // CrazyGames players get the PvP Arena in place of the Gauntlet
+      $('optPvp').classList.add('hidden');
+      if (App.pvpAvailable()) {
+        const g = $('btnGauntlet');
+        g.id = 'btnPvp'; g.classList.add('feat-pvp');
+        g.innerHTML = '<span class="feat-ic">' + BB.ICON.swords + '</span><span>PvP</span>';
+        g.onclick = () => { BB.audio.unlock(); BB.audio.play('click'); BB.meta.openPvp(); };
+      }
       // A friend's challenge link takes priority; otherwise first-time players get the tutorial.
-      const ch = App.pvpAvailable() ? App.decodeChallenge(BB.sdk.getInviteParam('pvp')) : null;
-      if (ch) BB.ui.pvpReceive(ch);
+      const ch3 = App.pvpAvailable() ? BB.meta.decode3(BB.sdk.getInviteParam('pvp3')) : null;
+      const ch = !ch3 && App.pvpAvailable() ? App.decodeChallenge(BB.sdk.getInviteParam('pvp')) : null;
+      if (ch3) BB.meta.pvpReceive(ch3);
+      else if (ch) BB.ui.pvpReceive(ch);
       else if (!BB.save.data.tutorialDone && !App.capture) setTimeout(() => BB.ui.tutorial(), 400);
     },
 
@@ -399,7 +407,7 @@
               const big = e.amt >= 4 || e.crit || e.amt >= 99;
               const ko = e.amt >= 99;
               if (ko || (big && !(App.impact && !App.impact.mini)) || (!App.impact && !(App.impactCd > 0))) {
-                App.impact = { t: 0, dur: ko ? 0.55 : big ? 0.34 : 0.13, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0, ko, mini: !big };
+                App.impact = { t: 0, dur: ko ? 1.0 : big ? 0.72 : 0.16, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0, ko, mini: !big };
                 App.impactCd = big ? 0.2 : 0.3;
               }
             }
@@ -484,7 +492,7 @@
       click('optMode', () => BB.ui.pickMode());
       click('optPvp', () => BB.ui.pvpCreate());
       click('btnCup', () => BB.meta.openCup());
-      click('btnGauntlet', () => BB.meta.openGauntlet());
+      $('btnGauntlet').addEventListener('click', () => { if (!App.pvpAvailable()) { BB.audio.unlock(); BB.audio.play('click'); BB.meta.openGauntlet(); } });
       click('btnQuests', () => BB.meta.openQuests());
       click('btnGift', () => BB.meta.claimGift());
       click('btnSpeed', () => {

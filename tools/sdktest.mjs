@@ -16,7 +16,7 @@ window.CrazyGames = { SDK: {
     loadingStart: () => L('loadingStart'), loadingStop: () => L('loadingStop'),
     gameplayStart: () => L('gameplayStart'), gameplayStop: () => L('gameplayStop'),
     happytime: () => L('happytime'),
-    inviteLink: (p) => { L('inviteLink'); return 'https://www.crazygames.com/game/ball-battles?pvp=' + encodeURIComponent(p.pvp); },
+    inviteLink: (p) => { L('inviteLink'); return 'https://www.crazygames.com/game/ball-battles?' + Object.keys(p).map((k) => k + '=' + encodeURIComponent(p[k])).join('&'); },
     getInviteParam: (k) => (k === 'pvp' ? window.__invite || null : null),
     showInviteButton: () => L('showInviteButton'), hideInviteButton: () => L('hideInviteButton'),
   },
@@ -93,25 +93,29 @@ check('back on menu, gameplay stopped', (await page.evaluate(() => BB.app.state)
 const prevented = await page.evaluate(() => { const e = new KeyboardEvent('keydown', { code: 'ArrowDown', key: 'ArrowDown', cancelable: true, bubbles: true }); window.dispatchEvent(e); return e.defaultPrevented; });
 check('arrow keys do not scroll the page', prevented);
 
-// PvP: button only on CrazyGames; link round-trips into a challenge
-check('PvP button visible on CrazyGames', await page.isVisible('#optPvp'));
-await page.click('#optPvp');
-await page.click('text=Create Challenge Link');
+// PvP: the PvP Arena replaces the Gauntlet on CrazyGames; a squad link round-trips into a series
+check('PvP button visible on CrazyGames', await page.isVisible('#btnPvp'));
+await page.click('#btnPvp');
+await page.click('text=Create a challenge');
+for (let i = 0; i < 3; i++) await page.click(`.grid .tile >> nth=${i}`);
+await page.click('text=Confirm squad');
 await page.waitForTimeout(200);
 const link = await page.inputValue('.pvp-link');
-check('PvP invite link created', /pvp=/.test(link));
-const code = decodeURIComponent(link.split('pvp=')[1]);
+check('PvP invite link created', /pvp3=/.test(link));
+check('CrazyGames invite button shown', (await page.evaluate(() => __log.slice())).includes('showInviteButton'));
+const code = decodeURIComponent(link.split('pvp3=')[1]);
 await page.click('.x-btn');
 const pv = await browser.newPage({ viewport: { width: 1000, height: 560 } });
 pv.on('pageerror', (e) => errs.push('pvp: ' + e.message));
-await pv.route('**/crazygames-sdk-v3.js', (r) => r.fulfill({ contentType: 'text/javascript', body: MOCK + 'window.__invite = ' + JSON.stringify(code) + ';' }));
+await pv.route('**/crazygames-sdk-v3.js', (r) => r.fulfill({ contentType: 'text/javascript', body: MOCK.replace("getInviteParam: (k) => (k === 'pvp' ? window.__invite || null : null),", "getInviteParam: (k) => (k === 'pvp3' ? " + JSON.stringify(code) + " : null),") }));
 await pv.goto(BASE + '/index.html');
-await pv.waitForSelector('text=Challenged', { timeout: 8000 });
-await pv.click('text=Fight!');
-await pv.waitForTimeout(400);
-check('challenge link opens PvP battle', await pv.evaluate(() => BB.app.state === 'battle' && !!BB.app.pvp));
-const seedA = await pv.evaluate(() => BB.app.sim.cfg.seed);
-check('PvP battle uses the challenge seed', String(seedA) === code.split('~')[7]);
+await pv.waitForSelector('text=Challenge Received', { timeout: 8000 });
+for (let i = 3; i < 6; i++) await pv.click(`.grid .tile >> nth=${i}`);
+await pv.click('text=Confirm squad');
+await pv.click('.vs-go');
+await pv.waitForTimeout(300);
+check('challenge link opens a PvP series battle', await pv.evaluate(() => BB.app.state === 'battle' && BB.app.event && BB.app.event.kind === 'pvp3'));
+check('PvP round uses the challenge seed', (await pv.evaluate(() => BB.app.sim.cfg.seed)) === (Number(code.split('~')[2]) | 0));
 
 // Standalone (SDK missing) still works
 const p2 = await browser.newPage();
