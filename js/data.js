@@ -82,7 +82,7 @@
       b.vx *= b.speed / v; b.vy *= b.speed / v;
     },
     onDamaged(sim, b) { b.speedMul = Math.min(b.w.cap, b.speedMul + 0.3); },
-    stats: (w, b) => ['Hit dmg: ' + fmt(w.damage), 'Speed: ' + Math.round(b.speedMul * 100) + '% / ' + Math.round(w.cap * 100) + '%'],
+    stats: (w, b) => ['Hit dmg: ' + fmt(w.damage), 'Spd ' + Math.round(b.speedMul * 100) + '/' + Math.round(w.cap * 100) + '%'],
   });
   add({
     id: 'bow', name: 'Bow', cat: 'weapon', rarity: 'rare', color: '#e7b928',

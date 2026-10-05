@@ -964,3 +964,6 @@ html.cport .is-battle .stat-row.team .tr .hpbar { height: 18px !important; }
 html.cport .is-battle .stat-row.team .tr .hpbar b { font-size: 12px !important; line-height: 13px !important; }
 .stat-row.team .tr em { max-width: none !important; min-width: 22px; text-align: right; flex-shrink: 0; overflow: visible !important; }
 html.cport .is-battle .stat-row.team .tr em { font-size: 13px; }
+html.cport .stat-row:not(.team) { font-size: 14px; }
+html.cport .stat-row:not(.team), html.cport.touch .stat-row:not(.team) { font-size: 16px !important; }
+html.cport .stat-row:not(.team) .st { white-space: normal; line-height: 1.15; }

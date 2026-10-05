@@ -181,7 +181,9 @@
         document.documentElement.style.setProperty('--panelw', pw + 'px');
         S = Math.min(vh - top - header - stats - 14, vw - pw * ui - 28 - 40);
       } else {
-        const panel = (teamMode ? 300 : 270) * ui;
+        // use the menu panel's real height so the arena takes all the space that's actually free
+        const mp = $('menuPanel'), real = mp && mp.offsetHeight ? mp.getBoundingClientRect().height : 0;
+        const panel = real > 50 ? real : (teamMode ? 300 : 270) * ui;
         S = Math.min(vw - 24, vh - top - header - stats - 12 - panel);
       }
       S = Math.max(150, Math.floor(S));

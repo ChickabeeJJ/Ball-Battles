@@ -488,7 +488,8 @@
         ctx.restore();
       }
 
-      // fx
+      // fx (floating text scales up on small arenas so it stays readable on phones)
+      const tsz = Math.max(1, Math.min(1.8, 560 / (this.px || 560)));
       for (const f of sim.fx) {
         const a = Math.max(0, f.life / f.max);
         if (f.k === 'p') {
@@ -503,8 +504,8 @@
           const k = 1 - a, pop = k < 0.15 ? 0.6 + k / 0.15 * 0.5 : 1.1 - Math.min(0.1, (k - 0.15));
           ctx.globalAlpha = Math.min(1, a * 2.2);
           ctx.save(); ctx.translate(f.x, f.y - k * 26); ctx.scale(pop, pop);
-          ctx.font = '26px ' + NUM_FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
-          const tw = ctx.measureText(f.text).width + 22, th = 34;
+          ctx.font = Math.round(26 * tsz) + 'px ' + NUM_FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+          const tw = ctx.measureText(f.text).width + 22 * tsz, th = 34 * tsz;
           ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-tw / 2, -th / 2, tw, th, 10) : ctx.rect(-tw / 2, -th / 2, tw, th);
           ctx.fillStyle = 'rgba(20,20,26,0.88)'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = f.c; ctx.stroke();
           ctx.lineWidth = 5; ctx.strokeStyle = '#111'; ctx.strokeText(f.text, 0, 2);
@@ -517,7 +518,7 @@
           ctx.strokeStyle = '#7fd3ff'; ctx.lineWidth = 10; ctx.stroke(); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 3.5; ctx.stroke();
         } else if (f.k === 'n') {
           ctx.globalAlpha = Math.min(1, a * 2);
-          ctx.font = '24px ' + NUM_FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.font = Math.round(24 * tsz) + 'px ' + NUM_FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           ctx.lineWidth = 5; ctx.strokeStyle = this.dark ? '#1c1d22' : '#ffffff'; ctx.lineJoin = 'round';
           ctx.strokeText(f.text, f.x, f.y);
           ctx.fillStyle = f.c === '#1d1d22' && this.dark ? '#ffffff' : f.c; ctx.fillText(f.text, f.x, f.y);
