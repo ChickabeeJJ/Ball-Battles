@@ -83,7 +83,7 @@
         id: this.nextId++, team, def, x, y, vx: 0, vy: 0,
         r: BALL_R * scale, baseR: BALL_R * scale, scale,
         speed: ov.speed > 0 ? ov.speed : BASE_SPEED, speedMul: 1,
-        hp: o.hp, maxHp: o.hp, alive: true, main: o.main !== false,
+        hp: def.fixedHp || o.hp, maxHp: def.fixedHp || o.hp, alive: true, main: o.main !== false,
         flash: 0, cd: {}, burnLvl: 0, burnT: 0, burnTick: 1, poison: 0, poisonTick: 1,
         controlled: !!o.controlled, slot: o.slot, caps: [], owner: o.owner || null, kills: 0,
         slowT: 0, stunT: 0, phase: 0, sq: 0, sqA: 0,
@@ -178,6 +178,7 @@
         if (!e.alive || e.team === src.team) continue;
         if ((e.x - x) ** 2 + (e.y - y) ** 2 <= (R + e.r) ** 2) {
           const dealt = this.damage(e, dmg, src, { x: e.x, y: e.y });
+          if (e._dg) continue;
           this.knock(e, x, y, 380);
           if (dealt) hit = true;
         }
@@ -238,6 +239,9 @@
     // Applies damage, returns the amount actually dealt.
     damage(target, amt, src, info) {
       if (!target.alive || amt <= 0) return 0;
+      // dodge hook (Kami's Divine Grace); _dg tells the caller to skip knockback and on-hit effects
+      target._dg = false;
+      if (target.def.dodge && target.def.dodge(this, target, amt, src, info)) { target._dg = true; return 0; }
       if (target.phase > 0 && !(info && info.dot)) { this.fxNum(target.x, target.y - target.r - 4, 'MISS', '#8da2c0'); return 0; }
       // per-ball balance multiplier (tools/balance.js) and painted targets take extra damage
       const pow = src && src.def ? (BB.BALANCE[src.def.id] || 1) : 1;
@@ -272,7 +276,7 @@
       if (src && src.alive !== undefined) src.kills++;
       this.burst(b.x, b.y, 30, [BB.TEAMS[b.team].fill, '#ffffff', BB.TEAMS[b.team].dark], 380, 5);
       this.ring(b.x, b.y, b.r, b.r * 3, BB.TEAMS[b.team].fill, 0.4);
-      this.emit({ type: 'death', x: b.x, y: b.y, team: b.team, main: b.main });
+      this.emit({ type: 'death', x: b.x, y: b.y, team: b.team, main: b.main, kami: !!(src && src.def && src.def.kami) });
       if (this.potato && this.potato.holder === b) { this.potato.holder = this.pickPotatoHolder(); this.potato.t = Math.max(this.potato.t, 4); }
       if (b.def.splits && b.main) {
         for (let k = 0; k < 2; k++) {
@@ -388,6 +392,7 @@
         if (b.paintT > 0) b.paintT -= dt;
         if (b.flyT > 0) b.flyT -= dt;
         if (b.stunT > 0) b.stunT -= dt;
+        if (b.jail) { b.jail.t += dt; if (b.jail.t >= b.jail.dur) b.jail = null; }
         if (b.sq > 0) b.sq = Math.max(0, b.sq - dt * 5);
         w.prevAngle = w.angle;
         w.angle += w.dir * w.spin * D2R * dt * (b.stunT > 0 ? 0 : b.slowT > 0 ? 0.45 : 1);
@@ -432,10 +437,11 @@
         }
         const sp = Math.hypot(b.vx, b.vy);
         if (sp > 1400) { b.vx *= 1400 / sp; b.vy *= 1400 / sp; }
-        if (b.stunT > 0) {
-          // stunned balls freeze in place; their momentum resumes when the stun wears off
+        if (b.stunT > 0 || b.hold || b.jail) {
+          // stunned (or imprisoned / channelling) balls freeze in place; their momentum resumes when the stun wears off
           if (!b.stunV) b.stunV = [b.vx, b.vy];
           b.vx = 0; b.vy = 0;
+          if (b.jail) { b.x = b.jail.x; b.y = b.jail.y; }
         } else {
           if (b.stunV) { b.vx = b.stunV[0]; b.vy = b.stunV[1]; b.stunV = null; }
           b.x += b.vx * dt; b.y += b.vy * dt;
@@ -590,6 +596,7 @@
       if (dmg <= 0) return;
       c.cd['c' + a.id] = 0.5;
       const dealt = this.damage(c, dmg, a, { x, y, lag: true });
+      if (c._dg) return;
       if (dealt && a.def.id !== 'splodey') this.onHit(a, c, dealt);
     }
 
@@ -617,6 +624,7 @@
       const [px, py] = geo.segClosest(cap.ax, cap.ay, cap.bx, cap.by, c.x, c.y);
       c.cd[a.id] = def.hitCd || 0.25;
       const dealt = this.damage(c, dmg, a, { x: px, y: py, crit, lag: true });
+      if (c._dg) return;
       const ang = Math.atan2(py - a.y, px - a.x);
       const tx = -Math.sin(ang) * a.w.dir, ty = Math.cos(ang) * a.w.dir;
       let nx = c.x - px, ny = c.y - py; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl;
@@ -684,7 +692,7 @@
 
         // blocked by enemy weapons
         for (const b of this.balls) {
-          if (!b.alive || b.team === p.team || !b.caps.length) continue;
+          if (!b.alive || b.team === p.team || !b.caps.length || p.divine) continue;
           for (const cap of b.caps) {
             if (!cap.block) continue;
             const r = cap.hw + p.r;
@@ -716,9 +724,10 @@
               this.burst(p.x, p.y, 6, ['#ffffff', '#bfe9ff'], 200, 2.5); this.emit({ type: 'parry', x: p.x, y: p.y, small: true });
               break;
             }
+            const dealt = this.damage(e, p.dmg, p.owner, { x: p.x, y: p.y, lag: p.kind === 'cannonball' });
+            if (e._dg) continue; // dodged: the projectile flies on through
             if (p.burn) { e.burnLvl = Math.max(e.burnLvl, p.burn); e.burnT = 3; e.burnPow = BB.BALANCE[p.owner.def.id] || 1; }
             if (p.slow) e.slowT = Math.max(e.slowT, p.slow);
-            const dealt = this.damage(e, p.dmg, p.owner, { x: p.x, y: p.y, lag: p.kind === 'cannonball' });
             this.knock(e, p.x - p.vx, p.y - p.vy, p.knock || 90);
             if ((p.knock || 0) >= 250) this.launch(e, p.x, p.y);
             this.onHit(p.owner, e, dealt);

@@ -18,10 +18,11 @@ The game also runs without the SDK (opened from disk, other hosts, ad blockers).
 |---|---|
 | Weapons (45) | Sword, Dagger, Spear, Axe, Unarmed, Bow, Shuriken, Katana, Hammer, Torch, Scythe, Poison Flask, Wrench, Boomerang, Shield, Grimoire, Cannon, Lance, Dummy |
 | Specials (21) | Fibonacci, Speedy, Grower, Spiky, Gravitron, Splodey, Orbital, Duplicator, Vampire |
+| Iridescent (1) | **Kami (神)**: 25,000 coins. Locked at 1 HP; Divine Grace dodges every attack while charged (4 charges, refills over time). Three divine arts on cooldowns with anime cut-ins (Seraph Beam, Golden Gates, Heaven's Arsenal) and its own finisher cutscene. Logic and art live in `js/kami.js`. |
 | Modes | 1v1, 2v2, 3v3, Free For All |
 | Maps | Classic, Large, Bouncy (gravity), Pillars, Saws, Shrinking, Hot Potato, Meteors |
 | Per ball | Health, size, and overrides for damage, spin and speed |
-| Settings | Sound, dark mode, hit freeze, parry freeze, damage numbers, reverse team 2 spin, vibration |
+| Settings | Sound, dark mode, hit freeze, parry freeze, damage numbers, impact frames, finisher, Kami cutscenes, overtime bonus, reverse Team Two spin, vibration |
 
 Every weapon scales on hit (for example, Sword gains +1 damage, Dagger spins faster, Bow adds an arrow). Weapons that touch **parry**, which flips both spin directions. After 40s, **overtime** raises all damage, so every battle ends. Wins earn coins, which unlock Rare, Epic and Legendary items. Opponent slots can use any item, so players can see locked items in action.
 

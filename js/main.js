@@ -18,30 +18,45 @@
     last: 0,
     capture: /[?&]capture\b/.test(location.search),
 
-    // Cinematic loader: ~2s intro (tap/key skips), then fades to the menu.
-    // Loader: the bar eases toward the real progress, but never faster than ~1.5s for the full fill,
-    // so it always visibly progresses and the whole screen is gone in ~2s.
+    // Loader: five segments, one per real boot stage. Inside the current stage the bar keeps
+    // creeping toward the segment's end so it never sits still, and a time floor (~1.75s, the
+    // length of the intro fight) keeps it from snapping straight to 100%. Tap or key skips.
     loader: {
-      t0: performance.now(), real: 0, shown: 0, raf: 0,
+      STAGES: ['Contacting the arena', 'Loading your save', 'Sharpening blades', 'Building the arena', 'Polishing balls'],
+      t0: performance.now(), stage: 0, sub: 0, stageT: performance.now(), shown: 0, raf: 0, lastDone: -1,
       tick() {
-        const L = App.loader, t = (performance.now() - L.t0) / 1500;
-        const cap = Math.min(L.real, App.capture ? 1 : 1 - Math.pow(1 - Math.min(1, t), 2));
-        L.shown += (cap - L.shown) * 0.25; if (cap - L.shown < 0.003) L.shown = cap;
-        const f = document.getElementById('ldFill'), p = document.getElementById('ldPct');
-        if (f) f.style.transform = 'scaleX(' + L.shown.toFixed(3) + ')';
+        const L = App.loader, now = performance.now(), N = L.STAGES.length;
+        const tk = Math.min(1, (now - L.t0) / 1750);
+        const timeCap = App.capture ? 1 : 1 - Math.pow(1 - tk, 2);
+        const creep = L.stage >= N ? 0 : Math.max(L.sub, 0.88 * (1 - Math.exp(-(now - L.stageT) / 600)));
+        const realCap = Math.min(1, (L.stage + creep) / N);
+        const cap = Math.min(timeCap, realCap);
+        if (cap > L.shown) { L.shown += (cap - L.shown) * 0.24; if (cap - L.shown < 0.002) L.shown = cap; }
+        const cells = document.querySelectorAll('#ldBar > i');
+        const done = Math.min(N, Math.floor(L.shown * N + 1e-6));
+        cells.forEach((c, j) => { c.firstChild.style.transform = 'scaleX(' + Math.max(0, Math.min(1, L.shown * N - j)).toFixed(3) + ')'; });
+        for (let j = L.lastDone + 1; j < done; j++) if (cells[j]) cells[j].classList.add('done');
+        L.lastDone = Math.max(L.lastDone, done - 1);
+        const idx = Math.min(N - 1, done);
+        const p = document.getElementById('ldPct'), tip = document.getElementById('ldTip'), st = document.getElementById('ldStep');
         if (p) p.textContent = Math.round(L.shown * 100) + '%';
-        const tip = document.getElementById('ldTip');
-        if (tip) tip.textContent = L.shown >= 1 ? 'Ready!' : ['Entering the arena...', 'Sharpening blades...', 'Inflating balls...', 'Polishing weapons...'][Math.min(3, Math.floor(L.shown * 4))];
-        if (L.shown < 1) L.raf = requestAnimationFrame(L.tick);
+        if (tip) tip.textContent = L.shown >= 1 ? 'Ready!' : L.STAGES[idx] + '...';
+        if (st) st.textContent = Math.min(N, idx + 1) + '/' + N;
+        L.raf = L.shown < 1 ? requestAnimationFrame(L.tick) : 0;
       },
-      set(p) { this.real = Math.max(this.real, p); if (!this.raf) this.raf = requestAnimationFrame(this.tick); },
+      // stage k finished (sub = progress inside the next stage, 0..1)
+      set(k, sub) {
+        if (k > this.stage) { this.stage = k; this.stageT = performance.now(); this.sub = 0; }
+        if (sub != null) this.sub = Math.max(this.sub, Math.min(0.99, sub));
+        if (!this.raf) this.raf = requestAnimationFrame(this.tick);
+      },
       async done() {
         const el = document.getElementById('loader');
         if (!el) return;
-        this.set(1, 'Ready!');
+        this.set(this.STAGES.length);
         await new Promise((r) => {
           const skip = () => { this.shown = 1; this.tick(); r(); };
-          const chk = () => (this.shown >= 1 ? setTimeout(r, 180) : requestAnimationFrame(chk));
+          const chk = () => (this.shown >= 1 ? setTimeout(r, 220) : requestAnimationFrame(chk));
           if (App.capture) { skip(); return; }
           chk(); el.addEventListener('pointerdown', skip, { once: true }); window.addEventListener('keydown', skip, { once: true });
         });
@@ -52,15 +67,17 @@
 
     async boot() {
       const ld = document.getElementById('loader');
-      App.loader.set(0.15, 'Contacting the arena...');
+      App.loader.set(0);
       await BB.sdk.init();
-      App.loader.set(0.4, 'Sharpening blades...');
+      App.loader.set(1);
       BB.sdk.loadingStart();
       BB.save.load();
+      App.loader.set(2);
 
       try {
         await Promise.race([Promise.all([document.fonts.load('20px Anton'), document.fonts.load('20px "Pixelify Sans"')]), new Promise((r) => setTimeout(r, 700))]);
       } catch (e) { /* fall back to system font */ }
+      App.loader.set(3);
 
       App.renderer = new BB.Renderer($('arena'));
       App.applySettings();
@@ -68,12 +85,18 @@
       App.bindInput();
       App.layout();
       App.toMenu();
+      App.loader.set(4);
 
       BB.sdk.on('adStart', () => { App.applyAudio(); });
       BB.sdk.on('adEnd', () => { App.applyAudio(); App.last = performance.now(); });
       BB.sdk.on('settings', () => App.applyAudio());
 
-      App.loader.set(0.9, 'Polishing balls...');
+      // warm the icon cache so the menus open instantly
+      const ids = BB.ITEMS.filter((i) => i.cat !== 'hidden').map((i) => i.id);
+      for (let i = 0; i < ids.length; i++) {
+        BB.icon(ids[i]);
+        if (i % 8 === 7) { App.loader.set(4, i / ids.length); await new Promise((r) => setTimeout(r, 0)); }
+      }
       BB.sdk.loadingStop();
       if (!App.capture) requestAnimationFrame(App.frame);
       await App.loader.done();
@@ -199,7 +222,7 @@
         b.className = 'slot';
         b.style.borderLeftColor = BB.itemColor(s.id);
         b.setAttribute('aria-label', 'Edit ' + BB.TEAMS[team].name + ' ' + it.name);
-        b.innerHTML = `<img src="${BB.icon(s.id)}" alt=""><span class="sl-t"><span class="sl-n">${it.name}${BB.meta.starHtml(s.id)}</span><span class="sl-s">HP ${s.hp}${s.scale !== 1 ? ' · x' + s.scale : ''} · Edit</span></span><span class="dot" style="background:${BB.TEAMS[team].fill}"></span>`;
+        b.innerHTML = `<img src="${BB.icon(s.id)}" alt=""><span class="sl-t"><span class="sl-n">${it.name}${BB.meta.starHtml(s.id)}</span><span class="sl-s">HP ${it.fixedHp || s.hp}${s.scale !== 1 ? ' · x' + s.scale : ''} · Edit</span></span><span class="dot" style="background:${BB.TEAMS[team].fill}"></span>`;
         b.onclick = () => { BB.audio.unlock(); BB.audio.play('click'); BB.ui.editSlot(i); };
         return b;
       };
@@ -253,7 +276,8 @@
         const txt = (one ? '' : b.def.name + ': ') + (lines.join(' · ') || '');
         const pct = Math.max(0, Math.min(100, (b.hp / b.maxHp) * 100)).toFixed(1);
         const c = one ? BB.itemColor(b.def.id) : BB.TEAMS[b.team].fill;
-        html += `<span class="st" style="color:${c};${b.alive ? '' : 'opacity:.35'}"><span class="hpbar"><i style="width:${pct}%;background:${c}"></i><b>${Math.ceil(b.hp)}</b></span>${txt}</span>`;
+        const grace = b.def.kami ? `<span class="grbar${b.w.grace < BB.KAMI.GRACE.cost ? ' low' : ''}"><i style="width:${Math.round(b.w.grace)}%"></i></span>` : '';
+        html += `<span class="st" style="color:${c};${b.alive ? '' : 'opacity:.35'}"><span class="hpbar"><i style="width:${pct}%;background:${c}"></i><b>${Math.ceil(b.hp)}</b></span>${grace}${txt}</span>`;
       }
       if (force || html !== App._lastStats) {
         App._lastStats = html;
@@ -427,7 +451,17 @@
           case 'bump': BB.audio.play('bump'); break;
           case 'shoot': BB.audio.play('shoot', e); break;
           case 'boom': BB.audio.play('boom', e); App.vibrate(30); break;
-          case 'death': BB.audio.play('death'); if (e.main) App.vibrate(60); break;
+          case 'death': BB.audio.play('death'); if (e.main) App.vibrate(60); if (e.main && e.kami) App.kamiKill = true; break;
+          case 'kami': {
+            const cine = BB.save.data.settings.kamiCine !== false;
+            if (e.k === 'dodge') { BB.audio.play('kamiDodge'); break; }
+            if (e.k === 'beamfire') { BB.audio.play('kamiBeam'); App.shake = 16; App.vibrate(40); break; }
+            if (e.k === 'gateslam') { BB.audio.play('kamiSlam'); App.shake = 12; App.vibrate(30); break; }
+            BB.audio.play(e.k === 'gate' ? 'kamiGate' : 'kamiCast');
+            // anime cut-in for each divine art (sim pauses while it plays)
+            if (cine && !App.impact) App.impact = { t: 0, dur: 0.9, kamiCut: true, k: e.k, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0 };
+            break;
+          }
           case 'build': BB.audio.play('build'); break;
           case 'break': BB.audio.play('break'); break;
           case 'pass': BB.audio.play('pass'); break;
@@ -447,10 +481,20 @@
               }
             }
             break;
-          case 'ko': App.slowmo = 1.1; App.shake = 14; BB.ui.banner(e.winner < 0 ? 'DRAW!' : 'K.O.!', 1000); break;
+          case 'ko':
+            App.slowmo = 1.1; App.shake = 14;
+            // Kami's own finisher replaces the regular one
+            if (App.kamiKill && e.winner >= 0 && BB.save.data.settings.kamiCine !== false) {
+              const foe = sim.balls.find((b) => b.main && !b.alive && b.team !== e.winner);
+              App.impact = { t: 0, dur: 2.8, kamiFin: true, x: 0, y: 0, seed: (Math.random() * 1e6) | 0, foe: foe ? BB.itemColor(foe.def.id) : '#e8473f' };
+              BB.audio.play('kamiFinisher');
+              setTimeout(() => BB.ui.banner('K.O.!', 900), 2700);
+            } else BB.ui.banner(e.winner < 0 ? 'DRAW!' : 'K.O.!', 1000);
+            break;
         }
       }
       sim.events.length = 0;
+      App.kamiKill = false;
     },
 
     // ------------------------------------------------------------- loop

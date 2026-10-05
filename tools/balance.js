@@ -6,7 +6,7 @@ for (const f of ['core', 'data', 'data2', 'sim']) require('../js/' + f + '.js');
 const fs = require('fs');
 const BB = globalThis.BB;
 BB.BALANCE = {};
-const ids = BB.ITEMS.filter((i) => i.id !== 'dummy').map((i) => i.id);
+const ids = BB.ITEMS.filter((i) => i.id !== 'dummy' && i.rarity !== 'iridescent').map((i) => i.id);
 const SETTINGS = { hitlag: true, parrylag: true, dmgNumbers: false };
 function duel(a, b, seed) {
   const s = new BB.Sim({ seed, map: 'classic', settings: SETTINGS, teams: [[{ id: a, hp: 100, slot: 0 }], [{ id: b, hp: 100, slot: 1 }]] });

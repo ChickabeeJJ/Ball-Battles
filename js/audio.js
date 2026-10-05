@@ -112,6 +112,36 @@
         if (!ok('unlock', 0.3)) return;
         [523, 784, 1047, 1568].forEach((f, i) => tone('triangle', f, 0, 0.2, 0.14, i * 0.07));
         break;
+      case 'kamiCast':
+        if (!ok('kamiCast', 0.4)) return;
+        [523, 659, 784, 1047].forEach((f, i) => { tone('sine', f, 0, 0.9, 0.07, i * 0.03); tone('triangle', f * 2, 0, 0.5, 0.025, i * 0.03); });
+        noise(0.6, 0.12, 6000, 0.8);
+        break;
+      case 'kamiGate':
+        if (!ok('kamiGate', 0.4)) return;
+        tone('square', 196, 98, 0.35, 0.12); tone('triangle', 784, 740, 0.6, 0.14);
+        noise(0.12, 0.3, 2400, 3, 0.05); noise(0.12, 0.3, 2000, 3, 0.25);
+        [392, 494, 587].forEach((f, i) => tone('sine', f, 0, 0.7, 0.06, 0.1 + i * 0.04));
+        break;
+      case 'kamiBeam':
+        if (!ok('kamiBeam', 0.3)) return;
+        noise(0.7, 0.45, 2600, 0.6); tone('sawtooth', 140, 55, 0.7, 0.16); tone('sine', 880, 1760, 0.5, 0.1);
+        break;
+      case 'kamiSlam':
+        if (!ok('kamiSlam', 0.3)) return;
+        noise(0.4, 0.6, 500, 0.8); tone('sine', 110, 40, 0.5, 0.4); tone('triangle', 1319, 988, 0.4, 0.1);
+        break;
+      case 'kamiDodge':
+        if (!ok('kamiDodge', 0.08)) return;
+        noise(0.16, 0.22, 1900, 2); tone('sine', 1200, 2600, 0.12, 0.05);
+        break;
+      case 'kamiFinisher':
+        if (!ok('kamiFinisher', 1)) return;
+        noise(0.3, 0.5, 4000, 0.5);
+        tone('sine', 98, 82, 2.4, 0.35); tone('triangle', 196, 0, 1.6, 0.12, 0.25);
+        [523, 659, 784, 988, 1175].forEach((f, i) => tone('sine', f, 0, 1.4, 0.05, 0.3 + i * 0.08));
+        noise(0.5, 0.6, 700, 0.7, 2.05); tone('sine', 140, 35, 0.6, 0.4, 2.05);
+        break;
       case 'overtime': if (ok('overtime', 0.5)) { tone('sawtooth', 220, 440, 0.3, 0.1); } break;
     }
   };

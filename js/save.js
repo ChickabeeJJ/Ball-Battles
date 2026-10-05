@@ -10,7 +10,7 @@
       v: 1,
       coins: 0,
       unlocked,
-      settings: { sound: 0.8, dark: false, hitlag: true, parrylag: true, reverseB: false, vibrate: true, dmgNumbers: true, impact: false, finisher: false, overtime: true },
+      settings: { sound: 0.8, dark: false, hitlag: true, parrylag: true, reverseB: false, vibrate: true, dmgNumbers: true, impact: false, finisher: false, overtime: true, kamiCine: true },
       tutorialDone: false,
       setup: {
         mode: '1v1', map: 'classic', control: false,

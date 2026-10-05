@@ -327,7 +327,7 @@
     },
 
     randomFoes(n, exclude, rng) {
-      const pool = BB.ITEMS.filter((i) => i.cat !== 'hidden' && i.id !== 'dummy' && i.id !== exclude);
+      const pool = BB.ITEMS.filter((i) => i.cat !== 'hidden' && i.id !== 'dummy' && i.rarity !== 'iridescent' && i.id !== exclude);
       const out = [];
       while (out.length < n) { const it = pool[Math.floor(rng() * pool.length)]; if (!out.includes(it.id)) out.push(it.id); }
       return out;
@@ -602,7 +602,7 @@
       app.startBattle();
       // carry HP into the new fight
       const meBall = app.sim.balls.find((b) => b.team === 0 && b.main);
-      meBall.hp = Math.max(1, Math.round(g.hp));
+      if (!meBall.def.fixedHp) meBall.hp = Math.max(1, Math.round(g.hp));
       app.renderStats(app.sim, true);
       BB.ui.banner('STAGE ' + g.stage, 900);
     },

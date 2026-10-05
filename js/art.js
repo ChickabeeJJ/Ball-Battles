@@ -237,7 +237,7 @@
     }
 
     // HP number
-    if (b.main || b.r > 12) {
+    if ((b.main || b.r > 12) && !b.def.kami) {
       const hp = Math.ceil(b.hp);
       const fs = r * (hp >= 1000 ? 0.66 : hp >= 100 ? 0.82 : 1.0);
       ctx.font = fs + 'px ' + BB.NUM_FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';

@@ -81,7 +81,8 @@
         cur.appendChild(change);
         body.appendChild(cur);
 
-        body.appendChild(UI.numField('Health', '', s.hp, 1, 9999, 10, (v) => { s.hp = v; }));
+        if (it.fixedHp) body.appendChild(el('div', 'field', `<div><div class="f-k">Health</div><div class="f-s">Locked by Divine Grace</div></div><b class="hp-lock">${it.fixedHp}</b>`));
+        else body.appendChild(UI.numField('Health', '', s.hp, 1, 9999, 10, (v) => { s.hp = v; }));
         body.appendChild(UI.numField('Size', 'Ball scale', s.scale, 0.5, 2.5, 0.25, (v) => { s.scale = v; }, true));
         body.appendChild(el('div', 'section-t', 'Overrides (0 = default)'));
         body.appendChild(UI.numField('Damage', 'Starting damage', s.ov.damage, 0, 999, 1, (v) => { s.ov.damage = v; }));
@@ -127,19 +128,21 @@
       const s = save.setup.slots[slotIdx];
       const mine = true; // every slot uses only unlocked balls
       let sel = s.id;
-      tab = tab || (BB.ITEM[s.id].cat === 'special' ? 'special' : 'weapon');
+      tab = tab || (BB.ITEM[s.id].rarity === 'iridescent' ? 'iridescent' : BB.ITEM[s.id].cat === 'special' ? 'special' : 'weapon');
 
       UI.open((sheet) => {
         const body = UI.head(sheet, app.teamOfSlot(slotIdx) === 0 ? 'Choose Your Ball' : 'Choose Opponent', { onX: () => UI.editSlot(slotIdx) });
         const tabs = el('div', 'tabs');
-        for (const [k, n] of [['weapon', 'Weapons'], ['special', 'Specials']]) {
-          const t = el('button', 'tab' + (tab === k ? ' on' : ''), n);
+        for (const [k, n] of [['weapon', 'Weapons'], ['special', 'Specials'], ['iridescent', 'Iridescent']]) {
+          const t = el('button', 'tab' + (tab === k ? ' on' : '') + (k === 'iridescent' ? ' iri' : ''), n);
           t.onclick = () => { BB.audio.play('click'); UI.pickItem(slotIdx, k); };
           tabs.appendChild(t);
         }
         body.appendChild(tabs);
         const detail = el('div', 'detail');
         body.appendChild(detail);
+        const inTab = (i) => (tab === 'iridescent' ? i.rarity === 'iridescent' : i.cat === tab && i.rarity !== 'iridescent');
+        if (!inTab(BB.ITEM[sel])) { const first = BB.ITEMS.find((i) => inTab(i)); if (first) sel = first.id; }
         const grid = el('div', 'grid');
         body.appendChild(grid);
 
@@ -151,6 +154,7 @@
           const r = BB.RARITY[it.rarity];
           detail.innerHTML = `<img src="${BB.icon(sel)}" alt=""><div style="flex:1;min-width:0"><div class="d-n">${esc(it.name)}</div>
             <div class="d-r" style="color:${r.color}">${r.name}</div><div class="d-d">${esc(it.desc)}</div></div>`;
+          if (it.kami) detail.insertAdjacentHTML('beforeend', '<div class="k-abil">' + [['Divine Grace', 'Dodges any attack while charged (4 charges, refills over time). HP locked at 1.'], ['Seraph Beam', 'Angel wings unfurl, then a beam of light pierces the arena. 20 dmg · ' + BB.KAMI.AB.beam.cd + 's'], ['Golden Gates', 'Imprisons a foe in a golden cage, then slams it shut. 18 dmg · ' + BB.KAMI.AB.gate.cd + 's'], ['Heaven\'s Arsenal', 'Portals open and rain ' + BB.KAMI.AB.rain.swords + ' holy swords. 3 dmg each · ' + BB.KAMI.AB.rain.cd + 's']].map(([n, d]) => `<div><b>${n}</b><span>${d}</span></div>`).join('') + '</div>');
           if (app.isOwned(sel)) { detail.insertAdjacentHTML('beforeend', '<div class="m-inline">' + BB.meta.masteryBlock(sel) + '</div>'); BB.meta.bindSkins(detail, sel, () => app.refreshMenu()); }
           foot.innerHTML = '';
           const owned = app.isOwned(sel);
@@ -194,12 +198,12 @@
           grid.querySelectorAll('.tile').forEach((t) => t.classList.toggle('sel', t.dataset.id === sel));
         };
 
-        const items = BB.ITEMS.filter((i) => i.cat === tab);
-        const rank = { common: 0, rare: 1, epic: 2, legendary: 3 };
+        const items = BB.ITEMS.filter(inTab);
+        const rank = { common: 0, rare: 1, epic: 2, legendary: 3, iridescent: 4 };
         items.sort((a, b) => rank[a.rarity] - rank[b.rarity]);
         for (const it of items) {
           const owned = app.isOwned(it.id);
-          const t = el('button', 'tile' + (mine && !owned ? ' locked' : ''));
+          const t = el('button', 'tile' + (mine && !owned ? ' locked' : '') + (it.rarity === 'iridescent' ? ' iri' : ''));
           t.dataset.id = it.id;
           t.innerHTML = `<img src="${BB.icon(it.id)}" alt=""><span class="t-n">${esc(it.name)}</span>${BB.meta.starHtml(it.id)}<span class="rar" style="background:${BB.RARITY[it.rarity].color}"></span>`;
           if (!owned) t.innerHTML += `<span class="price">${coinHtml(it.price)}</span>`;
@@ -275,6 +279,7 @@
           ['dmgNumbers', 'Damage Numbers', ''],
           ['impact', 'Impact Frames', 'Quick black flash on hits'],
           ['finisher', 'Finisher', 'Full anime cut on the knockout'],
+          ['kamiCine', 'Kami Cutscenes', 'Divine cut-ins and the Kami finisher'],
           ['overtime', 'Overtime Bonus', 'Damage ramps up after 55s'],
           ['reverseB', 'Reverse Team Two Spin', 'Team Two spins the other way'],
           ['vibrate', 'Vibration', 'On supported phones'],
@@ -311,7 +316,7 @@
         for (const b of sim.balls.filter((x) => x.main)) {
           const c = BB.itemColor(b.def.id), pct = Math.max(0, (b.hp / b.maxHp) * 100);
           list.innerHTML += `<div class="pz-f${b.alive ? '' : ' out'}"><img src="${BB.icon(b.def.id)}" alt=""><div class="pz-fi"><div class="pz-fn" style="color:${c}">${esc(b.def.name)}</div>
-            <span class="hpbar"><i style="width:${pct}%;background:${c}"></i><b>${Math.ceil(b.hp)}</b></span><div class="pz-fs">${esc(sim.stats(b).join(' · '))}</div></div></div>`;
+            <span class="hpbar"><i style="width:${pct}%;background:${c}"></i><b>${Math.ceil(b.hp)}</b></span>${b.def.kami ? `<span class="grbar"><i style="width:${Math.round(b.w.grace)}%"></i></span>` : ''}<div class="pz-fs">${esc(sim.stats(b).join(' · '))}</div></div></div>`;
         }
         body.appendChild(list);
         const big = (cls, icon, label, fn) => { const b = el('button', 'btn pz-btn ' + cls, `<span class="pz-ic">${icon}</span>${label}`); b.onclick = () => { BB.audio.play('click'); fn(); }; return b; };
