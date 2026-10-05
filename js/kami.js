@@ -609,8 +609,8 @@
     const tg = ctx.createLinearGradient(0, -H * 0.16, 0, H * 0.08); tg.addColorStop(0, '#fffbe0'); tg.addColorStop(1, '#ffc93a');
     ctx.fillStyle = tg; ctx.fillText(def.title, tx, -H * 0.04);
     ctx.font = Math.round(H * 0.08) + 'px ' + (BB.NUM_FONT || 'sans-serif');
-    ctx.lineWidth = H * 0.025; ctx.strokeText('DIVINE ART OF KAMI', tx + H * 0.04, H * 0.16);
-    ctx.fillStyle = '#ffffff'; ctx.fillText('DIVINE ART OF KAMI', tx + H * 0.04, H * 0.16);
+    ctx.lineWidth = H * 0.025; ctx.strokeText('DIVINE JUDGEMENT', tx + H * 0.04, H * 0.16);
+    ctx.fillStyle = '#ffffff'; ctx.fillText('DIVINE JUDGEMENT', tx + H * 0.04, H * 0.16);
     ctx.restore();
     ctx.restore();
     // band edges
