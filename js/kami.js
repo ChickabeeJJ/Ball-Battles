@@ -948,6 +948,9 @@
     }
     const cw = Math.round(vw * dpr), ch = Math.round(vh * dpr);
     if (fsC.width !== cw || fsC.height !== ch) { fsC.width = cw; fsC.height = ch; }
+    // size the element to exactly the viewport we measured (100vh on mobile includes the browser
+    // bars, which stretched the art into ovals)
+    fsC.style.width = vw + 'px'; fsC.style.height = vh + 'px';
     fsSeen = performance.now();
     const ctx = fsC.getContext('2d'), S = Math.min(Math.max(cw, ch), Math.min(cw, ch) * 1.15);
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cw, ch);

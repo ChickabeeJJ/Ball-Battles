@@ -1069,7 +1069,7 @@ html.cport .stat-row:not(.team) .st { white-space: normal; line-height: 1.15; }
 .awk.no .awk-line { opacity: 0; transition: opacity .2s; }
 .stat-row .st .stx { white-space: normal; }
 .stat-row .st .stx > b { white-space: nowrap; font-weight: inherit; }
-.kami-fs { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 800; pointer-events: none; }
+.kami-fs { position: fixed; left: 0; top: 0; z-index: 800; pointer-events: none; }
 .feat-row .feat-pvp { grid-column: 1 / -1; }
 @media (max-aspect-ratio: 1/1), (max-width: 700px) { .awk-bars { display: none; } }
 
