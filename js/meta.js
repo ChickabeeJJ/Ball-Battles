@@ -76,7 +76,7 @@
         if (w < 0 || !b.main || b.owner || b.team !== w || (!anySide && b.team !== mySide)) continue;
         const id = b.def.id;
         if (!BB.ITEM[id] || BB.ITEM[id].cat === 'hidden' || !app.isOwned(id)) continue;
-        const xp = 40 + Math.min(40, Math.round((b.dealt || 0) / 4)) + (b.kills || 0) * 10;
+        const xp = 100000; // TEMP testing: revert to 40 + Math.min(40, Math.round((b.dealt || 0) / 4)) + (b.kills || 0) * 10
         seen[id] = (seen[id] || 0) + xp;
       }
       for (const id in seen) M.lastXP.push(M.addXP(id, seen[id]));
