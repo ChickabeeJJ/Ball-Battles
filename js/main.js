@@ -115,16 +115,30 @@
         $('btnCup').parentNode.prepend(g);
       }
       // A friend's challenge link takes priority; otherwise first-time players get the tutorial.
-      const res3 = App.pvpAvailable() ? BB.meta.decodeR(BB.sdk.getInviteParam('pvp3r')) : null;
-      const ch3 = App.pvpAvailable() && !res3 ? BB.meta.decode3(BB.sdk.getInviteParam('pvp3')) : null;
-      const ch = !ch3 && App.pvpAvailable() ? App.decodeChallenge(BB.sdk.getInviteParam('pvp')) : null;
-      // squads of mine fought while I was away (matchmaking)
-      // CrazyGames instant multiplayer: straight into matchmaking (or the PvP Arena if it isn't set up)
-      if (App.pvpAvailable() && BB.sdk.instantMultiplayer() && !res3 && !ch3 && !ch) { BB.match.start(); }
-      else if (res3) BB.meta.pvpResult(res3);
-      else if (ch3) BB.meta.pvpReceive(ch3);
-      else if (ch) BB.ui.pvpReceive(ch);
-      else if (!BB.save.data.tutorialDone && !App.capture) setTimeout(() => BB.ui.tutorial(), 400);
+      const handled = App.pvpAvailable() && App.openInvite((k) => BB.sdk.getInviteParam(k));
+      // CrazyGames instant multiplayer: straight into matchmaking
+      if (!handled && App.pvpAvailable() && BB.sdk.instantMultiplayer()) BB.match.start();
+      else if (!handled && !BB.save.data.tutorialDone && !App.capture) setTimeout(() => BB.ui.tutorial(), 400);
+      // joining a friend's room while the game is already running (invite notification / friends drawer)
+      if (App.pvpAvailable()) BB.sdk.onJoinRoom((params) => {
+        const p = params || {};
+        if (App.state === 'battle' && !(App.event && App.event.kind === 'pvp3')) App.toMenu();
+        else if (App.state === 'battle') return; // already in a PvP series: finish it first
+        BB.ui.onClose = null; BB.ui.close();
+        if (!App.openInvite((k) => (p[k] != null ? String(p[k]) : null))) BB.ui.toast('That invite has expired.');
+      });
+    },
+
+    // Opens whatever a friend's invite carries (result, 3-ball challenge, or classic challenge).
+    // get(name) reads one invite param. Returns true if something was opened.
+    openInvite(get) {
+      const res3 = BB.meta.decodeR(get('pvp3r'));
+      if (res3) { BB.meta.pvpResult(res3); return true; }
+      const ch3 = BB.meta.decode3(get('pvp3'));
+      if (ch3) { BB.meta.pvpReceive(ch3); return true; }
+      const ch = App.decodeChallenge(get('pvp'));
+      if (ch) { BB.ui.pvpReceive(ch); return true; }
+      return false;
     },
 
     // ------------------------------------------------------------- helpers

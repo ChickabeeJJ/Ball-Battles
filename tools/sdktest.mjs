@@ -19,6 +19,7 @@ window.CrazyGames = { SDK: {
     inviteLink: (p) => { L('inviteLink'); return 'https://www.crazygames.com/game/ball-battles?' + Object.keys(p).map((k) => k + '=' + encodeURIComponent(p[k])).join('&'); },
     getInviteParam: (k) => (k === 'pvp' ? window.__invite || null : null),
     showInviteButton: () => L('showInviteButton'), hideInviteButton: () => L('hideInviteButton'),
+    updateRoom: (o) => { window.__room = o; L('updateRoom'); }, addJoinRoomListener: (fn) => { window.__join = fn; L('addJoinRoomListener'); },
   },
   ad: { requestAd: (type, cb) => { L('requestAd:' + type); setTimeout(() => { cb.adStarted(); L('adStarted'); setTimeout(() => { L('adFinished'); cb.adFinished(); }, 300); }, 100); } },
   data: { getItem: (k) => (k in window.__data ? window.__data[k] : null), setItem: (k, v) => { window.__data[k] = v; L('data.setItem'); }, removeItem: () => {}, clear: () => {} },
@@ -36,6 +37,18 @@ const check = (name, ok) => { console.log((ok ? 'PASS ' : 'FAIL ') + name); if (
 let log = await page.evaluate(() => __log.slice());
 check('init -> loadingStart -> loadingStop', log.join(',').startsWith('init,loadingStart') && log.includes('loadingStop'));
 check('no gameplayStart on menu', !log.includes('gameplayStart'));
+check('room join listener registered', log.includes('addJoinRoomListener'));
+// creating a challenge opens a joinable room with invite params
+await page.evaluate(() => BB.meta.pvpCreated(['sword', 'axe', 'spear']));
+await page.waitForFunction(() => window.__room);
+check('updateRoom on challenge', await page.evaluate(() => __room.isJoinable === true && !!__room.roomId && !!(__room.inviteParams && __room.inviteParams.pvp3)));
+// joining a friend's room from the listener opens their challenge
+const p3 = await page.evaluate(() => __room.inviteParams);
+await page.evaluate(() => { BB.ui.onClose = null; BB.ui.close(); BB.save.data.meta.pvp.sent = []; });
+await page.evaluate((p) => __join(p), p3);
+await page.waitForTimeout(400);
+check('join listener opens the challenge', await page.evaluate(() => !!document.querySelector('.vs-sheet')));
+await page.evaluate(() => { BB.ui.onClose = null; BB.ui.close(); });
 
 await page.click('#btnStart');
 await page.waitForTimeout(300);

@@ -57,14 +57,16 @@ bash tools/build.sh      # -> dist/ball-battles.zip (~56 KB, 13 files, index.htm
 
 Upload `dist/ball-battles.zip` as an HTML5 game. It meets the ≤ 20 MB initial download needed for the mobile homepage, and the file count is far under 1500.
 
-## Store assets (`marketing/`)
+## Store assets (`marketing/`, not committed)
+
+The covers and preview videos are generated locally into `marketing/` and are git-ignored; upload them to CrazyGames directly.
 
 | File | Spec |
 |---|---|
 | `cover-landscape-1920x1080.png` | 16:9 cover |
 | `cover-portrait-800x1200.png` | 2:3 cover |
 | `cover-square-800x800.png` | 1:1 cover |
-| `preview-landscape-1920x1080.mp4` | 16:9 1080p, ~18s, H.264, no audio |
+| `preview-landscape-1920x1080.mp4` | 16:9 1080p, ~17s, H.264, no audio |
 | `preview-portrait-1080x1620.mp4` | 2:3 1080p, ~17s, H.264, no audio |
 
 The covers show only the game title: no borders, logos or store icons. Each video opens on its static cover, then crossfades into real gameplay at 1x speed. There is no "Play now" text, no cursor, no black bars and no sound.
@@ -73,8 +75,8 @@ Regenerate them with:
 
 ```bash
 npx http-server -p 8080 . &
-node tools/covers.mjs     # covers + video title frames (tools/art.html)
-node tools/trailer.mjs    # fast-cut cinematic trailers from real 1x gameplay (impact frames on)
+node tools/covers2.mjs    # covers + video title frames (tools/art3.html)
+node tools/trailer2.mjs   # trailers from real 1x gameplay with captions (needs an Anton TTF: FONT=path)
 node tools/seeds.js       # finds seeds whose battles end with a K.O. inside a clip
 ```
 

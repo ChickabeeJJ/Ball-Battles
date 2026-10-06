@@ -714,11 +714,12 @@
       const short = M.shortChallenge(ids, maps, seed);
       const link = BB.sdk.inviteLink({ pvp3: code });
       BB.sdk.showInvite({ pvp3: code });
+      BB.sdk.updateRoom('c' + seed, true, { pvp3: code }); // open room: friends can join from CrazyGames
       BB.ui.open((sheet) => {
         const body = BB.ui.head(sheet, 'Challenge Ready!');
         body.innerHTML += `<div class="squad">${ids.map((id, k) => `<div class="sq-s"><em>Round ${k + 1}</em><img src="${BB.icon(id)}" alt=""><span>${esc(BB.ITEM[id].name)}</span></div>`).join('')}</div>
           ${M.codeBox(short, 'Challenge code')}
-          <div class="f-s">Your friend opens PvP, taps <b>Enter code</b> and types this in (or use the invite link below). Your squad stays hidden until they lock in theirs, and they get a result code to send back to you.</div>`;
+          <ol class="pm-tldr"><li><b>Copy</b> the code</li><li><b>Send</b> it to a friend</li><li>They tap <b>PvP → Enter code</b></li></ol>`;
         const cc = document.createElement('button'); cc.className = 'btn primary'; cc.textContent = 'Copy code';
         cc.onclick = async () => { try { await navigator.clipboard.writeText(short); BB.ui.toast('Code copied!'); } catch (e) { BB.ui.toast(short); } };
         body.appendChild(cc);
@@ -727,13 +728,14 @@
         const cp = document.createElement('button'); cp.className = 'btn green'; cp.textContent = 'Copy link';
         cp.onclick = async () => { try { await navigator.clipboard.writeText(out.value); BB.ui.toast('Link copied!'); } catch (e) { out.select(); } };
         body.appendChild(cp);
-      }, { width: '480px', onClose: () => BB.sdk.hideInvite() });
+      }, { width: '480px', onClose: () => { BB.sdk.hideInvite(); BB.sdk.updateRoom('c' + seed, false); } });
     },
 
     pvpReceive(ch) {
       const pv = M.pvpData();
       if (pv.sent.includes(ch.seed)) { BB.ui.toast('That is your own challenge. Send it to a friend!'); return; }
       if (M.ownedCount() < 3) { BB.ui.toast('Unlock at least 3 balls to answer PvP challenges'); return; }
+      BB.sdk.updateRoom('c' + ch.seed, false); // joined the challenger's room; a 1v1 is now full
       BB.ui.open((sheet) => {
         sheet.classList.add('vs-sheet');
         sheet.innerHTML = `<div class="vs-round">CHALLENGE RECEIVED</div>

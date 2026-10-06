@@ -193,6 +193,7 @@
       BB.ui.onClose = null; BB.ui.close();
       BB.audio.play('unlock'); BB.sdk.happytime();
       M.series = { mine: ids, theirs: opp.ids, maps, seed, foeRating: rating, foeName: name, round: 0, score: [0, 0], results: [], live: true, flip: !iAmHost };
+      BB.sdk.updateRoom('m' + seed, false); // in a live 1v1 room (full)
       M.lineup();
     },
 

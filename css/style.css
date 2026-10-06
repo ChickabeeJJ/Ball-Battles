@@ -1115,3 +1115,5 @@ html.cport .stat-row:not(.team) .st { white-space: normal; line-height: 1.15; }
 @media (max-aspect-ratio: 1/1) { .lx-bars { display: none; } }
 /* title sits over the stage */
 .lx-title { position: absolute; z-index: 3; top: 50%; margin-top: 10px; }
+.pm-tldr { margin: 8px 0 10px; padding-left: 1.4em; font-size: 15px; line-height: 1.6; color: #e9e6f0; }
+.pm-tldr b { color: #ffd23f; }

@@ -3,3 +3,5 @@ dist/
 marketing/_frames/
 marketing/_frame-*.png
 marketing/_cover-frame-*.png
+marketing/*.png
+marketing/*.mp4
