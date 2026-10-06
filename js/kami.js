@@ -9,9 +9,9 @@
 
   // Divine Grace: every attack is dodged while the bar holds at least one charge.
   // Recharge scales with how full the bar is: at 20% or below it only trickles back slowly,
-  // and in the revived (ascended) form it gets a slight boost from 60% up.
-  const GRACE = { max: 100, cost: 25, dotCost: 12, regen: 14, floor: 20, trickle: 1.2, high: 60, highMul: 1.2, iframe: 0.3 };
-  const regenRate = (g, mul, asc) => (g <= GRACE.floor ? GRACE.trickle : GRACE.regen * (g / GRACE.max) * (asc && g >= GRACE.high ? GRACE.highMul : 1)) * (mul || 1);
+  // and in the revived (ascended) form it gets a slight boost from 60% up and refills very fast from 90%.
+  const GRACE = { max: 100, cost: 25, dotCost: 12, regen: 14, floor: 20, trickle: 1.2, high: 60, highMul: 1.2, top: 90, topMul: 3.5, iframe: 0.3 };
+  const regenRate = (g, mul, asc) => (g <= GRACE.floor ? GRACE.trickle : GRACE.regen * (g / GRACE.max) * (asc && g >= GRACE.top ? GRACE.topMul : asc && g >= GRACE.high ? GRACE.highMul : 1)) * (mul || 1);
   const AB = {
     beam: { name: 'Seraph Beam', cd: 10, first: 3.5, wind: 1.0, end: 1.85, dmg: 20 },
     gate: { name: 'Golden Gates', cd: 14, first: 7, jail: 2.8, end: 3.1, tick: 2, slam: 10 },

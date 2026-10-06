@@ -203,7 +203,7 @@
       w.timer -= dt;
       if (w.timer <= 0) {
         w.timer = 2.3;
-        aimSpread(sim, b, w, Math.floor(w.orbs), 360 / Math.max(1, Math.floor(w.orbs)), 300, { kind: 'orb', r: 7 * w.scale, dmg: w.damage, life: 4, homing: 4.5 });
+        aimSpread(sim, b, w, Math.floor(w.orbs), 360 / Math.max(1, Math.floor(w.orbs)), 190, { kind: 'orb', r: 7 * w.scale, dmg: w.damage, life: 5.5, homing: 4.5 });
         sim.emit({ type: 'shoot', x: b.x, y: b.y });
       }
     },

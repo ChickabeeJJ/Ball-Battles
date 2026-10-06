@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Ball Vs Ball Kami cover</title>
+<title>Ball Vs Ball cover</title>
 <style>
   @font-face { font-family: 'Anton'; src: url('../fonts/anton.woff2') format('woff2'); }
   @font-face { font-family: 'Noto Serif JP Black'; src: url('../fonts/noto-serif-jp-900-sub.woff2') format('woff2'); font-weight: 900; }
@@ -25,7 +25,7 @@
 <script src="../js/kami.js"></script>
 <script src="../js/data3.js"></script>
 <script>
-// Kami key art: the ascended god ball in the middle of a storm, a horde of weapon balls charging in.
+// Key art: two heroes clashing mid-arena, a crowd of weapon and special balls charging in.
 // art3.html?w=1920&h=1080  (also 800x1200 portrait, 800x800 square)
 (async function () {
   const q = new URLSearchParams(location.search);
@@ -34,104 +34,89 @@
   const ctx = cv.getContext('2d');
   const TAU = Math.PI * 2, U = Math.min(W, H), port = H > W * 1.15, wide = W > H * 1.3;
   const rng = BB.RNG(77);
-  await document.fonts.load('100px Anton'); await document.fonts.load('900 100px "Noto Serif JP Black"', '神');
-
-  // where things go
-  const kx = W * 0.5, ky = port ? H * 0.58 : H * (wide ? 0.6 : 0.6);
-  const KR = U * (port ? 0.15 : wide ? 0.155 : 0.14); // Kami ball radius on screen
+  await document.fonts.load('100px Anton');
+  const cx = W * 0.5, cy = port ? H * 0.56 : H * 0.6;
 
   // ---------------------------------------------------------------- background
-  const g = ctx.createRadialGradient(kx, ky, 0, kx, ky, Math.hypot(W, H) * 0.75);
-  g.addColorStop(0, '#ff3355'); g.addColorStop(0.12, '#a0102c'); g.addColorStop(0.42, '#3a0614'); g.addColorStop(1, '#070308');
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.hypot(W, H) * 0.75);
+  g.addColorStop(0, '#fff1c4'); g.addColorStop(0.08, '#ff9a2e'); g.addColorStop(0.3, '#8a2a7a'); g.addColorStop(0.65, '#2a1240'); g.addColorStop(1, '#07060c');
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  // god rays
-  ctx.save(); ctx.translate(kx, ky); ctx.globalCompositeOperation = 'lighter';
-  for (let i = 0; i < 26; i++) {
-    const a = (i / 26) * TAU + rng() * 0.1, w = 0.03 + rng() * 0.07, R = Math.hypot(W, H);
-    const gr = ctx.createRadialGradient(0, 0, KR, 0, 0, R);
-    gr.addColorStop(0, 'rgba(255,220,200,0.32)'); gr.addColorStop(1, 'rgba(255,40,80,0)');
+  ctx.save(); ctx.translate(cx, cy); ctx.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 24; i++) {
+    const a = (i / 24) * TAU + rng() * 0.1, w = 0.03 + rng() * 0.07, R = Math.hypot(W, H);
+    const gr = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
+    gr.addColorStop(0, 'rgba(255,220,140,0.35)'); gr.addColorStop(1, 'rgba(255,90,40,0)');
     ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, R, a, a + w); ctx.closePath(); ctx.fill();
   }
   ctx.restore();
-  // speed lines converging on Kami
-  ctx.save(); ctx.translate(kx, ky);
+  // speed lines
+  ctx.save(); ctx.translate(cx, cy);
   for (let i = 0; i < 140; i++) {
-    const a = rng() * TAU, r0 = U * (0.55 + rng() * 0.4), r1 = r0 + U * (0.15 + rng() * 0.6);
+    const a = rng() * TAU, r0 = U * (0.5 + rng() * 0.4), r1 = r0 + U * (0.15 + rng() * 0.6);
     ctx.strokeStyle = 'rgba(255,255,255,' + (0.04 + rng() * 0.1) + ')'; ctx.lineWidth = U * (0.002 + rng() * 0.004);
     ctx.beginPath(); ctx.moveTo(Math.cos(a) * r0, Math.sin(a) * r0); ctx.lineTo(Math.cos(a) * r1, Math.sin(a) * r1); ctx.stroke();
   }
   ctx.restore();
-  // giant faded 神 behind everything
-  ctx.save(); ctx.font = '900 ' + Math.round(U * 0.95) + 'px "Noto Serif JP Black", serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.globalAlpha = 0.09; ctx.fillStyle = '#ffd0d8'; ctx.fillText('神', kx, ky - U * 0.02); ctx.restore();
-  // cracked ground under Kami
-  ctx.save(); ctx.translate(kx, ky + KR * 1.15); ctx.scale(1, 0.32);
-  const gg = ctx.createRadialGradient(0, 0, 0, 0, 0, KR * 2.6);
-  gg.addColorStop(0, 'rgba(255,60,90,0.55)'); gg.addColorStop(1, 'rgba(255,60,90,0)');
-  ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(0, 0, KR * 2.6, 0, TAU); ctx.fill();
-  ctx.strokeStyle = 'rgba(255,190,200,0.8)'; ctx.lineWidth = U * 0.004;
-  for (let i = 0; i < 12; i++) { let a = rng() * TAU, x = 0, y = 0; ctx.beginPath(); ctx.moveTo(0, 0); for (let k = 0; k < 5; k++) { a += (rng() - 0.5) * 0.8; x += Math.cos(a) * KR * 0.45; y += Math.sin(a) * KR * 0.45; ctx.lineTo(x, y); } ctx.stroke(); }
+  // arena floor grid
+  ctx.save(); const fy = H * 0.8;
+  ctx.strokeStyle = 'rgba(255,170,90,0.18)'; ctx.lineWidth = Math.max(1, U * 0.002);
+  for (let i = -14; i <= 14; i++) { ctx.beginPath(); ctx.moveTo(W / 2 + i * W * 0.02, fy); ctx.lineTo(W / 2 + i * W * 0.22, H); ctx.stroke(); }
+  for (let k = 0; k < 6; k++) { const y = fy + (H - fy) * Math.pow(k / 6, 1.8); ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
   ctx.restore();
 
   // ---------------------------------------------------------------- the cast (real game art)
-  const foes = ['sword', 'axe', 'hammer', 'scythe', 'katana', 'spear', 'cannon', 'bow', 'flail', 'chainsaw', 'trident', 'mace'];
-  const teams = [[{ id: 'kami', hp: 1, slot: 0 }]];
-  foes.forEach((id, i) => { const t = 1 + (i % (BB.TEAMS.length - 1)); (teams[t] = teams[t] || []).push({ id, hp: 100, slot: i + 1 }); });
+  const crowd = ['axe', 'hammer', 'scythe', 'bow', 'phoenix', 'spiky', 'cannon', 'vampire', 'flail', 'trident', 'frost', 'mace'];
+  const heroA = 'claymore', heroB = 'sword';
+  const teams = [[{ id: heroA, hp: 100, slot: 0 }], [{ id: heroB, hp: 100, slot: 1 }], [], []];
+  crowd.forEach((id, i) => teams[i % 4].push({ id, hp: 100, slot: i + 2 }));
   const sim = new BB.Sim({ seed: 3, map: 'classic', settings: { dmgNumbers: false, callouts: false }, teams });
   sim.preview = true; sim.t = 1.3; sim.nTeams = 2;
-  // poster mode: no HP numbers or team rings on the foes
-  for (const b of sim.balls) if (b.def.id !== 'kami') b.main = false;
+  for (const b of sim.balls) b.main = false;
   // skip the HP numbers (pure digits) when drawing balls
   const ft = ctx.fillText.bind(ctx), st = ctx.strokeText.bind(ctx);
   let quiet = false;
   ctx.fillText = (t, ...r) => { if (!(quiet && /^\d+$/.test(t))) ft(t, ...r); };
   ctx.strokeText = (t, ...r) => { if (!(quiet && /^\d+$/.test(t))) st(t, ...r); };
-  const kami = sim.balls.find((b) => b.def.id === 'kami');
-  kami.tenshi = true; kami.ascended = true;
   const R0 = { dark: false };
+  const ball = (id) => sim.balls.find((b) => b.def.id === id);
   function drawBall(b, x, y, rad, ang, alpha) {
     b.x = 0; b.y = 0; b.w.angle = ang; b.w.prevAngle = ang; if (sim.computeCaps) sim.computeCaps(b);
     const k = rad / b.r;
     ctx.save(); ctx.globalAlpha = alpha == null ? 1 : alpha; ctx.setTransform(k, 0, 0, k, x, y);
     quiet = true; BB.drawBallArt(ctx, sim, b, 3, R0); quiet = false; ctx.restore();
   }
-  // foes charging in from the sides (normalised positions per layout)
+  // the crowd charging in from the sides
   const SPOTS = port
-    ? [[0.15, 0.36], [0.85, 0.37], [0.12, 0.6], [0.88, 0.62], [0.2, 0.85], [0.8, 0.86], [0.5, 0.92]]
+    ? [[0.15, 0.36], [0.85, 0.37], [0.1, 0.62], [0.9, 0.64], [0.22, 0.86], [0.78, 0.87], [0.5, 0.93]]
     : wide
-      ? [[0.11, 0.38], [0.89, 0.36], [0.08, 0.72], [0.92, 0.7], [0.25, 0.86], [0.75, 0.88]]
-      : [[0.13, 0.4], [0.87, 0.4], [0.12, 0.75], [0.88, 0.76], [0.33, 0.9], [0.67, 0.9]];
-  const placed = SPOTS.map(([fx, fy], i) => ({ b: sim.balls.find((bb) => bb.def.id === foes[i % foes.length]), x: fx * W, y: fy * H }));
-  for (const p of placed) {
-    const rad = U * (0.06 + rng() * 0.025), inA = Math.atan2(ky - p.y, kx - p.x);
-    for (let t = 3; t >= 1; t--) drawBall(p.b, p.x - Math.cos(inA) * rad * 0.9 * t, p.y - Math.sin(inA) * rad * 0.9 * t, rad, inA + 0.4 - t * 0.35, 0.12 * (4 - t));
-    drawBall(p.b, p.x, p.y, rad, inA + 0.4);
-  }
-  // holy swords raining in
-  for (let i = 0; i < (port ? 9 : 12); i++) {
-    const x = kx + (rng() - 0.5) * W * 0.9, y = H * (0.25 + rng() * 0.65), L = U * (0.08 + rng() * 0.05), a = Math.PI * 0.5 + (rng() - 0.5) * 0.5;
-    if (Math.hypot(x - kx, y - ky) < KR * 1.6) continue;
-    ctx.save(); ctx.translate(x, y); ctx.rotate(a);
-    ctx.shadowColor = '#ff2d55'; ctx.shadowBlur = U * 0.03;
-    const sg = ctx.createLinearGradient(-L * 2.5, 0, 0, 0); sg.addColorStop(0, 'rgba(255,45,85,0)'); sg.addColorStop(1, 'rgba(255,140,160,0.7)');
-    ctx.fillStyle = sg; ctx.fillRect(-L * 2.5, -L * 0.05, L * 2.5, L * 0.1);
-    BB.drawWeapon(ctx, 'sword', -L * 0.2, L, L * 0.16, U * 0.003, 0.3, '#ff4d6d');
-    ctx.restore();
-  }
-  // Kami: shockwave rings, then the god itself
+      ? [[0.08, 0.36], [0.92, 0.34], [0.06, 0.72], [0.94, 0.7], [0.22, 0.9], [0.78, 0.9], [0.5, 0.94]]
+      : [[0.12, 0.38], [0.88, 0.38], [0.1, 0.74], [0.9, 0.75], [0.3, 0.91], [0.7, 0.91]];
+  SPOTS.forEach(([fx, fy2], i) => {
+    const b = ball(crowd[i % crowd.length]), x = fx * W, y = fy2 * H;
+    const rad = U * (0.055 + rng() * 0.025), inA = Math.atan2(cy - y, cx - x);
+    for (let t = 3; t >= 1; t--) drawBall(b, x - Math.cos(inA) * rad * 0.9 * t, y - Math.sin(inA) * rad * 0.9 * t, rad, inA + 0.4 - t * 0.35, 0.12 * (4 - t));
+    drawBall(b, x, y, rad, inA + 0.4);
+  });
+  // the two heroes clash in the middle: big balls, weapons crossing over a white-hot spark
+  const HR = U * (port ? 0.13 : 0.12), off = HR * (port ? 2.0 : 2.3), tilt = 0.32;
+  const A = ball(heroA), B = ball(heroB);
+  for (let t = 3; t >= 1; t--) { drawBall(A, cx - off - HR * 0.7 * t, cy + HR * 0.15 * t, HR, -tilt - 0.2 * t, 0.1 * (4 - t)); drawBall(B, cx + off + HR * 0.7 * t, cy + HR * 0.15 * t, HR, Math.PI + tilt + 0.2 * t, 0.1 * (4 - t)); }
+  drawBall(A, cx - off, cy, HR, -tilt);
+  drawBall(B, cx + off, cy, HR, Math.PI + tilt);
+  const sx = cx, sy = cy - off * Math.tan(tilt); // where the blades cross
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  for (const [r, a] of [[1.7, 0.5], [2.3, 0.3], [3.1, 0.16]]) { ctx.beginPath(); ctx.arc(kx, ky, KR * r, 0, TAU); ctx.strokeStyle = 'rgba(255,120,150,' + a + ')'; ctx.lineWidth = U * 0.01; ctx.stroke(); }
-  const core = ctx.createRadialGradient(kx, ky, 0, kx, ky, KR * 2.4); core.addColorStop(0, 'rgba(255,240,240,0.55)'); core.addColorStop(1, 'rgba(255,40,80,0)');
-  ctx.fillStyle = core; ctx.beginPath(); ctx.arc(kx, ky, KR * 2.4, 0, TAU); ctx.fill();
+  const sp = ctx.createRadialGradient(sx, sy, 0, sx, sy, HR * 0.9); sp.addColorStop(0, 'rgba(255,255,255,1)'); sp.addColorStop(0.25, 'rgba(255,230,150,0.8)'); sp.addColorStop(1, 'rgba(255,120,40,0)');
+  ctx.fillStyle = sp; ctx.beginPath(); ctx.arc(sx, sy, HR * 0.9, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,250,220,0.95)'; ctx.lineCap = 'round';
+  for (let i = 0; i < 26; i++) { const a = rng() * TAU, r0 = HR * (0.15 + rng() * 0.2), r1 = r0 + HR * (0.3 + rng() * 0.7); ctx.lineWidth = U * (0.003 + rng() * 0.004); ctx.beginPath(); ctx.moveTo(sx + Math.cos(a) * r0, sy + Math.sin(a) * r0); ctx.lineTo(sx + Math.cos(a) * r1, sy + Math.sin(a) * r1); ctx.stroke(); }
+  for (const [r, al] of [[0.7, 0.6], [1.2, 0.35]]) { ctx.beginPath(); ctx.arc(sx, sy, HR * r, 0, TAU); ctx.strokeStyle = 'rgba(255,220,120,' + al + ')'; ctx.lineWidth = U * 0.008; ctx.stroke(); }
   ctx.restore();
-  drawBall(kami, kx, ky, KR, -0.75);
   // embers
   ctx.save(); ctx.globalCompositeOperation = 'lighter';
-  for (let i = 0; i < 160; i++) { const x = rng() * W, y = rng() * H, r = U * (0.001 + rng() * 0.004); ctx.fillStyle = rng() < 0.7 ? 'rgba(255,120,140,0.8)' : 'rgba(255,230,180,0.9)'; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); }
+  for (let i = 0; i < 160; i++) { const x = rng() * W, y = rng() * H, r = U * (0.001 + rng() * 0.004); ctx.fillStyle = rng() < 0.7 ? 'rgba(255,170,90,0.8)' : 'rgba(255,240,190,0.9)'; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); }
   ctx.restore();
-  // vignette
   const vg = ctx.createRadialGradient(W / 2, H / 2, U * 0.4, W / 2, H / 2, Math.hypot(W, H) * 0.62);
-  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.75)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.7)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
 
   // ---------------------------------------------------------------- title
   function title(cx, cy, size) {

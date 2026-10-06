@@ -1,7 +1,6 @@
-// Kami trailers for CrazyGames (landscape 1920x1080 + portrait 1080x1620).
-// Real gameplay at 1x (frame-stepped, so no dropped frames): Kami's divine arts with their anime
-// cut-ins, the new balls, team chaos, and a finale on the ascended Kami's full-screen finisher.
-// Opens on the Kami cover (tools/art3.html), short punchy captions on top.
+// Trailers for CrazyGames (landscape 1920x1080 + portrait 1080x1620).
+// Real gameplay at 1x (frame-stepped, so no dropped frames): a spread of balls, maps and modes,
+// ending on a knockout finisher. Opens on the cover (tools/art3.html), short punchy captions on top.
 // Usage: npx http-server -p 8080 . &  then  node tools/trailer2.mjs   (needs ffmpeg + a TTF at FONT)
 import { chromium } from 'playwright';
 import { execFileSync } from 'node:child_process';
@@ -17,12 +16,14 @@ const sl = (ids, hp) => ids.map((id) => ({ id, hp, scale: 1, ov: { damage: 0, sp
 
 // asc: start the Kami already ascended (Tenshi). kill: force the knockout `kill` seconds into the shot.
 const CLIPS = [
-  { mode: '1v1', map: 'classic', ids: ['kami', 'claymore'], hp: 100, seed: 11, skip: 3.0, secs: 3.0, cap: 'BECOME A GOD' },
+  { mode: '1v1', map: 'classic', ids: ['claymore', 'chainsaw'], hp: 100, seed: 3, skip: 1.2, secs: 2.2, cap: 'PICK A WEAPON' },
   { mode: 'ffa', map: 'saws', ids: ['glaive', 'frost', 'shocker', 'nunchaku'], hp: 100, seed: 8, skip: 3.0, secs: 2.0, cap: '76 BALLS' },
-  { mode: '1v1', map: 'pillars', ids: ['kami', 'hammer'], hp: 100, seed: 5, skip: 6.6, secs: 2.8 },
-  { mode: '3v3', map: 'meteor', ids: ['sword', 'flail', 'mace', 'rapier', 'trident', 'sai'], hp: 100, seed: 6, skip: 2.0, secs: 2.0, cap: 'TEAM BATTLES' },
-  { mode: '1v1', map: 'classic', ids: ['kami', 'chainsaw'], hp: 140, seed: 4, skip: 0.6, secs: 3.0, asc: true, cap: 'ASCEND' },
-  { mode: '1v1', map: 'bouncy', ids: ['kami', 'katana'], hp: 100, seed: 2, skip: 1.0, secs: 4.0, asc: true, kill: 0.5 },
+  { mode: '3v3', map: 'meteor', ids: ['sword', 'flail', 'mace', 'rapier', 'trident', 'sai'], hp: 100, seed: 6, skip: 2.0, secs: 2.2, cap: 'TEAM BATTLES' },
+  { mode: '1v1', map: 'pillars', ids: ['phoenix', 'halberd'], hp: 100, seed: 4, skip: 2.0, secs: 1.8 },
+  { mode: 'ffa', map: 'potato', ids: ['splodey', 'vampire', 'tank', 'spiky'], hp: 100, seed: 5, skip: 3.0, secs: 2.0, cap: 'FREE FOR ALL' },
+  { mode: '1v1', map: 'classic', ids: ['kami', 'claymore'], hp: 100, seed: 11, skip: 3.0, secs: 2.0 },
+  { mode: '2v2', map: 'shrink', ids: ['whip', 'sickle', 'umbrella', 'pan'], hp: 100, seed: 9, skip: 5.0, secs: 1.8 },
+  { mode: '1v1', map: 'bouncy', ids: ['axe', 'katana'], hp: 100, seed: 2, skip: 2.0, secs: 2.6, kill: 0.5, cap: 'K.O.!' },
 ];
 
 fs.mkdirSync(TMP, { recursive: true });
@@ -49,7 +50,7 @@ for (let ci = 0; ci < CLIPS.length; ci++) {
   const frames = Math.round(c.secs * FPS);
   for (let f = 0; f < frames; f++) {
     if (c.kill != null && f === Math.round(c.kill * FPS)) {
-      await page.evaluate(() => { const s = BB.app.sim, k = s.balls.find((b) => b.def.id === 'kami'), e = s.balls.find((b) => b.main && b.team !== k.team); e.phase = 0; s.damage(e, 9999, k, {}); });
+      await page.evaluate(() => { const s = BB.app.sim, k = s.balls.find((b) => b.main && b.team === 0), e = s.balls.find((b) => b.main && b.team !== 0); e.phase = 0; s.damage(e, 9999, k, { x: e.x, y: e.y }); });
     }
     const data = await page.evaluate(([fps, px]) => {
       BBCapture.advance(1, fps); if (BB.app.renderer.px !== px) BB.app.renderer.resize(px); BB.app.draw();
@@ -86,8 +87,8 @@ execFileSync('ffmpeg', ['-v', 'error', '-y', ...inputs, '-filter_complex', filte
 // Compose: blurred backdrop, arena framed on top, opening on the cover, captions slamming in.
 const INTRO = 1.25, XF = 0.35, shift = INTRO - XF; // gameplay starts this many seconds into the final video
 for (const [name, W, H, A, cover] of [
-  ['preview-landscape-1920x1080.mp4', 1920, 1080, 1000, '_kami-frame-1920x1080.png'],
-  ['preview-portrait-1080x1620.mp4', 1080, 1620, 1040, '_kami-frame-1080x1620.png'],
+  ['preview-landscape-1920x1080.mp4', 1920, 1080, 1000, '_cover-frame-1920x1080.png'],
+  ['preview-portrait-1080x1620.mp4', 1080, 1620, 1040, '_cover-frame-1080x1620.png'],
 ]) {
   const big = Math.max(W, H), fsz = Math.round(Math.min(W, H) * 0.11);
   const capY = H > W ? `(h-${A})/4-th/2` : `h*0.14-th/2`;
