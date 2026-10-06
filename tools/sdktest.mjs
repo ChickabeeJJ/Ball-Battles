@@ -65,15 +65,15 @@ log = await page.evaluate(() => __log.slice());
 check('gameplayStop on results', log[log.length - 1] === 'gameplayStop' || log.slice(-3).includes('gameplayStop'));
 check('progress saved via SDK data module', log.includes('data.setItem') && (await page.evaluate(() => !!__data.ballbattles_save_v1)));
 
-// rewarded ad: audio muted while the ad plays, coins doubled after
+// rewarded ad: audio muted while the ad plays, coins tripled after
 const coins0 = await page.evaluate(() => BB.save.data.coins);
-await page.click('text=Double coins');
+await page.click('text=Triple coins');
 await page.waitForFunction(() => __log.includes('adStarted'));
 check('audio muted during ad', await page.evaluate(() => BB.audio.blocked === true));
 await page.waitForFunction(() => __log.includes('adFinished'));
 await page.waitForTimeout(100);
 check('audio restored after ad', await page.evaluate(() => BB.audio.blocked === false));
-check('rewarded doubles coins', (await page.evaluate(() => BB.save.data.coins)) === coins0 * 2);
+check('rewarded triples coins', (await page.evaluate(() => BB.save.data.coins)) === coins0 * 3);
 
 // midgame: skipped before 3 minutes, shown after
 await page.click('text=Continue');

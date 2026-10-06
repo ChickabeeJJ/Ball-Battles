@@ -445,6 +445,7 @@
           BB.audio.play('lose');
         }
       }
+      coins = BB.meta.matchReward(sim, 250); // up to 250, full at 200s+ (any result)
       save.coins += coins;
       App.trials = {};
       BB.save.write();

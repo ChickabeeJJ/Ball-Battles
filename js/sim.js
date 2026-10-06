@@ -604,7 +604,8 @@
       if (dmg <= 0) return;
       c.cd['c' + a.id] = 0.5;
       const dealt = this.damage(c, dmg, a, { x, y, lag: true });
-      if (c._dg) return;
+      // a dodged hit still counts for per-hit boosts, just no damage, knockback or on-hit effects on the target
+      if (c._dg) { if (a.def.id !== 'splodey') this.onHit(a, c, 0); return; }
       if (dealt && a.def.id !== 'splodey') this.onHit(a, c, dealt);
     }
 
@@ -632,7 +633,7 @@
       const [px, py] = geo.segClosest(cap.ax, cap.ay, cap.bx, cap.by, c.x, c.y);
       c.cd[a.id] = def.hitCd || 0.25;
       const dealt = this.damage(c, dmg, a, { x: px, y: py, crit, lag: true });
-      if (c._dg) return;
+      if (c._dg) { this.onHit(a, c, 0); return; }
       const ang = Math.atan2(py - a.y, px - a.x);
       const tx = -Math.sin(ang) * a.w.dir, ty = Math.cos(ang) * a.w.dir;
       let nx = c.x - px, ny = c.y - py; const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl;
@@ -733,7 +734,7 @@
               break;
             }
             const dealt = this.damage(e, p.dmg, p.owner, { x: p.x, y: p.y, lag: p.kind === 'cannonball' });
-            if (e._dg) continue; // dodged: the projectile flies on through
+            if (e._dg) { if (p.owner && p.owner.alive) this.onHit(p.owner, e, 0); continue; } // dodged: boost still counts, the projectile flies on through
             if (p.burn) { e.burnLvl = Math.max(e.burnLvl, p.burn); e.burnT = 3; e.burnPow = BB.BALANCE[p.owner.def.id] || 1; }
             if (p.slow) e.slowT = Math.max(e.slowT, p.slow);
             this.knock(e, p.x - p.vx, p.y - p.vy, p.knock || 90);

@@ -22,6 +22,7 @@
     gate: { name: 'Crimson Gates', cd: 11, jail: 3.3, end: 3.6, tick: 3, slam: 16 },
     rain: { name: 'Arsenal of Heaven', cd: 9.5, swords: 14, dmg: 4, gap: 0.08 },
     serv: { name: 'Heavenly Servants', cd: 13, first: 2.5, n: 2, max: 4, hp: 50 },
+    touch: 8, // Grace restored per brush-spear hit on a foe
   };
   const ab = (b, k) => (b.ascended && ASC[k] ? Object.assign({}, AB[k], ASC[k]) : AB[k]);
   BB.KAMI = { GRACE, AB, ASC };
@@ -148,19 +149,6 @@
   }
 
   function ascendedUpdate(sim, b, w, dt) {
-    // Angelic Touch (passive): slamming into a ball deals no damage. Allies are healed, and
-    // touching an enemy restores Grace.
-    for (const o of sim.balls) {
-      if (o === b || !o.alive) continue;
-      const rr = o.r + b.r + 2;
-      if ((o.x - b.x) ** 2 + (o.y - b.y) ** 2 > rr * rr || (w.touch[o.id] || 0) > sim.t) continue;
-      w.touch[o.id] = sim.t + 0.8;
-      const mx = (o.x + b.x) / 2, my = (o.y + b.y) / 2;
-      sim.burst(mx, my, 10, ['#ffffff', '#ffd0d8', '#ffd23f'], 220, 3);
-      if (o.team === b.team) { if (o.hp < o.maxHp) sim.heal(o, 8); }
-      else { w.grace = Math.min(GRACE.max, w.grace + 10); sim.fxNum(b.x, b.y - b.r - 8, '+10 GRACE', '#ff8aa0'); }
-      if (!(w.touchTag > sim.t)) { w.touchTag = sim.t + 6; sim.fxTag(b.x, b.y - b.r - 30, 'ANGELIC TOUCH', '#ffd0d8'); }
-    }
     // Heavenly Servants
     w.servCd -= dt;
     const S = ASC.serv, alive = sim.balls.filter((m) => m.alive && m.owner === b && m.def.id === 'servant').length;
@@ -223,6 +211,14 @@
       }
       if (w.cast) runCast(sim, b, w, dt);
       if (b.ascended) ascendedUpdate(sim, b, w, dt);
+    },
+    // Angelic Touch (ascended passive): every brush-spear hit on a foe restores some Grace,
+    // dodged or not.
+    onHit(sim, b, w, t) {
+      if (!b.ascended || !t || t.team === b.team || t.owner) return;
+      w.grace = Math.min(GRACE.max, w.grace + ASC.touch);
+      sim.fxNum(b.x, b.y - b.r - 8, '+' + ASC.touch + ' GRACE', '#ff8aa0');
+      if (!(w.touchTag > sim.t)) { w.touchTag = sim.t + 6; sim.fxTag(b.x, b.y - b.r - 30, 'ANGELIC TOUCH', '#ffd0d8'); }
     },
     // Tenshi skin: the first death is refused. Kami ascends instead (see ascend()).
     beforeDeath(sim, b) {
@@ -935,12 +931,12 @@
 
   // =====================================================================
   // Tenshi awakening: the whole screen goes black, a line types out word by word,
-  // shatters away, and 「まだだ」 ("Not yet.") slams in before Kami ascends.
+  // shatters away, and 「否」 ("No.") slams in before Kami ascends.
   // =====================================================================
   BB.kamiAwaken = function (done) {
     const el = document.createElement('div');
     el.className = 'awk';
-    el.innerHTML = '<div class="awk-rays"></div><div class="awk-line"></div><div class="awk-slash"></div><div class="awk-no"><span>ま</span><span>だ</span><span>だ</span></div><div class="awk-flash"></div>';
+    el.innerHTML = '<div class="awk-rays"></div><div class="awk-line"></div><div class="awk-slash"></div><div class="awk-no"><span>否</span></div><div class="awk-flash"></div>';
     document.body.appendChild(el);
     const line = el.querySelector('.awk-line'), A = BB.audio;
     const at = (ms, fn) => setTimeout(fn, ms);
@@ -948,7 +944,7 @@
       const w = document.createElement('span'); w.className = 'awk-w'; line.appendChild(w);
       [...txt].forEach((ch, i) => at(i * 85, () => { const c = document.createElement('i'); c.textContent = ch; w.appendChild(c); A.play('type'); }));
     });
-    try { document.fonts.load('48px "Yuji Syuku"', '私が？死んだ'); document.fonts.load('900 48px "Noto Serif JP Black"', 'まだ'); } catch (e) { /* system font fallback */ }
+    try { document.fonts.load('48px "Yuji Syuku"', '私が？死んだ'); document.fonts.load('900 48px "Noto Serif JP Black"', '否'); } catch (e) { /* system font fallback */ }
     requestAnimationFrame(() => el.classList.add('on'));
     at(250, () => A.play('heartbeat'));
     word('私が？', 650);
