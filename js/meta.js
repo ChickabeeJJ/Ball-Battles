@@ -672,7 +672,7 @@
           <div class="pvp-modes">
             <div class="pvp-mode code"><div class="pm-h">${BB.ICON.scroll}<b>Play a Friend</b></div><span>Make a challenge and share its code or invite link. They answer with the same code.</span><div class="pm-btns"></div></div>
             <div class="pvp-mode room"><div class="pm-h">${BB.ICON.swords}<b>Friend Room</b><em class="on">LIVE</em></div><span>Open a private room, invite a friend and keep playing together.</span><button class="btn blue pm-room">${BB.party && BB.party.active() ? 'Back to my room' : 'Open a room'}</button></div>
-            <div class="pvp-mode mm"><div class="pm-h">${BB.ICON.swords}<b>Matchmaking</b><em class="on">LIVE</em></div><span>Get matched with another player who is online right now. Same fights on both screens.</span><button class="btn green pm-find">Find a match</button></div>
+            <div class="pvp-mode mm"><div class="pm-h">${BB.ICON.swords}<b>Matchmaking</b></div><span>Get matched with another player who is online right now. Same fights on both screens.</span><button class="btn green pm-find">Find a match</button></div>
           </div>
           <div class="pvp-steps"><div><b>1</b><span>Pick 3 different balls in fight order</span></div><div><b>2</b><span>Share the code with a friend</span></div><div><b>3</b><span>All 3 rounds play. Most wins takes it</span></div></div>`;
         const go = document.createElement('button'); go.className = 'btn primary'; go.innerHTML = BB.ICON.swords + ' Create';
