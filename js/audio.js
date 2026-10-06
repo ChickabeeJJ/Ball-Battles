@@ -183,6 +183,8 @@
         [523, 659, 784, 988, 1175].forEach((f, i) => tone('sine', f, 0, 1.4, 0.05, 0.3 + i * 0.08));
         noise(0.5, 0.6, 700, 0.7, 2.05); tone('sine', 140, 35, 0.6, 0.4, 2.05);
         break;
+      // a small, clean beep for each character of the Tenshi awakening line
+      case 'beep': if (ok('beep', 0.03)) tone('square', 1320, 1320, 0.045, 0.035); break;
       case 'type': if (ok('type', 0.03)) { noise(0.03, 0.12, 3200, 3); tone('sine', 1800, 1400, 0.03, 0.03); } break;
       case 'heartbeat':
         if (!ok('heartbeat', 0.4)) return;

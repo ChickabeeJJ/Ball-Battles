@@ -26,7 +26,7 @@
       t0: performance.now(), stage: 0, sub: 0, stageT: performance.now(), shown: 0, raf: 0, lastDone: -1,
       tick() {
         const L = App.loader, now = performance.now(), N = L.STAGES.length;
-        const tk = Math.min(1, (now - L.t0) / 1100);
+        const tk = Math.min(1, (now - L.t0) / 1700);
         const timeCap = App.capture ? 1 : 1 - Math.pow(1 - tk, 2);
         const creep = L.stage >= N ? 0 : Math.max(L.sub, 0.88 * (1 - Math.exp(-(now - L.stageT) / 600)));
         const realCap = Math.min(1, (L.stage + creep) / N);

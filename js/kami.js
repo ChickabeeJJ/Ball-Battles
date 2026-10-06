@@ -967,7 +967,7 @@
     const at = (ms, fn) => setTimeout(fn, ms);
     const word = (txt, ms) => at(ms, () => {
       const w = document.createElement('span'); w.className = 'awk-w'; line.appendChild(w);
-      [...txt].forEach((ch, i) => at(i * 85, () => { const c = document.createElement('i'); c.textContent = ch; w.appendChild(c); }));
+      [...txt].forEach((ch, i) => at(i * 85, () => { const c = document.createElement('i'); c.textContent = ch; w.appendChild(c); if (!/[？?]/.test(ch)) A.play('beep'); }));
     });
     try { document.fonts.load('48px "Yuji Syuku"', '私が？死んだ'); document.fonts.load('900 48px "Noto Serif JP Black"', '否'); } catch (e) { /* system font fallback */ }
     // slow pale motes drift up through the dark; when 否 lands they freeze where they are
@@ -979,7 +979,7 @@
       m.style.animationDuration = (5 + Math.random() * 6).toFixed(1) + 's'; m.style.animationDelay = (-Math.random() * 6).toFixed(1) + 's';
       motes.appendChild(m);
     }
-    // total silence: the music stops and 私が？死んだ？ makes no sound at all
+    // the music stops; 私が？死んだ？ types out with only a small beep per character
     BB.music && BB.music.fade(0, 350);
     requestAnimationFrame(() => el.classList.add('on'));
     word('私が？', 650);
