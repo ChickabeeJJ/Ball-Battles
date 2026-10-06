@@ -87,7 +87,7 @@
       sim.fx.push({ k: 'z', x: b.x, y: b.y, x2: e.x, y2: e.y, life: 0.25, max: 0.25 });
       const d = sim.damage(e, w.zap, b, { x: e.x, y: e.y });
       sim.emit({ type: 'shoot', x: b.x, y: b.y, small: true });
-      if (d) sim.onHit(b, e, d);
+      if (d || e._dg) sim.onHit(b, e, d);
     },
     onHit(sim, b, w) { w.zap += 0.25; },
     stats: (w) => ['Zap: ' + fmt(w.zap)],

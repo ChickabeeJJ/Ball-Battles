@@ -8,9 +8,10 @@
   BB.RARITY.iridescent = { name: 'Iridescent', color: '#d7b8ff', price: 25000 };
 
   // Divine Grace: every attack is dodged while the bar holds at least one charge.
-  // Recharge scales with how full the bar is and stops completely at 20% or below.
-  const GRACE = { max: 100, cost: 25, dotCost: 12, regen: 14, floor: 20, iframe: 0.3 };
-  const regenRate = (g, mul) => (g <= GRACE.floor ? 0 : GRACE.regen * (g / GRACE.max) * (mul || 1));
+  // Recharge scales with how full the bar is: at 20% or below it only trickles back slowly,
+  // and in the revived (ascended) form it gets a slight boost from 60% up.
+  const GRACE = { max: 100, cost: 25, dotCost: 12, regen: 14, floor: 20, trickle: 1.2, high: 60, highMul: 1.2, iframe: 0.3 };
+  const regenRate = (g, mul, asc) => (g <= GRACE.floor ? GRACE.trickle : GRACE.regen * (g / GRACE.max) * (asc && g >= GRACE.high ? GRACE.highMul : 1)) * (mul || 1);
   const AB = {
     beam: { name: 'Seraph Beam', cd: 10, first: 3.5, wind: 1.0, end: 1.85, dmg: 20 },
     gate: { name: 'Golden Gates', cd: 14, first: 7, jail: 2.8, end: 3.1, tick: 2, slam: 10 },
@@ -185,7 +186,7 @@
 
   const kami = {
     id: 'kami', name: 'Kami', cat: 'special', rarity: 'iridescent', color: '#f6e7b0', price: 25000,
-    desc: 'A god in ball form. Locked at 1 HP, but Divine Grace teleports it away from every attack while charged; the bar refills slower as it drains and stops at 20%. Casts Seraph Beam, Golden Gates and Heaven\'s Arsenal.',
+    desc: 'A god in ball form. Locked at 1 HP, but Divine Grace teleports it away from every attack while charged; the bar refills slower as it drains and only trickles back at 20% or below. Casts Seraph Beam, Golden Gates and Heaven\'s Arsenal.',
     base: { damage: 2, spin: 160, len: 52, width: 10, gap: 4 },
     melee: true, blocks: true, kami: true, fixedHp: 1, knock: 240,
     init(w, b) {
@@ -194,7 +195,7 @@
       b.ghosts = []; b.tps = [];
     },
     update(sim, b, w, dt) {
-      w.grace = Math.min(GRACE.max, w.grace + regenRate(w.grace, w.regenMul) * dt);
+      w.grace = Math.min(GRACE.max, w.grace + regenRate(w.grace, w.regenMul, b.ascended) * dt);
       for (const tp of b.tps) tp.t -= dt;
       if (b.tps.length && b.tps[0].t <= 0) b.tps = b.tps.filter((tp) => tp.t > 0);
       if (w.iframe > 0) w.iframe -= dt;

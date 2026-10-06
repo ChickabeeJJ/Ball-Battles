@@ -180,7 +180,7 @@
         if (!e.alive || e.team === src.team) continue;
         if ((e.x - x) ** 2 + (e.y - y) ** 2 <= (R + e.r) ** 2) {
           const dealt = this.damage(e, dmg, src, { x: e.x, y: e.y });
-          if (e._dg) continue;
+          if (e._dg) { hit = true; continue; } // a dodged blast still counts as a hit for boosts
           this.knock(e, x, y, 380);
           if (dealt) hit = true;
         }

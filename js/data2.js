@@ -135,7 +135,7 @@
       sim.fx.push({ k: 'z', x: b.x + Math.cos(tipA) * s, y: b.y + Math.sin(tipA) * s, x2: e.x, y2: e.y, life: 0.25, max: 0.25 });
       const dealt = sim.damage(e, w.zap, b, { x: e.x, y: e.y, lag: true });
       sim.emit({ type: 'boom', x: e.x, y: e.y, small: true });
-      if (dealt) sim.onHit(b, e, dealt);
+      if (dealt || e._dg) sim.onHit(b, e, dealt);
     },
     onHit(sim, b, w) { w.zap += 0.25; }, stats: (w) => ['Zap: ' + fmt(w.zap)] });
 
