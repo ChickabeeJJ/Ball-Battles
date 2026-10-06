@@ -61,6 +61,7 @@
     destroy(p) { if (p) try { p.destroy(); } catch (e) { /* gone */ } },
   };
 
+  BB.net = Net; // shared with the friend rooms (js/party.js)
   const MM = (BB.match = {
     token: 0, searching: false, matched: false, host: null, client: null, probe: null, ids: null, t0: 0,
 

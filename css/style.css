@@ -1117,3 +1117,15 @@ html.cport .stat-row:not(.team) .st { white-space: normal; line-height: 1.15; }
 .lx-title { position: absolute; z-index: 3; top: 50%; margin-top: 10px; }
 .pm-tldr { margin: 8px 0 10px; padding-left: 1.4em; font-size: 15px; line-height: 1.6; color: #e9e6f0; }
 .pm-tldr b { color: #ffd23f; }
+
+/* friend room */
+.party-code { text-align: center; font-family: 'Pixelify Sans', monospace; color: #c9c2d6; margin: 2px 0 10px; }
+.party-code b { font-family: 'Lilita One', sans-serif; font-size: 30px; letter-spacing: .18em; color: #ffd23f; text-shadow: 0 2px 0 #000; margin-left: 6px; }
+.party-slots { display: grid; gap: 8px; margin-bottom: 8px; }
+.party-p { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #2a2a31; border: 3px solid #111; border-radius: 6px; color: #fff; }
+.party-p span { flex: 1; font-weight: 700; } .party-p small { color: #9aa0a6; font-weight: 400; }
+.party-p em { font-style: normal; font-size: 12px; font-family: 'Pixelify Sans', monospace; color: #9aa0a6; }
+.party-p.ok { border-color: #35d047; } .party-p.ok em { color: #35d047; }
+.party-sq { display: flex; gap: 4px; } .party-sq img { width: 30px; height: 30px; }
+.party-btns { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.party-help { margin-top: 0; }

@@ -654,13 +654,15 @@
     enterCode() {
       BB.ui.open((sheet) => {
         const body = BB.ui.head(sheet, 'Enter a Code', { onX: () => M.openPvp() });
-        body.innerHTML += `<div class="f-s">Type the challenge code your friend sent you, or the result code from a challenge you created.</div>`;
+        body.innerHTML += `<div class="f-s">Type a friend's room code, the challenge code they sent you, or the result code from a challenge you created.</div>`;
         const inp = document.createElement('input'); inp.className = 'pvp-code-in'; inp.placeholder = 'XXXX-XXXX-XXXX-XXXX'; inp.autocapitalize = 'characters'; inp.spellcheck = false; inp.maxLength = 32;
         inp.onkeydown = (e) => { e.stopPropagation(); if (e.key === 'Enter') go.click(); };
         inp.oninput = () => { const v = inp.value.toUpperCase().replace(/[^0-9A-Z]/g, ''); inp.value = (v.match(/.{1,4}/g) || []).join('-'); };
         body.appendChild(inp);
         const go = document.createElement('button'); go.className = 'btn primary pvp-go'; go.innerHTML = BB.ICON.swords + ' Go';
         go.onclick = () => {
+          const rc = inp.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+          if (BB.party && BB.party.validCode(rc)) { BB.ui.onClose = null; BB.ui.close(); BB.party.join(rc); return; } // a friend's room code
           const got = M.readCode(inp.value);
           if (!got) { BB.audio.play('lose'); BB.ui.toast('That code is not valid. Check it and try again.'); inp.classList.add('bad'); return; }
           BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close();
@@ -684,6 +686,7 @@
             <div class="pvp-rec">${next ? (next[0] - pv.rating) + ' to ' + next[1] : 'Top rank'} · ${pv.w} W · ${pv.d} D · ${pv.l} L</div></div>
           <div class="pvp-modes">
             <div class="pvp-mode code"><div class="pm-h">${BB.ICON.scroll}<b>Play a Friend</b></div><span>Make a challenge and share its code or invite link. They answer with the same code.</span><div class="pm-btns"></div></div>
+            <div class="pvp-mode room"><div class="pm-h">${BB.ICON.swords}<b>Friend Room</b><em class="on">LIVE</em></div><span>Open a private room, invite a friend and keep playing together.</span><button class="btn blue pm-room">${BB.party && BB.party.active() ? 'Back to my room' : 'Open a room'}</button></div>
             <div class="pvp-mode mm"><div class="pm-h">${BB.ICON.swords}<b>Matchmaking</b><em class="on">LIVE</em></div><span>Get matched with another player who is online right now. Same fights on both screens.</span><button class="btn green pm-find">Find a match</button></div>
           </div>
           <div class="pvp-steps"><div><b>1</b><span>Pick 3 different balls in fight order</span></div><div><b>2</b><span>Share the code with a friend</span></div><div><b>3</b><span>All 3 rounds play. Most wins takes it</span></div></div>`;
@@ -701,6 +704,8 @@
         body.querySelector('.pm-btns').append(go, enter);
         const fm = body.querySelector('.pm-find');
         if (fm) fm.onclick = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); BB.match.start(); };
+        const rm = body.querySelector('.pm-room');
+        if (rm) rm.onclick = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); if (BB.party.active()) BB.party.lobby(); else BB.party.create(); };
       }, { width: '460px' });
     },
 
@@ -818,7 +823,7 @@
       if (sr.spectate) { M.series = null; M.pvpResultScreen(sr.view); return; }
       const pv = M.pvpData();
       const won = sr.score[0] > sr.score[1], draw = sr.score[0] === sr.score[1];
-      const delta = M.applyRating(pv, sr.foeRating, won ? 1 : draw ? 0.5 : 0);
+      const delta = sr.party ? 0 : M.applyRating(pv, sr.foeRating, won ? 1 : draw ? 0.5 : 0); // friend rooms are unranked
       M.track('pvpplay', 1); if (won) M.track('pvpwin', 1);
       M.pushHist(pv, sr.foeName, sr.score[0] + '-' + sr.score[1], delta, won ? 1 : draw ? 0 : -1);
       const coinsWon = won ? 150 : draw ? 80 : 50;
@@ -866,12 +871,19 @@
           wb.onclick = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); o.watch(); };
           foot.append(wb);
         }
+        if (sr.party) {
+          // friend room: both players go back to the room together
+          const back = document.createElement('button'); back.className = 'btn primary'; back.textContent = BB.party.active() ? 'Back to room' : 'PvP';
+          back.onclick = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); BB.party.backToRoom(); };
+          foot.append(back); sheet.appendChild(foot);
+          return;
+        }
         const re = document.createElement('button'); re.className = 'btn primary'; re.textContent = sr.live ? 'Find another' : 'New challenge';
         re.onclick = () => { BB.sdk.hideInvite(); BB.ui.onClose = null; BB.ui.close(); M.series = null; BB.app.toMenu(); if (sr.live) BB.match.start(); else M.pick3('Your PvP Squad', 'Pick 3 different balls in fight order.', (ids) => M.pvpCreated(ids)); };
         const ok = document.createElement('button'); ok.className = 'btn green'; ok.textContent = 'Menu';
         ok.onclick = () => { BB.sdk.hideInvite(); M.series = null; BB.ui.onClose = null; BB.ui.close(); BB.sdk.maybeMidgame().then(() => BB.app.toMenu()); };
         foot.append(re, ok); sheet.appendChild(foot);
-      }, { width: '460px', onClose: () => { BB.sdk.hideInvite(); M.series = null; BB.app.toMenu(); } });
+      }, { width: '460px', onClose: () => { if (sr.party) { BB.party.backToRoom(); return; } BB.sdk.hideInvite(); M.series = null; BB.app.toMenu(); } });
     },
 
     // The challenger opens the result link: apply the rating once, show the series, offer a replay.

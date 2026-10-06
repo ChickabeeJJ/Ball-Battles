@@ -116,12 +116,13 @@
       }
       // A friend's challenge link takes priority; otherwise first-time players get the tutorial.
       const handled = App.pvpAvailable() && App.openInvite((k) => BB.sdk.getInviteParam(k));
-      // CrazyGames instant multiplayer: straight into matchmaking
-      if (!handled && App.pvpAvailable() && BB.sdk.instantMultiplayer()) BB.match.start();
+      // CrazyGames instant multiplayer: the party leader opens a friend room straight away
+      if (!handled && App.pvpAvailable() && BB.sdk.instantMultiplayer()) BB.party.create();
       else if (!handled && !BB.save.data.tutorialDone && !App.capture) setTimeout(() => BB.ui.tutorial(), 400);
       // joining a friend's room while the game is already running (invite notification / friends drawer)
       if (App.pvpAvailable()) BB.sdk.onJoinRoom((params) => {
         const p = params || {};
+        if (BB.party.active() && BB.party.code === String(p.room || '').toUpperCase()) { if (!BB.party.inSeries) BB.party.lobby(); return; }
         if (App.state === 'battle' && !(App.event && App.event.kind === 'pvp3')) App.toMenu();
         else if (App.state === 'battle') return; // already in a PvP series: finish it first
         BB.ui.onClose = null; BB.ui.close();
@@ -132,6 +133,8 @@
     // Opens whatever a friend's invite carries (result, 3-ball challenge, or classic challenge).
     // get(name) reads one invite param. Returns true if something was opened.
     openInvite(get) {
+      const room = get('room');
+      if (room && BB.party.validCode(String(room).toUpperCase())) { BB.party.join(room); return true; }
       const res3 = BB.meta.decodeR(get('pvp3r'));
       if (res3) { BB.meta.pvpResult(res3); return true; }
       const ch3 = BB.meta.decode3(get('pvp3'));
