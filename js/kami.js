@@ -754,7 +754,7 @@
     const tx = -W * 0.04 + (1 - ease((p - 0.04) / 0.14)) * W * 0.5;
     ctx.save(); ctx.transform(1, 0, -0.18, 1, 0, 0);
     // the ability name follows the Ability Text setting
-    if (BB.save && BB.save.data.settings.callouts === false) ctx.globalAlpha = 0;
+    if (BB.save && (BB.app && BB.app.st ? BB.app.st() : BB.save.data.settings).callouts === false) ctx.globalAlpha = 0;
     ctx.lineWidth = H * 0.06; ctx.strokeStyle = '#1d1d22'; ctx.strokeText(def.title, tx, -H * 0.04);
     const tg = ctx.createLinearGradient(0, -H * 0.16, 0, H * 0.08); tg.addColorStop(0, '#fffbe0'); tg.addColorStop(1, red ? '#ffd23f' : '#ffc93a');
     ctx.fillStyle = tg; ctx.fillText(def.title, tx, -H * 0.04);
@@ -774,8 +774,11 @@
   }
 
   // The finisher: judgement of the gods
-  function finisher(R, imp) {
-    const ctx = R.ctx, W = R.c.width, T = imp.t, D = imp.dur, red = !!imp.asc;
+  // ox/oy: where the W x W square sits on the canvas (the full-screen version overhangs the edges)
+  function finisher(R, imp, ox = 0, oy = 0) {
+    // full-canvas fills cover the whole screen even when the square is smaller than it
+    const FW = R.c.width, FH = R.c.height;
+    const ctx = R.ctx, W = R.W || R.c.width, T = imp.t, D = imp.dur, red = !!imp.asc;
     const cx = W / 2, cy = W / 2;
     if (!imp.shards) {
       const rng = BB.RNG(imp.seed), n = 14;
@@ -786,11 +789,11 @@
       imp.embers = [];
       for (let i = 0; i < 60; i++) imp.embers.push({ x: rng(), s: 0.2 + rng() * 0.8, o: rng(), r: 1 + rng() * 3 });
     }
-    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, ox, oy);
     const fadeOut = T > D - 0.35 ? (T - (D - 0.35)) / 0.35 : 0;
     ctx.globalAlpha = 1 - fadeOut;
     // black void
-    ctx.fillStyle = '#05040a'; ctx.fillRect(0, 0, W, W);
+    ctx.fillStyle = '#05040a'; ctx.fillRect(-ox, -oy, FW, FH);
     // god rays
     const rays = ease((T - 0.1) / 0.6);
     if (rays > 0) {
@@ -803,7 +806,7 @@
       ctx.restore();
       const cg = ctx.createRadialGradient(cx, cy, 0, cx, cy, W * 0.55);
       cg.addColorStop(0, (red ? 'rgba(255,70,100,' : 'rgba(255,236,170,') + 0.4 * rays + ')'); cg.addColorStop(1, red ? 'rgba(255,70,100,0)' : 'rgba(255,236,170,0)');
-      ctx.fillStyle = cg; ctx.fillRect(0, 0, W, W);
+      ctx.fillStyle = cg; ctx.fillRect(-ox, -oy, FW, FH);
     }
     // embers rising
     for (const e of imp.embers) {
@@ -875,8 +878,8 @@
       const fi = Math.floor((T - ifA) / 0.055), rng = BB.RNG(imp.seed + fi * 31);
       const pal = red ? [['#050003', '#ffffff'], ['#c8102e', '#050003'], ['#ffffff', '#c8102e']] : [['#050508', '#ffffff'], ['#ffffff', '#050508']];
       const [bg, ink] = pal[fi % pal.length];
-      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, W);
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, ox, oy);
+      ctx.fillStyle = bg; ctx.fillRect(-ox, -oy, FW, FH);
       // speed spikes converging on the centre
       const n = red ? 70 : 46, r0 = W * (0.08 + rng() * 0.05);
       ctx.fillStyle = ink;
@@ -902,14 +905,14 @@
         }
         const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, W * 0.2);
         core.addColorStop(0, 'rgba(255,255,255,0.95)'); core.addColorStop(1, 'rgba(255,45,85,0)');
-        ctx.fillStyle = core; ctx.fillRect(0, 0, W, W);
+        ctx.fillStyle = core; ctx.fillRect(-ox, -oy, FW, FH);
       }
       ctx.restore();
     }
     // ascended: a crimson cross-slash cuts the condemned apart
     if (red && T > 1.9 && T < 2.5) {
       const k = clamp((T - 1.9) / 0.18, 0, 1), fade = 1 - clamp((T - 2.2) / 0.3, 0, 1);
-      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.lineCap = 'round'; ctx.globalAlpha = fade;
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, ox, oy); ctx.lineCap = 'round'; ctx.globalAlpha = fade;
       for (const [x0, y0, x1, y1] of [[0.15, 0.2, 0.85, 0.8], [0.85, 0.2, 0.15, 0.8]]) {
         const ex = x0 + (x1 - x0) * k, ey = y0 + (y1 - y0) * k;
         ctx.beginPath(); ctx.moveTo(W * x0, W * y0); ctx.lineTo(W * ex, W * ey);
@@ -920,15 +923,36 @@
     }
     // white flashes: the opening cut and the shatter
     const fl = Math.max(T < 0.25 ? 1 - T / 0.25 : 0, T > 2.0 && T < 2.3 ? 1 - Math.abs(T - 2.07) / 0.23 : 0);
-    if (fl > 0) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = 'rgba(255,252,240,' + clamp(fl, 0, 1) + ')'; ctx.fillRect(0, 0, W, W); ctx.restore(); }
+    if (fl > 0) { ctx.save(); ctx.setTransform(1, 0, 0, 1, ox, oy); ctx.fillStyle = 'rgba(255,252,240,' + clamp(fl, 0, 1) + ')'; ctx.fillRect(-ox, -oy, FW, FH); ctx.restore(); }
   }
 
   const baseImpact = BB.impactFrame;
   BB.impactFrame = function (R, imp, scale, sx, sy) {
     if (imp.kamiCut) return cutIn(R, imp);
+    if (imp.kamiFin && imp.asc) return fullScreenFinisher(imp);
     if (imp.kamiFin) return finisher(R, imp);
     return baseImpact(R, imp, scale, sx, sy);
   };
+
+  // The ascended finisher breaks out of the arena: it is drawn on a fixed canvas over the whole
+  // screen, as a square sized to the short side (centred); its backgrounds fill the whole screen. The canvas removes
+  // itself as soon as a frame goes by without the finisher being drawn.
+  let fsC = null, fsSeen = 0;
+  function fullScreenFinisher(imp) {
+    const dpr = Math.min(2, window.devicePixelRatio || 1), vw = innerWidth, vh = innerHeight;
+    if (!fsC) {
+      fsC = document.createElement('canvas'); fsC.className = 'kami-fs';
+      document.body.appendChild(fsC);
+      const watch = () => { if (!fsC) return; if (performance.now() - fsSeen > 120) { fsC.remove(); fsC = null; return; } requestAnimationFrame(watch); };
+      requestAnimationFrame(watch);
+    }
+    const cw = Math.round(vw * dpr), ch = Math.round(vh * dpr);
+    if (fsC.width !== cw || fsC.height !== ch) { fsC.width = cw; fsC.height = ch; }
+    fsSeen = performance.now();
+    const ctx = fsC.getContext('2d'), S = Math.min(Math.max(cw, ch), Math.min(cw, ch) * 1.15);
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cw, ch);
+    finisher({ ctx, W: S, c: fsC }, imp, (cw - S) / 2, (ch - S) / 2);
+  }
 
   // =====================================================================
   // Tenshi awakening: the whole screen goes black, a line types out word by word,
@@ -937,23 +961,32 @@
   BB.kamiAwaken = function (done) {
     const el = document.createElement('div');
     el.className = 'awk';
-    el.innerHTML = '<div class="awk-rays"></div><div class="awk-line"></div><div class="awk-slash"></div><div class="awk-no"><span>否</span></div><div class="awk-eye"></div><div class="awk-wave"></div><div class="awk-flash"></div>';
+    el.innerHTML = '<div class="awk-rays"></div><div class="awk-line"></div><div class="awk-slash"></div><div class="awk-no"><span>否</span></div><div class="awk-eye"></div><div class="awk-wave"></div><div class="awk-bars"></div><div class="awk-motes"></div><div class="awk-flash"></div>';
     document.body.appendChild(el);
     const line = el.querySelector('.awk-line'), A = BB.audio;
     const at = (ms, fn) => setTimeout(fn, ms);
     const word = (txt, ms) => at(ms, () => {
       const w = document.createElement('span'); w.className = 'awk-w'; line.appendChild(w);
-      [...txt].forEach((ch, i) => at(i * 85, () => { const c = document.createElement('i'); c.textContent = ch; w.appendChild(c); A.play('type'); }));
+      [...txt].forEach((ch, i) => at(i * 85, () => { const c = document.createElement('i'); c.textContent = ch; w.appendChild(c); }));
     });
     try { document.fonts.load('48px "Yuji Syuku"', '私が？死んだ'); document.fonts.load('900 48px "Noto Serif JP Black"', '否'); } catch (e) { /* system font fallback */ }
+    // slow pale motes drift up through the dark; when 否 lands they freeze where they are
+    const motes = el.querySelector('.awk-motes');
+    for (let i = 0; i < 46; i++) {
+      const m = document.createElement('i');
+      m.style.left = (Math.random() * 100) + '%'; m.style.top = (Math.random() * 100) + '%';
+      m.style.setProperty('--s', (1 + Math.random() * 2.5).toFixed(1) + 'px');
+      m.style.animationDuration = (5 + Math.random() * 6).toFixed(1) + 's'; m.style.animationDelay = (-Math.random() * 6).toFixed(1) + 's';
+      motes.appendChild(m);
+    }
+    // total silence: the music stops and 私が？死んだ？ makes no sound at all
+    BB.music && BB.music.fade(0, 350);
     requestAnimationFrame(() => el.classList.add('on'));
-    at(250, () => A.play('heartbeat'));
     word('私が？', 650);
-    at(1250, () => A.play('heartbeat'));
     word('死んだ？', 1700);
     // the line is torn apart: every character flies off on its own
     at(3000, () => {
-      el.classList.add('cut'); A.play('slash');
+      el.classList.add('cut');
       const chars = [...line.querySelectorAll('i')];
       chars.forEach((c) => { c.style.animation = 'none'; c.style.opacity = '1'; });
       void line.offsetWidth; // commit the reset before the flight starts
@@ -968,10 +1001,11 @@
     // a dead-silent beat of pure black, then 否 simply *appears*: no bounce, no shake, utterly still.
     // A thin crimson line opens beneath it like an eye, and only then does the pressure hit.
     at(3700, () => el.classList.add('void'));
-    at(4500, () => { el.classList.add('no'); A.play('heartbeat'); });
+    // 否 appears and the music slowly comes back with it
+    at(4500, () => { el.classList.add('no'); BB.music && BB.music.fade(1, 2600); });
     at(5600, () => { el.classList.add('press'); A.play('awaken'); BB.app && (BB.app.shake = 10); if (navigator.vibrate) try { navigator.vibrate([200]); } catch (e) { /* */ } });
     at(6700, () => el.classList.add('flash'));
-    at(7050, () => { el.classList.add('out'); done && done(); });
+    at(7050, () => { el.classList.add('out'); BB.music && BB.music.duck < 1 && BB.music.fade(1, 400); done && done(); });
     at(7600, () => el.remove());
   };
 })();

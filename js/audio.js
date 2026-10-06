@@ -36,11 +36,11 @@
 
   // Background music: two tracks that alternate. Streamed (not preloaded) so boot stays fast,
   // started on the first user gesture, silenced by the same SDK mute / ad / hidden-tab rules.
-  const M = (BB.music = { volume: 0.5, el: null, i: 0, started: false });
+  const M = (BB.music = { volume: 0.5, el: null, i: 0, started: false, duck: 1 });
   const TRACKS = ['music/arcade-groove.mp3', 'music/arcade-groove-2.mp3'];
   M.apply = function () {
     if (!M.el) return;
-    const v = A.blocked ? 0 : M.volume * 0.5;
+    const v = A.blocked ? 0 : M.volume * 0.5 * M.duck;
     M.el.volume = v;
     if (v > 0 && M.el.paused && M.started) M.el.play().catch(() => M.retryOnGesture());
     else if (v === 0 && !M.el.paused) M.el.pause();
@@ -62,6 +62,17 @@
     M.apply();
   };
   M.setVolume = function (v) { M.volume = v; M.apply(); };
+  // Cutscenes: fade the music to `to` (0 pauses it, 1 is normal) over `ms`.
+  M.fade = function (to, ms) {
+    cancelAnimationFrame(M.fadeRaf);
+    const from = M.duck, t0 = performance.now();
+    const step = () => {
+      const k = ms > 0 ? Math.min(1, (performance.now() - t0) / ms) : 1;
+      M.duck = from + (to - from) * k; M.apply();
+      if (k < 1) M.fadeRaf = requestAnimationFrame(step);
+    };
+    step();
+  };
 
   function ok(name, gap) {
     if (!ctx || A.blocked || A.volume <= 0 || ctx.state !== 'running') return false;

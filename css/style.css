@@ -1030,6 +1030,25 @@ html.cport .stat-row:not(.team) .st { white-space: normal; line-height: 1.15; }
 .awk.void .awk-line { opacity: 0; transition: opacity .12s; }
 .awk-no { position: absolute; z-index: 4; font-family: 'Noto Serif JP Black', 'Noto Serif JP', 'Yu Mincho', serif; font-weight: 900; font-size: clamp(110px, 30vw, 360px); line-height: 1; color: #f2f6fa; opacity: 0; text-shadow: 0 0 2px #fff, 0 0 40px rgba(170,200,230,.18); }
 .awk.no .awk-no { animation: awkCold 1.6s cubic-bezier(.16,1,.3,1) forwards; }
+/* frost sheen sweeps across the kanji; colour split glitch when the pressure hits */
+.awk-no span { background: linear-gradient(100deg, #eef3f8 0 42%, #ffffff 47%, #bfe6ff 50%, #ffffff 53%, #eef3f8 58% 100%); background-size: 320% 100%; background-position: 100% 0; -webkit-background-clip: text; background-clip: text; color: transparent; }
+.awk.no .awk-no span { animation: awkSheen 1.5s .9s cubic-bezier(.6,0,.3,1) forwards; }
+@keyframes awkSheen { to { background-position: 0 0; } }
+.awk.press .awk-no { animation: awkCold 1.6s cubic-bezier(.16,1,.3,1) forwards, awkSplit .32s steps(4) 1; }
+@keyframes awkSplit { 0% { filter: drop-shadow(-9px 0 0 rgba(255,30,70,.9)) drop-shadow(9px 0 0 rgba(120,220,255,.9)); transform: translateX(4px); } 50% { filter: drop-shadow(6px 0 0 rgba(255,30,70,.9)) drop-shadow(-6px 0 0 rgba(120,220,255,.9)); transform: translateX(-3px); } 100% { filter: none; transform: none; } }
+/* cinematic letterbox closes in during the silent beat */
+.awk-bars { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
+.awk-bars::before, .awk-bars::after { content: ''; position: absolute; left: 0; right: 0; height: 13vh; background: #000; transform: scaleY(0); transition: transform .9s cubic-bezier(.7,0,.2,1); }
+.awk-bars::before { top: 0; transform-origin: top; } .awk-bars::after { bottom: 0; transform-origin: bottom; }
+.awk.void .awk-bars::before, .awk.void .awk-bars::after { transform: scaleY(1); }
+.awk.flash .awk-bars { display: none; }
+/* drifting motes that stop dead (time freezes) when 否 appears, then get blown away */
+.awk-motes { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.awk-motes i { position: absolute; width: var(--s); height: var(--s); border-radius: 50%; background: #dfe9f3; box-shadow: 0 0 6px rgba(200,225,255,.8); opacity: .55; animation: awkMote linear infinite; }
+@keyframes awkMote { from { transform: translateY(6vh); } to { transform: translateY(-6vh); } }
+.awk.no .awk-motes i { animation-play-state: paused; }
+.awk.press .awk-motes { animation: awkBlow .9s cubic-bezier(.1,.8,.3,1) forwards; }
+@keyframes awkBlow { to { transform: scale(2.4); opacity: 0; } }
 @keyframes awkCold { 0% { opacity: 0; transform: scale(1.06); filter: blur(3px); letter-spacing: .2em; } 35% { opacity: 1; filter: none; } 100% { opacity: 1; transform: scale(1); } }
 .awk.press .awk-no { text-shadow: 0 0 2px #fff, 0 0 30px rgba(255,45,85,.55), 0 0 120px rgba(255,0,40,.4); transition: text-shadow .5s; }
 .awk-eye { position: absolute; z-index: 3; top: calc(50% + clamp(62px, 17vw, 200px)); left: 50%; width: min(70vw, 620px); height: 2px; margin-left: calc(min(70vw, 620px) / -2); background: linear-gradient(90deg, transparent, #ff2d55 30%, #fff 50%, #ff2d55 70%, transparent); box-shadow: 0 0 14px 2px rgba(255,45,85,.7); transform: scaleX(0); }
@@ -1050,3 +1069,4 @@ html.cport .stat-row:not(.team) .st { white-space: normal; line-height: 1.15; }
 .awk.no .awk-line { opacity: 0; transition: opacity .2s; }
 .stat-row .st .stx { white-space: normal; }
 .stat-row .st .stx > b { white-space: nowrap; font-weight: inherit; }
+.kami-fs { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 800; pointer-events: none; }

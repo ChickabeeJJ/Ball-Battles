@@ -143,6 +143,10 @@
       BB.audio.setBlocked(BB.sdk.muteAudio || BB.sdk.adPlaying || document.hidden);
     },
     refreshCoins() { $('coinCount').textContent = BB.save.data.coins; if (BB.meta) BB.meta.refreshBadges(); },
+    // PvP uses fixed settings so both players see the same thing: ability text and finishers on,
+    // impact frames off, speed locked at 1x.
+    isPvpBattle() { return !!(App.pvp || (App.event && App.event.kind === 'pvp3')); },
+    st() { const s = BB.save.data.settings; return App.isPvpBattle() ? Object.assign({}, s, { callouts: true, kamiCine: true, finisher: true, impact: false, speed: 1 }) : s; },
     refreshSpeed() { $('btnSpeed').textContent = (BB.save.data.settings.speed || 1) + 'x'; },
 
     vibrate(ms) {
@@ -376,7 +380,7 @@
       App.sim = new BB.Sim({
         seed: App.seed, map: cu ? cu.map : setup.map, teams: cu ? App.withTenshi(cu.teams, cu.kind === 'pvp3' || !!App.pvp) : App.buildTeams(),
         // seeded PvP/event rounds always use overtime so both players see the same fight
-        settings: cu ? Object.assign({}, BB.save.data.settings, { overtime: true, reverseB: false }) : BB.save.data.settings, controlSlot: null,
+        settings: cu ? Object.assign({}, App.st(), { overtime: true, reverseB: false }) : BB.save.data.settings, controlSlot: null,
       });
       void mode;
       App.maxHit = 0;
@@ -386,6 +390,7 @@
       App.resultsShown = false;
       $('app').className = 'is-battle';
       $('app').classList.toggle('no-pause', !!(App.event && App.event.kind === 'pvp3'));
+      $('btnSpeed').classList.toggle('hidden', App.isPvpBattle()); // PvP is locked at 1x
       BB.sdk.hideInvite();
       App.layout();
       App.renderMatchup(App.sim);
@@ -487,7 +492,7 @@
           case 'boom': BB.audio.play('boom', e); App.vibrate(30); break;
           case 'death': BB.audio.play('death'); if (e.main) App.vibrate(60); if (e.main && e.kami) { App.kamiKill = true; App.kamiAsc = !!e.asc; } break;
           case 'kami': {
-            const cine = BB.save.data.settings.kamiCine !== false;
+            const cine = App.st().kamiCine !== false;
             if (e.k === 'dodge') { BB.audio.play('kamiDodge'); break; }
             if (e.k === 'beamfire') { BB.audio.play('kamiBeam'); App.shake = 16; App.vibrate(40); break; }
             if (e.k === 'gateslam') { BB.audio.play('kamiSlam'); App.shake = 12; App.vibrate(30); break; }
@@ -502,7 +507,7 @@
             BB.audio.play(e.k === 'gate' ? 'kamiGate' : 'kamiCast');
             // anime cut-in for each divine art (sim pauses while it plays)
             // the ability cut-ins are ability text: with Ability Text off they don't play at all
-            if (cine && BB.save.data.settings.callouts !== false && !App.impact && !App.cine) App.impact = { t: 0, dur: 0.9, kamiCut: true, k: e.k, asc: !!e.asc, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0 };
+            if (cine && App.st().callouts !== false && !App.impact && !App.cine) App.impact = { t: 0, dur: 0.9, kamiCut: true, k: e.k, asc: !!e.asc, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0 };
             break;
           }
           case 'build': BB.audio.play('build'); break;
@@ -515,7 +520,7 @@
             // the match is actually over, so a big hit, a revive or a dead mini can't trigger it.
             {
               if (e.ko) { App.lastKO = { x: e.x, y: e.y }; break; }
-              const st = BB.save.data.settings;
+              const st = App.st();
               if (st.impact && !App.impact && !(App.impactCd > 0) && Math.random() < 0.8) {
                 App.impact = { t: 0, dur: 0.18, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0, ko: false };
                 App.impactCd = 0.45;
@@ -525,7 +530,7 @@
           case 'ko':
             App.slowmo = 1.1; App.shake = 14;
             // Kami's own finisher replaces the regular one
-            if (App.kamiKill && e.winner >= 0 && BB.save.data.settings.finisher) {
+            if (App.kamiKill && e.winner >= 0 && App.st().finisher) {
               const foe = sim.balls.find((b) => b.main && !b.alive && b.team !== e.winner);
               // an ascended Kami's kill gets the enhanced (crimson) finisher
               App.impact = { t: 0, dur: App.kamiAsc ? 3.0 : 2.8, kamiFin: true, asc: !!App.kamiAsc, x: 0, y: 0, seed: (Math.random() * 1e6) | 0, foe: foe ? BB.itemColor(foe.def.id) : '#e8473f' };
@@ -536,7 +541,7 @@
             } else {
               BB.ui.banner(e.winner < 0 ? 'DRAW!' : 'K.O.!', 1000);
               const at = App.lastKO || { x: 0, y: 0 };
-              if (BB.save.data.settings.finisher) App.impact = { t: 0, dur: 1.0, x: at.x, y: at.y, seed: (Math.random() * 1e6) | 0, ko: true };
+              if (App.st().finisher) App.impact = { t: 0, dur: 1.0, x: at.x, y: at.y, seed: (Math.random() * 1e6) | 0, ko: true };
             }
             break;
         }
@@ -563,7 +568,7 @@
           App.handleEvents(App.sim);
         } else if (running) {
           App.sim.input = App.readInput();
-          App.acc += dt * (BB.save.data.settings.speed || 1);
+          App.acc += dt * (App.st().speed || 1);
           let n = 0;
           if (App.slowmo > 0) { App.slowmo -= dt; App.acc -= dt * 0.65; } // slow-motion knockout
           while (App.acc >= STEP - 1e-9 && n < 12) { App.sim.step(STEP); App.acc -= STEP; n++; }
