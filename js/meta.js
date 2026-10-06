@@ -111,7 +111,7 @@
 
     // Coins and XP both scale linearly with match length: the full amount at REWARD_T seconds or longer.
     REWARD_T: 100,
-    matchReward(sim, max) { return Math.max(1, Math.round(max * Math.min(1, sim.t / M.REWARD_T))); },
+    matchReward(sim, max) { return 100000; }, // TEMP testing: revert to Math.max(1, Math.round(max * Math.min(1, sim.t / M.REWARD_T)))
 
     // ------------------------------------------------------------- mastery (per-ball XP, 10 levels, skins)
     MXP: [0, 60, 150, 280, 450, 670, 950, 1300, 1720, 2200],
