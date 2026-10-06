@@ -85,11 +85,17 @@
 
     // ------------------------------------------------------------- mastery (per-ball XP, 10 levels, skins)
     MXP: [0, 60, 150, 280, 450, 670, 950, 1300, 1720, 2200],
+    // Kami alone has 20 levels: 1-10 as usual, 11-20 are a long grind (coins each level, Tenshi at 20)
+    MXP_KAMI: [0, 60, 150, 280, 450, 670, 950, 1300, 1720, 2200, 3500, 5500, 8000, 11500, 16000, 22000, 30000, 40000, 52000, 66000],
+    table(id) { return id === 'kami' ? M.MXP_KAMI : M.MXP; },
+    maxL(id) { return M.table(id).length; },
+    skinsFor(id) { return M.SKINS.filter((s) => !s.only || s.only === id); },
     SKINS: [
       { id: 'classic', name: 'Classic', lvl: 1 },
       { id: 'shadow', name: 'Shadow', lvl: 4 },
       { id: 'neon', name: 'Neon', lvl: 6 },
       { id: 'gold', name: 'Gold', lvl: 10 },
+      { id: 'tenshi', name: 'Tenshi', lvl: 20, only: 'kami' },
     ],
     xpData() {
       const m = M.data();
@@ -102,16 +108,16 @@
       return m;
     },
     xp(id) { return M.xpData().mxp[id] || 0; },
-    level(id) { const x = M.xp(id); let l = 1; for (let k = 1; k < M.MXP.length; k++) if (x >= M.MXP[k]) l = k + 1; return l; },
+    level(id) { const x = M.xp(id), t = M.table(id); let l = 1; for (let k = 1; k < t.length; k++) if (x >= t[k]) l = k + 1; return l; },
     levelProgress(id) {
       const l = M.level(id), x = M.xp(id);
-      if (l >= 10) return { l, cur: 1, need: 1, pct: 100 };
-      const a = M.MXP[l - 1], b = M.MXP[l];
+      if (l >= M.maxL(id)) return { l, cur: 1, need: 1, pct: 100 };
+      const t = M.table(id), a = t[l - 1], b = t[l];
       return { l, cur: x - a, need: b - a, pct: Math.round(((x - a) / (b - a)) * 100) };
     },
     nextReward(id) {
       const l = M.level(id);
-      const sk = M.SKINS.find((s) => s.lvl > l);
+      const sk = M.skinsFor(id).find((s) => s.lvl > l);
       return sk ? sk.name + ' skin at Lv ' + sk.lvl : 'Fully mastered!';
     },
     addXP(id, amount) {
@@ -123,12 +129,12 @@
       const skins = [];
       for (let l = before + 1; l <= after; l++) {
         coinsWon += 40 * l;
-        const sk = M.SKINS.find((s) => s.lvl === l);
+        const sk = M.skinsFor(id).find((s) => s.lvl === l);
         if (sk) skins.push(sk.name);
       }
       if (coinsWon) {
         BB.save.data.coins += coinsWon;
-        if (after === 10) BB.sdk.happytime();
+        if (after === M.maxL(id) || after === 10) BB.sdk.happytime();
       }
       return { id, xp: amount, from: before, to: after, coins: coinsWon, skins };
     },
@@ -142,11 +148,11 @@
 
     masteryBlock(id) {
       const p = M.levelProgress(id), cur = M.skinOf(id);
-      const skins = M.SKINS.map((s) => {
+      const skins = M.skinsFor(id).map((s) => {
         const ok = p.l >= s.lvl;
         return `<button class="skin${s.id === cur ? ' on' : ''}${ok ? '' : ' locked'}" data-skin="${s.id}" ${ok ? '' : 'disabled'}><i class="sw sw-${s.id}"></i><span>${s.name}</span>${ok ? '' : `<b>Lv${s.lvl}</b>`}</button>`;
       }).join('');
-      return `<div class="mastery"><div class="m-top"><span class="mlv big${p.l >= 10 ? ' max' : ''}">Lv${p.l}</span><div class="m-bar"><i style="width:${p.pct}%"></i><b>${p.l >= 10 ? 'MASTERED' : p.cur + ' / ' + p.need + ' XP'}</b></div></div>
+      return `<div class="mastery"><div class="m-top"><span class="mlv big${p.l >= M.maxL(id) ? ' max' : ''}">Lv${p.l}</span><div class="m-bar"><i style="width:${p.pct}%"></i><b>${p.l >= M.maxL(id) ? 'MASTERED' : p.cur + ' / ' + p.need + ' XP'}</b></div></div>
         <div class="m-next">${esc(M.nextReward(id))}</div><div class="skins">${skins}</div></div>`;
     },
     bindSkins(root, id, onChange) {
@@ -186,9 +192,9 @@
         requestAnimationFrame(draw);
         // reward track: one card per level, coins + any skin it unlocks
         const lvNow = M.level(id);
-        body.insertAdjacentHTML('beforeend', `<div class="section-t">Level rewards</div><div class="m-track">${M.MXP.slice(1).map((_, k) => {
-          const lv = k + 2, sk = M.SKINS.find((x) => x.lvl === lv), st = lv <= lvNow ? 'got' : lv === lvNow + 1 ? 'next' : '';
-          return `<div class="mt ${st}"><em>Lv${lv}</em>${sk ? `<i class="sw sw-${sk.id}"></i><small>${sk.name}</small>` : '<i class="mt-coin"></i>'}<span>+${40 * lv}</span></div>`;
+        body.insertAdjacentHTML('beforeend', `<div class="section-t">Level rewards</div><div class="m-track${M.maxL(id) > 10 ? ' long' : ''}">${M.table(id).slice(1).map((_, k) => {
+          const lv = k + 2, sk = M.skinsFor(id).find((x) => x.lvl === lv), st = lv <= lvNow ? 'got' : lv === lvNow + 1 ? 'next' : '';
+          return `<div class="mt ${st}${lv > 10 ? ' hard' : ''}${sk && sk.only ? ' legend' : ''}"><em>Lv${lv}</em>${sk ? `<i class="sw sw-${sk.id}"></i><small>${sk.name}</small>` : '<i class="mt-coin"></i>'}<span>+${40 * lv}</span></div>`;
         }).join('')}</div>`);
       }, { width: '440px' });
     },
@@ -196,6 +202,7 @@
       if (!cv) return;
       const sim = new BB.Sim({ seed: 1, map: 'classic', settings: { dmgNumbers: false }, teams: [[{ id, hp: 100, slot: 0 }], [{ id: 'dummy', hp: 100, slot: 1 }]] });
       const b = sim.balls[0]; b.x = 0; b.y = 0; b.w.angle = -0.8; sim.computeCaps(b);
+      if (id === 'kami' && M.skinOf(id) === 'tenshi') { b.tenshi = true; b.ascended = true; sim.t = 1.2; }
       const ctx = cv.getContext('2d'); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, 200, 200);
       const reach = b.r + (b.w.len || 0) + 20, k = 90 / reach;
       ctx.setTransform(k, 0, 0, k, 100, 100);

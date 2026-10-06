@@ -70,6 +70,7 @@
           const b = this.makeBall(BB.ITEM[sc.id] || BB.ITEM.sword, team, x, y, {
             hp: sc.hp, scale: sc.scale || 1, ov: sc.ov || {}, slot: sc.slot,
             controlled: cfg.controlSlot != null && cfg.controlSlot === sc.slot,
+            tenshi: !!sc.tenshi,
           });
           b.name = b.def.name;
         });
@@ -90,6 +91,7 @@
       };
       const a = this.rng() * TAU;
       b.vx = Math.cos(a) * b.speed; b.vy = Math.sin(a) * b.speed;
+      b.tenshi = !!o.tenshi;
       b.w = makeWeapon(def, ov, scale);
       b.w.angle = this.rng() * TAU;
       b.w.dir = team === 1 && this.settings.reverseB ? -1 : 1;
@@ -264,6 +266,7 @@
     }
 
     kill(b, src) {
+      if (b.def.beforeDeath && b.def.beforeDeath(this, b, src)) return;
       if (b.def.revive && !b.revived) {
         b.revived = true; b.hp = b.maxHp * 0.4;
         this.ring(b.x, b.y, b.r, b.r * 4, '#ff8a1f', 0.5);
@@ -276,7 +279,7 @@
       if (src && src.alive !== undefined) src.kills++;
       this.burst(b.x, b.y, 30, [BB.TEAMS[b.team].fill, '#ffffff', BB.TEAMS[b.team].dark], 380, 5);
       this.ring(b.x, b.y, b.r, b.r * 3, BB.TEAMS[b.team].fill, 0.4);
-      this.emit({ type: 'death', x: b.x, y: b.y, team: b.team, main: b.main, kami: !!(src && src.def && src.def.kami) });
+      this.emit({ type: 'death', x: b.x, y: b.y, team: b.team, main: b.main, kami: !!(src && src.def && (src.def.kami || (src.owner && src.owner.def.kami))), asc: !!(src && (src.ascended || (src.owner && src.owner.ascended))) });
       if (this.potato && this.potato.holder === b) { this.potato.holder = this.pickPotatoHolder(); this.potato.t = Math.max(this.potato.t, 4); }
       if (b.def.splits && b.main) {
         for (let k = 0; k < 2; k++) {

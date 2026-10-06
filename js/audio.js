@@ -172,6 +172,21 @@
         [523, 659, 784, 988, 1175].forEach((f, i) => tone('sine', f, 0, 1.4, 0.05, 0.3 + i * 0.08));
         noise(0.5, 0.6, 700, 0.7, 2.05); tone('sine', 140, 35, 0.6, 0.4, 2.05);
         break;
+      case 'type': if (ok('type', 0.03)) { noise(0.03, 0.12, 3200, 3); tone('sine', 1800, 1400, 0.03, 0.03); } break;
+      case 'heartbeat':
+        if (!ok('heartbeat', 0.4)) return;
+        tone('sine', 70, 40, 0.18, 0.5); tone('sine', 62, 38, 0.2, 0.42, 0.24);
+        break;
+      case 'slash':
+        if (!ok('slash', 0.3)) return;
+        noise(0.35, 0.55, 2400, 0.8); tone('sawtooth', 1800, 200, 0.3, 0.08);
+        break;
+      case 'awaken':
+        if (!ok('awaken', 1)) return;
+        noise(0.6, 0.7, 380, 0.6); tone('sine', 55, 30, 1.6, 0.5); tone('sawtooth', 110, 55, 0.9, 0.12);
+        [262, 330, 392, 523, 659].forEach((f, i) => { tone('sine', f, 0, 1.8, 0.06, 0.15 + i * 0.05); tone('triangle', f * 2, 0, 1.2, 0.025, 0.2 + i * 0.05); });
+        tone('sine', 1047, 2093, 1.2, 0.05, 0.4);
+        break;
       case 'overtime': if (ok('overtime', 0.5)) { tone('sawtooth', 220, 440, 0.3, 0.1); } break;
     }
   };

@@ -1000,3 +1000,45 @@ html.cport .stat-row:not(.team) .st { white-space: normal; line-height: 1.15; }
 .mm-squad img { width: 44px; height: 44px; filter: drop-shadow(0 3px 0 rgba(0,0,0,.5)); }
 .mm-status { text-align: center; color: #fff; font-family: var(--num); font-size: 16px; }
 .mm-status b { color: #ffd23f; font-weight: 400; margin-left: 6px; }
+
+/* ================================================================ Kami 20-level mastery + Tenshi */
+.skins { grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)) !important; }
+.m-track.long { grid-template-columns: repeat(10, 1fr); }
+.mt.hard { background: #2e2228; }
+.mt.hard em { color: #ff9ab0; }
+.mt.legend { background: linear-gradient(160deg, #4a1020, #2a1418); border-color: #ff4d6d; opacity: 1; box-shadow: 0 0 10px rgba(255,77,109,.45); }
+.mt.legend small { color: #ffd0d8; font-weight: 700; }
+.sw-tenshi { background: radial-gradient(circle at 50% 40%, #fff 0 22%, #ffd0d8 40%, #e0002b 75%, #5a0010); box-shadow: 0 0 9px 2px rgba(255,77,109,.8), inset 0 -3px 0 rgba(255,210,63,.8); }
+@media (max-width: 520px) { .m-track.long { grid-template-columns: repeat(5, 1fr); } }
+@font-face { font-family: 'Yuji Syuku'; src: url('../fonts/yuji-syuku-sub.woff2') format('woff2'); font-display: block; }
+@font-face { font-family: 'Noto Serif JP Black'; src: url('../fonts/noto-serif-jp-900-sub.woff2') format('woff2'); font-weight: 900; font-display: block; }
+
+/* ================================================================ Tenshi awakening (full screen) */
+.awk { position: fixed; inset: 0; z-index: 900; background: #000; opacity: 0; transition: opacity .35s ease; display: flex; align-items: center; justify-content: center; overflow: hidden; pointer-events: all; }
+.awk.on { opacity: 1; }
+.awk.out { opacity: 0; transition: opacity .5s ease; }
+.awk-line { position: relative; z-index: 2; display: flex; align-items: baseline; gap: .55em; font-family: 'Yuji Syuku', 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif; font-size: clamp(44px, 10vw, 120px); color: #f4efe8; letter-spacing: .04em; text-shadow: 0 0 22px rgba(255,255,255,.22); }
+.awk-line::after { content: ''; align-self: center; width: .07em; height: .95em; background: #f4efe8; animation: awkBlink .7s steps(1) infinite; }
+.awk.cut .awk-line::after { display: none; }
+.awk-w i { font-style: normal; display: inline-block; animation: awkIn .38s cubic-bezier(.2,.8,.3,1) both; }
+@keyframes awkIn { from { opacity: 0; transform: translateY(.25em); filter: blur(10px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes awkBlink { 50% { opacity: 0; } }
+.awk-slash { position: absolute; left: 0; right: 0; top: 50%; height: 6px; margin-top: -3px; z-index: 3; background: linear-gradient(90deg, transparent, #ff2d55 20%, #ffffff 50%, #ff2d55 80%, transparent); box-shadow: 0 0 24px 6px rgba(255,45,85,.6); transform: scaleX(0); opacity: 0; }
+.awk.cut .awk-slash { animation: awkSlash .7s cubic-bezier(.2,.8,.2,1) forwards; }
+@keyframes awkSlash { 0% { transform: scaleX(0) rotate(-6deg); opacity: 1; } 35% { transform: scaleX(1) rotate(-6deg); opacity: 1; } 100% { transform: scaleX(1.1) rotate(-6deg) scaleY(.1); opacity: 0; } }
+.awk-rays { position: absolute; inset: -60%; background: repeating-conic-gradient(rgba(255,45,85,.26) 0 3.5deg, transparent 3.5deg 13deg); opacity: 0; -webkit-mask: radial-gradient(circle, transparent 8%, #000 40%); mask: radial-gradient(circle, transparent 8%, #000 40%); }
+.awk.no .awk-rays { opacity: 1; animation: spin 10s linear infinite, awkRaysIn .5s ease-out; }
+@keyframes awkRaysIn { from { opacity: 0; transform: scale(.6); } to { opacity: 1; } }
+.awk-no { position: absolute; z-index: 4; display: flex; gap: .02em; font-family: 'Noto Serif JP Black', 'Noto Serif JP', 'Yu Mincho', serif; font-weight: 900; font-size: clamp(90px, 24vw, 300px); color: #ffffff; opacity: 0; text-shadow: 0 0 30px #ff2d55, 0 0 90px rgba(255,45,85,.75), 0 .05em 0 #5a0010; }
+.awk.no .awk-no { opacity: 1; animation: awkShake .5s .05s; }
+.awk-no span { display: inline-block; opacity: 0; }
+.awk.no .awk-no span { animation: awkSlam .5s cubic-bezier(.2,1.5,.3,1) both; }
+.awk.no .awk-no span:nth-child(2) { animation-delay: .12s; } .awk.no .awk-no span:nth-child(3) { animation-delay: .24s; }
+@keyframes awkSlam { 0% { opacity: 0; transform: scale(3.4) translateY(-.15em); filter: blur(16px); color: #ff2d55; } 55% { opacity: 1; filter: none; color: #fff; } 100% { opacity: 1; transform: none; } }
+@keyframes awkShake { 0%, 100% { transform: none; } 20% { transform: translate(-14px, 8px); } 40% { transform: translate(12px, -10px); } 60% { transform: translate(-8px, 6px); } 80% { transform: translate(5px, -3px); } }
+.awk-flash { position: absolute; inset: 0; z-index: 5; background: radial-gradient(circle, #fff 0 30%, #ffd0d8 70%); opacity: 0; }
+.awk.flash .awk-flash { animation: awkFlash .55s ease-out forwards; }
+@keyframes awkFlash { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 1; } }
+.k-abil div:nth-child(5) { grid-column: 1 / -1; background: linear-gradient(135deg, rgba(255,45,85,.22), rgba(90,0,16,.35)); border-color: #5a0010; }
+.k-abil div:nth-child(5) b { color: #ff8aa0; }
+.awk.no .awk-line { opacity: 0; transition: opacity .2s; }

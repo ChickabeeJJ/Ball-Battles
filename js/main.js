@@ -199,7 +199,13 @@
     // ------------------------------------------------------------- menu
     buildTeams() {
       const setup = BB.save.data.setup;
-      return App.mode().teams.map((t) => t.map((i) => Object.assign({}, setup.slots[i], { ov: Object.assign({}, setup.slots[i].ov), slot: i })));
+      return App.withTenshi(App.mode().teams.map((t) => t.map((i) => Object.assign({}, setup.slots[i], { ov: Object.assign({}, setup.slots[i].ov), slot: i }))));
+    },
+    // The Tenshi skin (Kami mastery 20) has a battle effect, so it is passed to the sim. Never in PvP:
+    // the other player's game can't know your skin, and both screens must play the same fights.
+    withTenshi(teams, pvp) {
+      const on = !pvp && BB.meta && BB.meta.skinOf('kami') === 'tenshi';
+      return teams.map((t) => t.map((sc) => (sc.id === 'kami' ? Object.assign({}, sc, { tenshi: on }) : sc)));
     },
 
     refreshMenu() {
@@ -360,14 +366,14 @@
     },
 
     startBattle() {
-      App.slowmo = 0; App.shake = 0; App.impact = null; App.lastKO = null;
+      App.slowmo = 0; App.shake = 0; App.impact = null; App.lastKO = null; App.cine = false; App.cineQ = 0;
       BB.audio.unlock();
       const setup = BB.save.data.setup;
       const mode = App.mode();
       const cu = App.pvp || App.event;
       App.seed = cu ? cu.seed : (Math.random() * 2147483647) | 0;
       App.sim = new BB.Sim({
-        seed: App.seed, map: cu ? cu.map : setup.map, teams: cu ? cu.teams : App.buildTeams(),
+        seed: App.seed, map: cu ? cu.map : setup.map, teams: cu ? App.withTenshi(cu.teams, cu.kind === 'pvp3' || !!App.pvp) : App.buildTeams(),
         // seeded PvP/event rounds always use overtime so both players see the same fight
         settings: cu ? Object.assign({}, BB.save.data.settings, { overtime: true, reverseB: false }) : BB.save.data.settings, controlSlot: null,
       });
@@ -477,15 +483,23 @@
           case 'bump': BB.audio.play('bump'); break;
           case 'shoot': BB.audio.play('shoot', e); break;
           case 'boom': BB.audio.play('boom', e); App.vibrate(30); break;
-          case 'death': BB.audio.play('death'); if (e.main) App.vibrate(60); if (e.main && e.kami) App.kamiKill = true; break;
+          case 'death': BB.audio.play('death'); if (e.main) App.vibrate(60); if (e.main && e.kami) { App.kamiKill = true; App.kamiAsc = !!e.asc; } break;
           case 'kami': {
             const cine = BB.save.data.settings.kamiCine !== false;
             if (e.k === 'dodge') { BB.audio.play('kamiDodge'); break; }
             if (e.k === 'beamfire') { BB.audio.play('kamiBeam'); App.shake = 16; App.vibrate(40); break; }
             if (e.k === 'gateslam') { BB.audio.play('kamiSlam'); App.shake = 12; App.vibrate(30); break; }
+            if (e.k === 'awaken') {
+              // Tenshi: everything stops, the screen goes black and Kami refuses to die
+              App.impact = null;
+              App.cineQ = (App.cineQ || 0) + 1;
+              const go = () => { App.cine = true; BB.kamiAwaken(() => { App.cine = false; App.last = performance.now(); if (--App.cineQ > 0) go(); }); };
+              if (App.cineQ === 1) go();
+              break;
+            }
             BB.audio.play(e.k === 'gate' ? 'kamiGate' : 'kamiCast');
             // anime cut-in for each divine art (sim pauses while it plays)
-            if (cine && !App.impact) App.impact = { t: 0, dur: 0.9, kamiCut: true, k: e.k, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0 };
+            if (cine && !App.impact && !App.cine) App.impact = { t: 0, dur: 0.9, kamiCut: true, k: e.k, asc: !!e.asc, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0 };
             break;
           }
           case 'build': BB.audio.play('build'); break;
@@ -510,9 +524,10 @@
             // Kami's own finisher replaces the regular one
             if (App.kamiKill && e.winner >= 0 && BB.save.data.settings.finisher) {
               const foe = sim.balls.find((b) => b.main && !b.alive && b.team !== e.winner);
-              App.impact = { t: 0, dur: 2.8, kamiFin: true, x: 0, y: 0, seed: (Math.random() * 1e6) | 0, foe: foe ? BB.itemColor(foe.def.id) : '#e8473f' };
+              // an ascended Kami's kill gets the enhanced (crimson) finisher
+              App.impact = { t: 0, dur: App.kamiAsc ? 3.0 : 2.8, kamiFin: true, asc: !!App.kamiAsc, x: 0, y: 0, seed: (Math.random() * 1e6) | 0, foe: foe ? BB.itemColor(foe.def.id) : '#e8473f' };
               BB.audio.play('kamiFinisher');
-              setTimeout(() => BB.ui.banner('K.O.!', 900), 2700);
+              setTimeout(() => BB.ui.banner('K.O.!', 900), App.kamiAsc ? 2900 : 2700);
             } else if (e.timeup) {
               BB.ui.banner(e.winner < 0 ? 'DRAW!' : 'TIME UP!', 1000);
             } else {
@@ -524,7 +539,7 @@
         }
       }
       sim.events.length = 0;
-      App.kamiKill = false;
+      App.kamiKill = false; App.kamiAsc = false;
     },
 
     // ------------------------------------------------------------- loop
@@ -537,7 +552,7 @@
 
     tick(dt) {
       if (App.state === 'battle' && App.sim) {
-        const running = !App.paused && !BB.sdk.adPlaying && !document.hidden;
+        const running = !App.paused && !BB.sdk.adPlaying && !document.hidden && !App.cine;
         if (App.impactCd > 0) App.impactCd -= dt;
         if (running && App.impact) {
           App.impact.t += dt;
