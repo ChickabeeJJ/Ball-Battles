@@ -38,34 +38,56 @@
   const cx = W * 0.5, cy = port ? H * 0.56 : H * 0.6;
 
   // ---------------------------------------------------------------- background
-  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.hypot(W, H) * 0.75);
-  g.addColorStop(0, '#fff1c4'); g.addColorStop(0.08, '#ff9a2e'); g.addColorStop(0.3, '#8a2a7a'); g.addColorStop(0.65, '#2a1240'); g.addColorStop(1, '#07060c');
-  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // team-coloured split: electric blue on the left, hot orange-red on the right, a jagged
+  // lightning seam through the clash
+  const seam = []; { let x = cx + W * 0.04, y = -10; seam.push([x, y]); while (y < H + 10) { y += U * (0.04 + rng() * 0.05); x = cx + (y - cy) * -0.18 + (rng() - 0.5) * U * 0.07; seam.push([x, y]); } }
+  const side = (left) => {
+    ctx.save(); ctx.beginPath();
+    if (left) { ctx.moveTo(-10, -10); for (const [x, y] of seam) ctx.lineTo(x, y); ctx.lineTo(-10, H + 10); }
+    else { ctx.moveTo(W + 10, -10); for (const [x, y] of seam) ctx.lineTo(x, y); ctx.lineTo(W + 10, H + 10); }
+    ctx.closePath(); ctx.clip();
+    const gx = left ? W * 0.25 : W * 0.75, gr = ctx.createRadialGradient(gx, cy, 0, gx, cy, Math.hypot(W, H) * 0.6);
+    if (left) { gr.addColorStop(0, '#5fd8ff'); gr.addColorStop(0.35, '#1f7cf0'); gr.addColorStop(0.75, '#0d2f8a'); gr.addColorStop(1, '#071645'); }
+    else { gr.addColorStop(0, '#ffd34d'); gr.addColorStop(0.3, '#ff7a1f'); gr.addColorStop(0.7, '#d81e3a'); gr.addColorStop(1, '#5a0718'); }
+    ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H);
+    // comic halftone dots, bigger towards the outer edge
+    ctx.fillStyle = left ? 'rgba(255,255,255,0.10)' : 'rgba(255,240,200,0.12)';
+    const step = U * 0.03;
+    for (let y = 0; y < H; y += step) for (let x = (Math.round(y / step) % 2) * step / 2; x < W; x += step) {
+      const k = Math.min(1, Math.abs(x - cx) / (W * 0.5)), r = step * 0.42 * k * k;
+      if (r > 0.5) { ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); }
+    }
+    ctx.restore();
+  };
+  side(true); side(false);
+  // god rays + speed lines out of the clash
   ctx.save(); ctx.translate(cx, cy); ctx.globalCompositeOperation = 'lighter';
-  for (let i = 0; i < 24; i++) {
-    const a = (i / 24) * TAU + rng() * 0.1, w = 0.03 + rng() * 0.07, R = Math.hypot(W, H);
+  for (let i = 0; i < 22; i++) {
+    const a = (i / 22) * TAU + rng() * 0.12, w = 0.025 + rng() * 0.05, R = Math.hypot(W, H);
     const gr = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
-    gr.addColorStop(0, 'rgba(255,220,140,0.35)'); gr.addColorStop(1, 'rgba(255,90,40,0)');
+    gr.addColorStop(0, 'rgba(255,255,230,0.45)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, R, a, a + w); ctx.closePath(); ctx.fill();
   }
-  ctx.restore();
-  // speed lines
-  ctx.save(); ctx.translate(cx, cy);
-  for (let i = 0; i < 140; i++) {
-    const a = rng() * TAU, r0 = U * (0.5 + rng() * 0.4), r1 = r0 + U * (0.15 + rng() * 0.6);
-    ctx.strokeStyle = 'rgba(255,255,255,' + (0.04 + rng() * 0.1) + ')'; ctx.lineWidth = U * (0.002 + rng() * 0.004);
+  for (let i = 0; i < 120; i++) {
+    const a = rng() * TAU, r0 = U * (0.45 + rng() * 0.4), r1 = r0 + U * (0.15 + rng() * 0.5);
+    ctx.strokeStyle = 'rgba(255,255,255,' + (0.08 + rng() * 0.18) + ')'; ctx.lineWidth = U * (0.002 + rng() * 0.004);
     ctx.beginPath(); ctx.moveTo(Math.cos(a) * r0, Math.sin(a) * r0); ctx.lineTo(Math.cos(a) * r1, Math.sin(a) * r1); ctx.stroke();
   }
   ctx.restore();
-  // arena floor grid
-  ctx.save(); const fy = H * 0.8;
-  ctx.strokeStyle = 'rgba(255,170,90,0.18)'; ctx.lineWidth = Math.max(1, U * 0.002);
-  for (let i = -14; i <= 14; i++) { ctx.beginPath(); ctx.moveTo(W / 2 + i * W * 0.02, fy); ctx.lineTo(W / 2 + i * W * 0.22, H); ctx.stroke(); }
-  for (let k = 0; k < 6; k++) { const y = fy + (H - fy) * Math.pow(k / 6, 1.8); ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  // the lightning seam itself
+  ctx.save(); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  for (const [c, w] of [['rgba(255,255,255,0.35)', U * 0.03], ['#ffffff', U * 0.008]]) { ctx.strokeStyle = c; ctx.lineWidth = w; ctx.beginPath(); seam.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.stroke(); }
   ctx.restore();
+  // flying rock debris
+  for (let i = 0; i < 18; i++) {
+    const a = rng() * TAU, d = U * (0.18 + rng() * 0.3), x = cx + Math.cos(a) * d * 1.4, y = cy + Math.sin(a) * d, r = U * (0.006 + rng() * 0.014);
+    ctx.save(); ctx.translate(x, y); ctx.rotate(rng() * TAU); ctx.beginPath();
+    for (let k = 0; k < 6; k++) { const aa = (k / 6) * TAU, rr = r * (0.6 + rng() * 0.5); k ? ctx.lineTo(Math.cos(aa) * rr, Math.sin(aa) * rr) : ctx.moveTo(Math.cos(aa) * rr, Math.sin(aa) * rr); }
+    ctx.closePath(); ctx.fillStyle = '#3a2a22'; ctx.fill(); ctx.lineWidth = U * 0.003; ctx.strokeStyle = '#0d0d12'; ctx.stroke(); ctx.restore();
+  }
 
   // ---------------------------------------------------------------- the cast (real game art)
-  const crowd = ['axe', 'hammer', 'scythe', 'bow', 'phoenix', 'spiky', 'cannon', 'vampire', 'flail', 'trident', 'frost', 'mace'];
+  const crowd = ['axe', 'trident', 'hammer', 'scythe', 'torch', 'icestaff', 'cannon', 'vampire', 'flail', 'bow', 'frost', 'mace']; // warm colours on the blue side, cool on the red
   const heroA = 'claymore', heroB = 'sword';
   const teams = [[{ id: heroA, hp: 100, slot: 0 }], [{ id: heroB, hp: 100, slot: 1 }], [], []];
   crowd.forEach((id, i) => teams[i % 4].push({ id, hp: 100, slot: i + 2 }));
@@ -116,7 +138,7 @@
   for (let i = 0; i < 160; i++) { const x = rng() * W, y = rng() * H, r = U * (0.001 + rng() * 0.004); ctx.fillStyle = rng() < 0.7 ? 'rgba(255,170,90,0.8)' : 'rgba(255,240,190,0.9)'; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); }
   ctx.restore();
   const vg = ctx.createRadialGradient(W / 2, H / 2, U * 0.4, W / 2, H / 2, Math.hypot(W, H) * 0.62);
-  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.7)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.45)'); ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
 
   // ---------------------------------------------------------------- title
   function title(cx, cy, size) {
