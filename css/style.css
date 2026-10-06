@@ -449,7 +449,8 @@ body.dark { background: radial-gradient(ellipse at 50% 0%, #2a2b33, #17181c 70%)
 .q-stats div { background: #3c3c42; border: 3px solid #111; border-radius: 4px; padding: 6px 2px; display: flex; flex-direction: column; }
 .q-stats b { font-family: var(--display); font-weight: 400; font-size: 22px; color: #ffd23f; }
 .q-stats span { font-size: 10px; color: #b9b4ac; }
-.bracket { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.bracket { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: auto repeat(8, minmax(34px, auto)); column-gap: 6px; row-gap: 4px; }
+.bracket .br-e { align-self: center; }
 .br-col { display: flex; flex-direction: column; justify-content: space-around; gap: 4px; }
 .br-h { font-size: 10px; color: #b9b4ac; text-align: center; letter-spacing: .06em; text-transform: uppercase; }
 .br-e { display: flex; align-items: center; gap: 4px; background: #3c3c42; border: 2px solid #111; border-radius: 4px; padding: 3px 4px; font-size: 11px; min-height: 30px; overflow: hidden; white-space: nowrap; }

@@ -298,6 +298,8 @@
       const all = BB.ITEMS.filter((i) => i.cat !== 'hidden');
       const ownedL = all.filter((i) => BB.app.isOwned(i.id));
       const levels = ownedL.reduce((n, i) => n + M.level(i.id), 0), mastered = ownedL.filter((i) => M.level(i.id) >= 10).length;
+      // Battles: non-competitive totals only (lots of players just test builds); PvP keeps its own record
+      const skinsN = ownedL.reduce((n, i) => n + M.skinsFor(i.id).filter((sk) => sk.lvl > 1 && M.level(i.id) >= sk.lvl).length, 0);
       const pvpN = pv.w + pv.d + pv.l, winRate = pvpN ? Math.round((pv.w / pvpN) * 100) : 0; // PvP series only
       const top = ownedL.filter((i) => M.xp(i.id) > 0).sort((a, b) => M.xp(b.id) - M.xp(a.id)).slice(0, 3);
       const k = M.rankOf(pv.rating), next = M.RANKS[k + 1], lo = M.RANKS[k][0];
@@ -316,7 +318,7 @@
               <div class="pvp-rankbar"><i style="width:${rpct}%"></i></div>
               <div class="pf-next">${next ? (next[0] - pv.rating) + ' rating to ' + next[1] : 'Top rank reached'}</div></div>
           </div>
-          <div class="pf-sec"><div class="pf-h">Battles</div><div class="pf-grid">${stat(st.wins, 'Wins')}${stat(st.battles, 'Played')}${stat(m.trophies, 'Cups won')}${stat(m.gauntletBest, 'Best Gauntlet')}</div></div>
+          <div class="pf-sec"><div class="pf-h">Battles</div><div class="pf-grid">${stat(st.battles, 'Played')}${stat(m.cupsPlayed || 0, 'Tournaments played')}${stat(m.gauntletsPlayed || 0, 'Gauntlets played')}${stat(skinsN, 'Skins unlocked')}</div></div>
           <div class="pf-sec"><div class="pf-h">PvP Arena</div><div class="pf-grid">${stat(pv.w, 'Won')}${stat(pv.d, 'Drawn')}${stat(pv.l, 'Lost')}${stat(pvpN ? winRate + '%' : '-', 'Win rate')}</div></div>
           <div class="pf-sec"><div class="pf-h">Collection</div>
             <div class="pf-coll"><span>${ownedL.length} / ${all.length} balls</span><div class="m-bar sm"><i style="width:${(ownedL.length / all.length) * 100}%"></i></div></div>
@@ -414,6 +416,7 @@
       M.pickN(8, 'Ball Cup', 'Pick 8 of your balls. They fight a knockout bracket until one champion is left!', (ids) => {
         const rng = BB.RNG((Math.random() * 1e9) | 0);
         for (let k = ids.length - 1; k > 0; k--) { const r = Math.floor(rng() * (k + 1)); [ids[k], ids[r]] = [ids[r], ids[k]]; }
+        M.data().cupsPlayed = (M.data().cupsPlayed || 0) + 1; BB.save.write();
         M.cup = { rounds: [ids], round: 0, match: 0, rng, maps: ['classic', 'pillars', BB.MAPS[Math.floor(rng() * BB.MAPS.length)].id] };
         M.showBracket();
       });
@@ -428,18 +431,19 @@
         const br = document.createElement('div');
         br.className = 'bracket';
         const cur = c.done ? [] : c.rounds[c.round].slice(c.match * 2, c.match * 2 + 2);
+        // one grid: a header row, then 8 rows; a round-r box spans 2^r rows and sits centred
+        // between the two boxes that feed it
+        let html = '';
         for (let r = 0; r < 4; r++) {
-          const col = document.createElement('div');
-          col.className = 'br-col';
-          col.innerHTML = `<div class="br-h">${names[r]}</div>`;
-          const list = c.rounds[r] || [];
+          html += `<div class="br-h" style="grid-column:${r + 1};grid-row:1">${names[r]}</div>`;
+          const list = c.rounds[r] || [], span = 1 << r;
           for (let k = 0; k < (8 >> r); k++) {
             const id = list[k];
             const next = r === c.round && cur.includes(id) && Math.floor(k / 2) === c.match;
-            col.innerHTML += `<div class="br-e${next ? ' me' : ''}${id ? '' : ' tbd'}">${id ? `<img src="${BB.icon(id)}" alt=""><span>${esc(BB.ITEM[id].name)}</span>` : '<span>?</span>'}</div>`;
+            html += `<div class="br-e${next ? ' me' : ''}${id ? '' : ' tbd'}" style="grid-column:${r + 1};grid-row:${2 + k * span} / span ${span}">${id ? `<img src="${BB.icon(id)}" alt=""><span>${esc(BB.ITEM[id].name)}</span>` : '<span>?</span>'}</div>`;
           }
-          br.appendChild(col);
         }
+        br.innerHTML = html;
         body.appendChild(br);
         const foot = document.createElement('div');
         foot.className = 'sh-foot';
@@ -901,6 +905,7 @@
     openGauntlet() {
       const best = M.data().gauntletBest;
       M.pickBall('Gauntlet', 'Fight wave after wave. Your HP carries over (you heal 25% between fights) and foes get tougher. Best: stage ' + best, (id) => {
+        M.data().gauntletsPlayed = (M.data().gauntletsPlayed || 0) + 1; BB.save.write();
         M.gaunt = { me: id, hp: 100, stage: 1, rng: BB.RNG((Math.random() * 1e9) | 0), coins: 0 };
         M.gauntletNext();
       });
