@@ -353,7 +353,7 @@
       if (p.length < 9 || !BB.ITEM[p[0]] || BB.ITEM[p[0]].cat === 'hidden' || !BB.MAP[p[6]]) return null;
       const n = (v, a, b, d) => { v = Number(v); return isFinite(v) ? BB.clamp(v, a, b) : d; };
       return {
-        slot: { id: p[0], hp: n(p[1], 1, 9999, 100), scale: n(p[2], 0.5, 2.5, 1), ov: { damage: n(p[3], 0, 999, 0), spin: n(p[4], 0, 3000, 0), speed: n(p[5], 0, 2000, 0) } },
+        slot: { id: p[0], hp: n(p[1], 1, 9999, 100), scale: n(p[2], 0.5, 2.5, 1), ov: { damage: n(p[3], 0, 999, 0), spin: n(p[4], 0, p[0] === 'kami' ? 3000 : 2000, 0), speed: n(p[5], 0, 9999, 0) } },
         map: p[6], seed: n(p[7], 0, 2147483647, 1) | 0, name: p[8] || 'Friend',
       };
     },
@@ -499,7 +499,8 @@
             }
             BB.audio.play(e.k === 'gate' ? 'kamiGate' : 'kamiCast');
             // anime cut-in for each divine art (sim pauses while it plays)
-            if (cine && !App.impact && !App.cine) App.impact = { t: 0, dur: 0.9, kamiCut: true, k: e.k, asc: !!e.asc, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0 };
+            // the ability cut-ins are ability text: with Ability Text off they don't play at all
+            if (cine && BB.save.data.settings.callouts !== false && !App.impact && !App.cine) App.impact = { t: 0, dur: 0.9, kamiCut: true, k: e.k, asc: !!e.asc, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0 };
             break;
           }
           case 'build': BB.audio.play('build'); break;

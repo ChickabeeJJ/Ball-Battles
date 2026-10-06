@@ -747,9 +747,14 @@
     const pr = H * 0.36 * (1 + p * 0.1);
     bigKami(ctx, -W * 0.25, H * 0.02, pr, T * 2, 1, red);
     // title
-    ctx.font = Math.round(H * 0.24) + 'px ' + (BB.FONT || 'Anton, Impact, sans-serif');
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
-    const tx = -W * 0.02 + (1 - ease((p - 0.08) / 0.2)) * W * 0.5;
+    // shrink the title until it fits between the portrait and the band's right edge
+    const room = W * 0.5 - H * 0.05;
+    let fs = H * 0.24;
+    ctx.font = Math.round(fs) + 'px ' + (BB.FONT || 'Anton, Impact, sans-serif');
+    const tw0 = ctx.measureText(def.title).width * 1.08;
+    if (tw0 > room) { fs *= room / tw0; ctx.font = Math.round(fs) + 'px ' + (BB.FONT || 'Anton, Impact, sans-serif'); }
+    const tx = -W * 0.04 + (1 - ease((p - 0.04) / 0.14)) * W * 0.5;
     ctx.save(); ctx.transform(1, 0, -0.18, 1, 0, 0);
     // the ability name follows the Ability Text setting
     if (BB.save && BB.save.data.settings.callouts === false) ctx.globalAlpha = 0;
@@ -867,6 +872,43 @@
       ctx.restore();
     }
     ctx.restore();
+    // impact frames from the centre as the condemned cracks (Tenshi: longer, crimson, with screen-wide cracks)
+    const ifA = red ? 1.58 : 1.72, ifB = 2.05;
+    if (T > ifA && T < ifB) {
+      const fi = Math.floor((T - ifA) / 0.055), rng = BB.RNG(imp.seed + fi * 31);
+      const pal = red ? [['#050003', '#ffffff'], ['#c8102e', '#050003'], ['#ffffff', '#c8102e']] : [['#050508', '#ffffff'], ['#ffffff', '#050508']];
+      const [bg, ink] = pal[fi % pal.length];
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, W);
+      // speed spikes converging on the centre
+      const n = red ? 70 : 46, r0 = W * (0.08 + rng() * 0.05);
+      ctx.fillStyle = ink;
+      for (let i = 0; i < n; i++) {
+        const a = rng() * TAU, w2 = 0.004 + rng() * (red ? 0.03 : 0.022), r1 = r0 + rng() * W * 0.18;
+        ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+        ctx.lineTo(cx + Math.cos(a - w2) * W, cy + Math.sin(a - w2) * W); ctx.lineTo(cx + Math.cos(a + w2) * W, cy + Math.sin(a + w2) * W); ctx.closePath(); ctx.fill();
+      }
+      // the cracking ball, inverted
+      ctx.beginPath(); ctx.arc(cx, cy + W * 0.04, W * 0.13 * (1 + 0.04 * (fi % 2)), 0, TAU); ctx.fillStyle = ink; ctx.fill();
+      ctx.lineWidth = W * 0.006; ctx.strokeStyle = bg; ctx.lineCap = 'round';
+      for (const cr of imp.cracks) { ctx.beginPath(); ctx.moveTo(cx, cy + W * 0.04); for (let i = 1; i < cr.length; i++) ctx.lineTo(cx + cr[i][0] * W * 0.13, cy + W * 0.04 + cr[i][1] * W * 0.13); ctx.stroke(); }
+      if (red) {
+        // screen-wide jagged cracks racing out from the centre
+        const grow = clamp((T - ifA) / (ifB - ifA), 0, 1);
+        ctx.strokeStyle = fi % 3 === 1 ? '#ffffff' : '#ff2d55'; ctx.lineWidth = W * 0.008; ctx.lineJoin = 'miter';
+        for (let k = 0; k < 7; k++) {
+          const crng = BB.RNG(imp.seed + k * 97); let x = cx, y = cy, a = (k / 7) * TAU + crng() * 0.5;
+          ctx.beginPath(); ctx.moveTo(x, y);
+          const steps = Math.ceil(9 * grow);
+          for (let st = 0; st < steps; st++) { a += (crng() - 0.5) * 1.1; x += Math.cos(a) * W * 0.07; y += Math.sin(a) * W * 0.07; ctx.lineTo(x, y); }
+          ctx.stroke();
+        }
+        const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, W * 0.2);
+        core.addColorStop(0, 'rgba(255,255,255,0.95)'); core.addColorStop(1, 'rgba(255,45,85,0)');
+        ctx.fillStyle = core; ctx.fillRect(0, 0, W, W);
+      }
+      ctx.restore();
+    }
     // ascended: a crimson cross-slash cuts the condemned apart
     if (red && T > 1.9 && T < 2.5) {
       const k = clamp((T - 1.9) / 0.18, 0, 1), fade = 1 - clamp((T - 2.2) / 0.3, 0, 1);

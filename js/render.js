@@ -503,7 +503,11 @@
         } else if (f.k === 'tag') {
           const k = 1 - a, pop = k < 0.15 ? 0.6 + k / 0.15 * 0.5 : 1.1 - Math.min(0.1, (k - 0.15));
           ctx.globalAlpha = Math.min(1, a * 2.2);
-          ctx.save(); ctx.translate(f.x, f.y - k * 26); ctx.scale(pop, pop);
+          // keep the whole tag inside the arena so names near a wall are never cut off
+          ctx.font = Math.round(26 * tsz) + 'px ' + NUM_FONT;
+          const half = (ctx.measureText(f.text).width + 22 * tsz) / 2 * 1.1, lim = sim.W / 2 - 4;
+          const tagX = Math.max(-lim + half, Math.min(lim - half, f.x));
+          ctx.save(); ctx.translate(tagX, f.y - k * 26); ctx.scale(pop, pop);
           ctx.font = Math.round(26 * tsz) + 'px ' + NUM_FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
           const tw = ctx.measureText(f.text).width + 22 * tsz, th = 34 * tsz;
           ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-tw / 2, -th / 2, tw, th, 10) : ctx.rect(-tw / 2, -th / 2, tw, th);

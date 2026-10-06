@@ -1,6 +1,6 @@
 // Headless sim runner: node tools/simtest.js  — runs every item vs every item and reports durations.
 global.window = globalThis;
-for (const f of ['core', 'data', 'data2', 'abilities', 'balance', 'sim', 'kami']) require('../js/' + f + '.js');
+for (const f of ['core', 'data', 'data2', 'abilities', 'balance', 'sim', 'kami', 'data3']) require('../js/' + f + '.js');
 const BB = globalThis.BB;
 function run(a, b, seed, map = 'classic', hp = 100, teams) {
   const s = new BB.Sim({ seed, map, settings: {}, teams: teams || [[{ id: a, hp, slot: 0 }], [{ id: b, hp, slot: 1 }]] });

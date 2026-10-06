@@ -522,8 +522,9 @@
       return { mine: a, theirs: b, maps, seed: (Number(p[3]) || 1) | 0, results: res.map((r) => (r === 0 ? 1 : r === 1 ? 0 : -1)), rating: Math.round(Number(p[5]) || 1000), name: M.cleanName(p[6]) };
     },
 
-    pick3(title, sub, onDone) { M.pickN(3, title, sub, onDone); },
-    pickN(N, title, sub, onDone) {
+    pick3(title, sub, onDone) { M.pickN(3, title, sub, onDone, { pvp: true }); },
+    pickN(N, title, sub, onDone, opts) {
+      opts = opts || {};
       const sel = [];
       BB.ui.open((sheet) => {
         const body = BB.ui.head(sheet, title);
@@ -547,7 +548,15 @@
           t.className = 'tile'; t.dataset.id = it.id;
           t.innerHTML = `<img src="${BB.icon(it.id)}" alt=""><span class="t-n">${esc(it.name)}</span>${M.starHtml(it.id)}<span class="rar" style="background:${BB.RARITY[it.rarity].color}"></span>`;
           // tapping a picked ball removes it; the same ball can never be picked twice
-          t.onclick = () => { BB.audio.play('click'); const k = sel.indexOf(it.id); if (k >= 0) sel.splice(k, 1); else if (sel.length < N) sel.push(it.id); draw(); };
+          t.onclick = () => {
+            BB.audio.play('click'); const k = sel.indexOf(it.id);
+            if (k >= 0) sel.splice(k, 1); else if (sel.length < N) {
+              sel.push(it.id);
+              // PvP must play the same fight on both screens, so Kami always fights in its base form
+              if (opts.pvp && it.id === 'kami' && M.skinOf('kami') === 'tenshi') BB.ui.toast('The Tenshi skin can\'t be used in PvP. Kami will fight in its base form.');
+            }
+            draw();
+          };
           grid.appendChild(t);
         }
         body.appendChild(grid);

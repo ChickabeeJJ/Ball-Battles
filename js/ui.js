@@ -86,8 +86,11 @@
         body.appendChild(UI.numField('Size', 'Ball scale', s.scale, 0.5, 2.5, 0.25, (v) => { s.scale = v; }, true));
         body.appendChild(el('div', 'section-t', 'Overrides (0 = default)'));
         body.appendChild(UI.numField('Damage', 'Starting damage', s.ov.damage, 0, 999, 1, (v) => { s.ov.damage = v; }));
-        body.appendChild(UI.numField('Spin', 'Weapon spin °/s', s.ov.spin, 0, 3000, 30, (v) => { s.ov.spin = v; }));
-        body.appendChild(UI.numField('Speed', 'Ball speed', s.ov.speed, 0, 2000, 50, (v) => { s.ov.speed = v; }));
+        // spin is capped at 2000 (Kami: 3000); speed at 9999
+        const spinMax = s.id === 'kami' ? 3000 : 2000;
+        if (s.ov.spin > spinMax) s.ov.spin = spinMax;
+        body.appendChild(UI.numField('Spin', 'Weapon spin °/s (max ' + spinMax + ')', s.ov.spin, 0, spinMax, 30, (v) => { s.ov.spin = v; }));
+        body.appendChild(UI.numField('Speed', 'Ball speed (max 9999)', s.ov.speed, 0, 9999, 50, (v) => { s.ov.speed = v; }));
         const reset = el('button', 'btn', 'Reset to defaults');
         reset.onclick = () => {
           BB.audio.play('click');
