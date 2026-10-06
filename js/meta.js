@@ -298,7 +298,7 @@
       const all = BB.ITEMS.filter((i) => i.cat !== 'hidden');
       const ownedL = all.filter((i) => BB.app.isOwned(i.id));
       const levels = ownedL.reduce((n, i) => n + M.level(i.id), 0), mastered = ownedL.filter((i) => M.level(i.id) >= 10).length;
-      const winRate = st.battles ? Math.round((st.wins / st.battles) * 100) : 0;
+      const pvpN = pv.w + pv.d + pv.l, winRate = pvpN ? Math.round((pv.w / pvpN) * 100) : 0; // PvP series only
       const top = ownedL.filter((i) => M.xp(i.id) > 0).sort((a, b) => M.xp(b.id) - M.xp(a.id)).slice(0, 3);
       const k = M.rankOf(pv.rating), next = M.RANKS[k + 1], lo = M.RANKS[k][0];
       const rpct = next ? Math.max(0, Math.min(100, ((pv.rating - lo) / (next[0] - lo)) * 100)) : 100;
@@ -316,8 +316,8 @@
               <div class="pvp-rankbar"><i style="width:${rpct}%"></i></div>
               <div class="pf-next">${next ? (next[0] - pv.rating) + ' rating to ' + next[1] : 'Top rank reached'}</div></div>
           </div>
-          <div class="pf-sec"><div class="pf-h">Battles</div><div class="pf-grid">${stat(st.wins, 'Wins')}${stat(st.battles, 'Played')}${stat(winRate + '%', 'Win rate')}${stat(m.trophies, 'Cups won')}</div></div>
-          <div class="pf-sec"><div class="pf-h">PvP Arena</div><div class="pf-grid">${stat(pv.w, 'Won')}${stat(pv.d, 'Drawn')}${stat(pv.l, 'Lost')}${stat(pv.rating, 'Rating')}</div></div>
+          <div class="pf-sec"><div class="pf-h">Battles</div><div class="pf-grid">${stat(st.wins, 'Wins')}${stat(st.battles, 'Played')}${stat(m.trophies, 'Cups won')}${stat(m.gauntletBest, 'Best Gauntlet')}</div></div>
+          <div class="pf-sec"><div class="pf-h">PvP Arena</div><div class="pf-grid">${stat(pv.w, 'Won')}${stat(pv.d, 'Drawn')}${stat(pv.l, 'Lost')}${stat(pvpN ? winRate + '%' : '-', 'Win rate')}</div></div>
           <div class="pf-sec"><div class="pf-h">Collection</div>
             <div class="pf-coll"><span>${ownedL.length} / ${all.length} balls</span><div class="m-bar sm"><i style="width:${(ownedL.length / all.length) * 100}%"></i></div></div>
             <div class="pf-grid">${stat(levels, 'Mastery levels')}${stat(mastered, 'Mastered')}${stat(m.gauntletBest, 'Best Gauntlet')}${stat(m.gift.streak || 0, 'Login streak')}</div></div>
@@ -449,12 +449,10 @@
           foot.appendChild(ok);
         } else {
           const [a, b] = cur;
-          const sim = document.createElement('button'); sim.className = 'btn'; sim.textContent = 'Sim round';
-          sim.onclick = () => { BB.audio.play('click'); M.cupSimRound(); };
           const go = document.createElement('button'); go.className = 'btn primary';
           go.innerHTML = `${BB.ICON.play} ${esc(BB.ITEM[a].name)} vs ${esc(BB.ITEM[b].name)}`;
           go.onclick = () => { BB.ui.onClose = null; BB.ui.close(); BB.sdk.maybeMidgame().then(() => M.cupFight(a, b)); };
-          foot.append(sim, go);
+          foot.append(go); // every Cup match is played out (no skipping: it paid out free coins)
         }
         sheet.appendChild(foot);
       }, { width: '640px', onClose: () => { if (!M.cup || M.cup.done) BB.app.toMenu(); } });
@@ -468,23 +466,6 @@
         onOver: (w) => M.cupAdvance(w === 1 ? b : a),
       };
       app.startBattle();
-    },
-
-    // headless sim for matches you skip
-    quickDuel(a, b, seed, map) {
-      const s = new BB.Sim({ seed, map, settings: { dmgNumbers: false }, teams: [[{ id: a, hp: 100, slot: 0 }], [{ id: b, hp: 100, slot: 1 }]] });
-      while (!s.over && s.t < 180) { s.step(1 / 60); s.events.length = 0; s.fx.length = 0; }
-      return s.over && s.over.winner === 1 ? b : a;
-    },
-
-    cupSimRound() {
-      const c = M.cup;
-      const list = c.rounds[c.round];
-      while (c.match * 2 < list.length && !c.done && c.rounds[c.round] === list) {
-        const a = list[c.match * 2], b = list[c.match * 2 + 1];
-        M.cupAdvance(M.quickDuel(a, b, (c.rng() * 1e9) | 0, c.maps[c.round]), true);
-      }
-      M.showBracket(c.done ? M.cupChampionMsg() : 'Round simulated!');
     },
 
     cupChampionMsg() { const id = M.cup.rounds[3][0]; return `<b>${esc(BB.ITEM[id].name)}</b> is the champion! +${coin(100)}`; },
