@@ -1071,3 +1071,4 @@ html.cport .stat-row:not(.team) .st { white-space: normal; line-height: 1.15; }
 .stat-row .st .stx > b { white-space: nowrap; font-weight: inherit; }
 .kami-fs { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 800; pointer-events: none; }
 .feat-row .feat-pvp { grid-column: 1 / -1; }
+@media (max-aspect-ratio: 1/1), (max-width: 700px) { .awk-bars { display: none; } }
