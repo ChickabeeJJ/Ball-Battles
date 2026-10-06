@@ -105,13 +105,14 @@
       $('btnProfile').classList.toggle('hidden', !App.pvpAvailable());
       document.documentElement.classList.toggle('touch', matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window);
       document.querySelectorAll('[data-ico]').forEach((e) => { e.innerHTML = BB.ICON[e.dataset.ico]; });
-      // CrazyGames players get the PvP Arena in place of the Gauntlet
+      // CrazyGames players also get the PvP Arena: a full-width button above Cup / Gauntlet / Quests
       $('optPvp').classList.add('hidden');
       if (App.pvpAvailable()) {
-        const g = $('btnGauntlet');
-        g.id = 'btnPvp'; g.classList.add('feat-pvp');
-        g.innerHTML = '<span class="feat-ic">' + BB.ICON.swords + '</span><span>PvP</span>';
+        const g = document.createElement('button');
+        g.className = 'feat feat-pvp'; g.id = 'btnPvp';
+        g.innerHTML = '<span class="feat-ic">' + BB.ICON.swords + '</span><span>PvP Arena</span>';
         g.onclick = () => { BB.audio.unlock(); BB.audio.play('click'); BB.meta.openPvp(); };
+        $('btnCup').parentNode.prepend(g);
       }
       // A friend's challenge link takes priority; otherwise first-time players get the tutorial.
       const res3 = App.pvpAvailable() ? BB.meta.decodeR(BB.sdk.getInviteParam('pvp3r')) : null;
@@ -485,7 +486,7 @@
             if (BB.save.data.setup.control && e.team === 0) App.vibrate(25);
             break;
           case 'dot': BB.audio.play('dot'); break;
-          case 'parry': BB.audio.play('parry', e); break;
+          case 'parry': BB.audio.play('parry', e); if (!e.small) BB.meta.track('parry', 1); break;
           case 'wall': BB.audio.play('wall'); break;
           case 'bump': BB.audio.play('bump'); break;
           case 'shoot': BB.audio.play('shoot', e); break;
@@ -493,7 +494,7 @@
           case 'death': BB.audio.play('death'); if (e.main) App.vibrate(60); if (e.main && e.kami) { App.kamiKill = true; App.kamiAsc = !!e.asc; } break;
           case 'kami': {
             const cine = App.st().kamiCine !== false;
-            if (e.k === 'dodge') { BB.audio.play('kamiDodge'); break; }
+            if (e.k === 'dodge') { BB.audio.play('kamiDodge'); BB.meta.track('kamidodge', 1); break; }
             if (e.k === 'beamfire') { BB.audio.play('kamiBeam'); App.shake = 16; App.vibrate(40); break; }
             if (e.k === 'gateslam') { BB.audio.play('kamiSlam'); App.shake = 12; App.vibrate(30); break; }
             if (e.k === 'awaken') {
@@ -624,7 +625,7 @@
       click('optMode', () => BB.ui.pickMode());
       click('optPvp', () => BB.ui.pvpCreate());
       click('btnCup', () => BB.meta.openCup());
-      $('btnGauntlet').addEventListener('click', () => { if (!App.pvpAvailable()) { BB.audio.unlock(); BB.audio.play('click'); BB.meta.openGauntlet(); } });
+      $('btnGauntlet').addEventListener('click', () => { BB.audio.unlock(); BB.audio.play('click'); BB.meta.openGauntlet(); });
       click('btnQuests', () => BB.meta.openQuests());
       click('btnGift', () => BB.meta.claimGift());
       click('btnProfile', () => BB.meta.openProfile());

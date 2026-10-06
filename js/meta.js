@@ -19,6 +19,19 @@
     { id: 'team2', text: 'Win 2 team or Free For All battles', goal: 2, reward: 80, ev: 'teamwin' },
     { id: 'cup1', text: 'Play a Cup match', goal: 1, reward: 100, ev: 'cupwin' },
     { id: 'gaunt3', text: 'Reach stage 3 in the Gauntlet', goal: 3, reward: 110, ev: 'gauntlet', max: true },
+    { id: 'gaunt6', text: 'Reach stage 6 in the Gauntlet', goal: 6, reward: 200, ev: 'gauntlet', max: true },
+    { id: 'ko5', text: 'Knock out 5 enemy balls', goal: 5, reward: 80, ev: 'ko' },
+    { id: 'flawless', text: 'Win a 1v1 with 75%+ HP left', goal: 1, reward: 120, ev: 'flawless' },
+    { id: 'clutch', text: 'Win a 1v1 with under 15% HP left', goal: 1, reward: 130, ev: 'clutch' },
+    { id: 'blitz', text: 'Win a battle in under 20 seconds', goal: 1, reward: 100, ev: 'blitz' },
+    { id: 'epic', text: 'Play a battle that lasts 90+ seconds', goal: 1, reward: 90, ev: 'epic' },
+    { id: 'variety3', text: 'Win with 3 different balls', goal: 3, reward: 110, ev: 'winball', uniq: true },
+    { id: 'parry10', text: 'Clash weapons 10 times', goal: 10, reward: 70, ev: 'parry' },
+    { id: 'ffa1', text: 'Win a Free For All', goal: 1, reward: 100, ev: 'ffawin' },
+    { id: 'level1', text: 'Level up any ball\'s mastery', goal: 1, reward: 90, ev: 'levelup' },
+    { id: 'dodge5', text: 'Make Kami dodge 5 attacks', goal: 5, reward: 90, ev: 'kamidodge' },
+    { id: 'pvp1', text: 'Play a PvP series', goal: 1, reward: 120, ev: 'pvpplay', pvp: true },
+    { id: 'pvpwin', text: 'Win a PvP series', goal: 1, reward: 180, ev: 'pvpwin', pvp: true },
   ];
 
   const M = (BB.meta = {
@@ -32,7 +45,8 @@
       m.gift = m.gift || { day: '', streak: 0 };
       if (m.questDay !== today() || !Array.isArray(m.quests)) {
         m.questDay = today();
-        const pool = QUEST_POOL.slice();
+        const pvpOk = !!(BB.app && BB.app.pvpAvailable && BB.app.pvpAvailable());
+        const pool = QUEST_POOL.filter((q) => !q.pvp || pvpOk);
         const r = BB.RNG(Date.now() & 0xffff);
         m.quests = [];
         while (m.quests.length < 3) { const q = pool.splice(Math.floor(r() * pool.length), 1)[0]; m.quests.push({ id: q.id, p: 0, claimed: false, maps: [] }); }
@@ -46,7 +60,7 @@
       for (const q of m.quests) {
         const def = QUEST_POOL.find((x) => x.id === q.id);
         if (!def || q.claimed || def.ev !== ev) continue;
-        if (ev === 'map') { if (!q.maps.includes(val)) { q.maps.push(val); q.p = q.maps.length; } }
+        if (ev === 'map' || def.uniq) { q.maps = q.maps || []; if (!q.maps.includes(val)) { q.maps.push(val); q.p = q.maps.length; } }
         else if (def.max) q.p = Math.max(q.p, val);
         else q.p += val || 1;
         q.p = Math.min(q.p, def.goal);
@@ -65,7 +79,19 @@
         M.track('win', 1);
         if (mine.some((b) => b.def.cat === 'special')) M.track('specialwin', 1);
         if (!app.pvp && !app.event && (mode.teams[0].length > 1 || mode.teams.length > 2)) M.track('teamwin', 1);
+        if (!app.pvp && !app.event && mode.teams.length > 2) M.track('ffawin', 1);
+        if (sim.t < 20) M.track('blitz', 1);
+        for (const b of mine) M.track('winball', b.def.id);
+        // 1v1 HP quests (fixed-HP balls like Kami don't count)
+        if (mine.length === 1 && sim.balls.filter((b) => b.main && !b.owner).length === 2 && !mine[0].def.fixedHp && mine[0].alive) {
+          const k = mine[0].hp / mine[0].maxHp;
+          if (k >= 0.75) M.track('flawless', 1);
+          if (k < 0.15) M.track('clutch', 1);
+        }
       }
+      if (sim.t >= 90) M.track('epic', 1);
+      const kos = sim.balls.filter((b) => b.main && !b.owner && b.team !== side && !b.alive).length;
+      if (kos) M.track('ko', kos);
       // Mastery XP goes only to the winning side (nobody on a draw). In sandbox battles and the Cup
       // both sides are yours, so whichever team wins earns it; in PvP / Gauntlet the other side is an
       // opponent, so only your own winning ball does.
@@ -136,6 +162,7 @@
         const sk = M.skinsFor(id).find((s) => s.lvl === l);
         if (sk) skins.push(sk.name);
       }
+      if (after > before) M.track('levelup', 1);
       if (coinsWon) {
         BB.save.data.coins += coinsWon;
         if (after === M.maxL(id) || after === 10) BB.sdk.happytime();
@@ -790,6 +817,7 @@
       const pv = M.pvpData();
       const won = sr.score[0] > sr.score[1], draw = sr.score[0] === sr.score[1];
       const delta = M.applyRating(pv, sr.foeRating, won ? 1 : draw ? 0.5 : 0);
+      M.track('pvpplay', 1); if (won) M.track('pvpwin', 1);
       M.pushHist(pv, sr.foeName, sr.score[0] + '-' + sr.score[1], delta, won ? 1 : draw ? 0 : -1);
       const coinsWon = won ? 150 : draw ? 80 : 50;
       BB.save.data.coins += coinsWon; BB.save.write(); app.refreshCoins();
@@ -927,7 +955,7 @@
         const body = document.createElement('div'); body.className = 'sh-body';
         body.innerHTML = `<div class="result"><div class="r-t" style="color:${won ? '#35d047' : '#f0545a'}">${won ? 'Stage ' + (g.stage - 1) + ' Cleared!' : 'Run Over'}</div>
           <img src="${BB.icon(g.me, 160)}" alt="">
-          <div class="r-sub">${won ? 'HP carried over: ' + Math.ceil(g.hp) + ' / 100' : 'You reached stage ' + g.stage + ' · Best: ' + m.gauntletBest}</div>
+          <div class="r-sub">${won ? 'HP carried over: ' + (BB.ITEM[g.me].fixedHp ? BB.ITEM[g.me].fixedHp + ' / ' + BB.ITEM[g.me].fixedHp : Math.ceil(g.hp) + ' / 100') : 'You reached stage ' + g.stage + ' · Best: ' + m.gauntletBest}</div>
           <div class="r-coins">+${coin(won ? reward : g.coins)}</div><div class="r-stats">${won ? 'Total this run: ' + g.coins + ' coins' : 'Coins this run'}</div></div>`;
         sheet.appendChild(body);
         const foot = document.createElement('div'); foot.className = 'sh-foot';
