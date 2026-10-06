@@ -936,7 +936,7 @@
   BB.kamiAwaken = function (done) {
     const el = document.createElement('div');
     el.className = 'awk';
-    el.innerHTML = '<div class="awk-rays"></div><div class="awk-line"></div><div class="awk-slash"></div><div class="awk-no"><span>否</span></div><div class="awk-flash"></div>';
+    el.innerHTML = '<div class="awk-rays"></div><div class="awk-line"></div><div class="awk-slash"></div><div class="awk-no"><span>否</span></div><div class="awk-eye"></div><div class="awk-wave"></div><div class="awk-flash"></div>';
     document.body.appendChild(el);
     const line = el.querySelector('.awk-line'), A = BB.audio;
     const at = (ms, fn) => setTimeout(fn, ms);
@@ -964,9 +964,13 @@
         c.style.opacity = '0'; c.style.filter = 'blur(6px)';
       });
     });
-    at(3900, () => { el.classList.add('no'); A.play('awaken'); BB.app && (BB.app.shake = 18); if (navigator.vibrate) try { navigator.vibrate([60, 40, 120]); } catch (e) { /* */ } });
-    at(5300, () => el.classList.add('flash'));
-    at(5650, () => { el.classList.add('out'); done && done(); });
-    at(6200, () => el.remove());
+    // a dead-silent beat of pure black, then 否 simply *appears*: no bounce, no shake, utterly still.
+    // A thin crimson line opens beneath it like an eye, and only then does the pressure hit.
+    at(3700, () => el.classList.add('void'));
+    at(4500, () => { el.classList.add('no'); A.play('heartbeat'); });
+    at(5600, () => { el.classList.add('press'); A.play('awaken'); BB.app && (BB.app.shake = 10); if (navigator.vibrate) try { navigator.vibrate([200]); } catch (e) { /* */ } });
+    at(6700, () => el.classList.add('flash'));
+    at(7050, () => { el.classList.add('out'); done && done(); });
+    at(7600, () => el.remove());
   };
 })();
