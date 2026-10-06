@@ -84,7 +84,7 @@
     },
 
     // Coins and XP both scale linearly with match length: the full amount at REWARD_T seconds or longer.
-    REWARD_T: 200,
+    REWARD_T: 100,
     matchReward(sim, max) { return Math.max(1, Math.round(max * Math.min(1, sim.t / M.REWARD_T))); },
 
     // ------------------------------------------------------------- mastery (per-ball XP, 10 levels, skins)
@@ -174,7 +174,7 @@
       const total = owned.reduce((n, i) => n + M.level(i.id), 0);
       BB.ui.open((sheet) => {
         const body = BB.ui.head(sheet, 'Ball Mastery');
-        body.innerHTML += `<div class="f-s">Balls earn XP when they win for you: the longer the battle, the more XP (up to 150 at 200s+). Level up for coins and new skins.</div>
+        body.innerHTML += `<div class="f-s">Balls earn XP when they win for you: the longer the battle, the more XP (up to 150 at 100s+). Level up for coins and new skins.</div>
           <div class="q-stats"><div><b>${total}</b><span>Total levels</span></div><div><b>${owned.filter((i) => M.level(i.id) >= 10).length}</b><span>Mastered</span></div><div><b>${owned.filter((i) => M.level(i.id) >= 4).length}</b><span>Skins unlocked</span></div><div><b>${owned.length}</b><span>Balls owned</span></div></div>`;
         const list = document.createElement('div'); list.className = 'm-list';
         for (const it of owned) {

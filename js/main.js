@@ -303,7 +303,8 @@
       }
       for (const b of mains) {
         const lines = sim.stats(b);
-        const txt = (one ? '' : b.def.name + ': ') + (lines.join(' · ') || '');
+        // each stat is unbreakable, so a long value never splits from its label on narrow screens
+        const txt = '<span class="stx">' + [(one ? '' : b.def.name + ': ') + (lines[0] || ''), ...lines.slice(1)].map((l) => '<b>' + l + '</b>').join(' · ') + '</span>';
         const pct = Math.max(0, Math.min(100, (b.hp / b.maxHp) * 100)).toFixed(1);
         const c = one ? BB.itemColor(b.def.id) : BB.TEAMS[b.team].fill;
         const grace = b.def.kami ? `<span class="grbar${b.w.grace < BB.KAMI.GRACE.cost ? ' low' : ''}"><i style="width:${Math.round(b.w.grace)}%"></i></span>` : '';
@@ -445,7 +446,7 @@
           BB.audio.play('lose');
         }
       }
-      coins = BB.meta.matchReward(sim, 250); // up to 250, full at 200s+ (any result)
+      coins = BB.meta.matchReward(sim, 250); // up to 250, full at 100s+ (any result)
       save.coins += coins;
       App.trials = {};
       BB.save.write();

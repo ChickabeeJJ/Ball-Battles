@@ -1048,3 +1048,5 @@ html.cport .stat-row:not(.team) .st { white-space: normal; line-height: 1.15; }
 .k-abil div:nth-child(5) { grid-column: 1 / -1; background: linear-gradient(135deg, rgba(255,45,85,.22), rgba(90,0,16,.35)); border-color: #5a0010; }
 .k-abil div:nth-child(5) b { color: #ff8aa0; }
 .awk.no .awk-line { opacity: 0; transition: opacity .2s; }
+.stat-row .st .stx { white-space: normal; }
+.stat-row .st .stx > b { white-space: nowrap; font-weight: inherit; }
