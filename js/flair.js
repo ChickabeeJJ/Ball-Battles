@@ -236,11 +236,14 @@
     if (id === 'vampire') {
       for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(b.x + sd * r * 0.22, b.y + r * 0.62); ctx.lineTo(b.x + sd * r * 0.14, b.y + r * 0.85); ctx.lineTo(b.x + sd * r * 0.06, b.y + r * 0.62); ctx.fillStyle = '#ffffff'; ctx.fill(); }
     }
-    // rarity sparkles: epic and legendary balls glitter a little
-    const fx = b.main && RARE_FX[b.def.rarity];
-    if (fx && sim.frng() < 0.08) {
-      const a = sim.frng() * TAU;
-      sim.fx.push({ k: 'p', x: b.x + Math.cos(a) * r * 1.1, y: b.y + Math.sin(a) * r * 1.1, vx: 0, vy: -25, life: 0.6, max: 0.6, c: fx[sim.frng() < 0.6 ? 0 : 1], s: 2.5 });
+    // rarity glow: epic and legendary balls get a soft pulsing halo (no particles)
+    const fx = b.main && b.alive && RARE_FX[b.def.rarity];
+    if (fx) {
+      const k = 0.5 + 0.5 * Math.sin(t * 3 + b.x * 0.01), R2 = r * (1.45 + 0.12 * k);
+      const g = ctx.createRadialGradient(b.x, b.y, r, b.x, b.y, R2);
+      g.addColorStop(0, fx[0]); g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.save(); ctx.globalAlpha = 0.35 + 0.3 * k;
+      ctx.beginPath(); ctx.arc(b.x, b.y, R2, 0, TAU); ctx.arc(b.x, b.y, r, 0, TAU, true); ctx.fillStyle = g; ctx.fill(); ctx.restore();
     }
   };
 })();
