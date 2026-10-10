@@ -892,7 +892,7 @@ button.sq-s { cursor: pointer; color: #fff; } button.sq-s:hover { border-color: 
 
 /* ================================================================ profile v2 */
 .pf-hero { position: relative; overflow: hidden; display: flex; align-items: center; gap: 14px; padding: 14px; border: 3px solid #111; border-radius: 10px; background: linear-gradient(135deg, #2a1640, #5b2a6e); box-shadow: 0 4px 0 #111; }
-.pf-hero::before { content: ''; position: absolute; inset: -40%; background: repeating-conic-gradient(from 0deg, rgba(255,255,255,.05) 0 8deg, transparent 8deg 22deg); animation: spin 30s linear infinite; pointer-events: none; }
+.pf-hero::before { content: ''; position: absolute; left: 50%; top: 50%; width: 1600px; height: 1600px; translate: -50% -50%; background: repeating-conic-gradient(from 0deg, rgba(255,255,255,.05) 0 8deg, transparent 8deg 22deg); animation: spin 30s linear infinite; pointer-events: none; }
 .pf-hero > * { position: relative; }
 .pf-hero .pf-pic { width: 84px; height: 84px; flex: none; border: 4px solid var(--rc); box-shadow: 0 0 0 3px #111, 0 0 18px var(--rc); background: #241a30; }
 .pf-ball { padding: 6px; }
@@ -1535,3 +1535,16 @@ html.no-season .bp-strip, html.no-season #topbar .pass-btn { display: none !impo
 /* Season Pass "look here" dot: top-right, yellow */
 .bp-hot { display: none; position: absolute; top: -6px; right: -6px; width: 14px; height: 14px; border-radius: 50%; background: #ffd23f; border: 2.5px solid #111; box-shadow: 0 0 8px rgba(255,210,63,.7); z-index: 2; pointer-events: none; }
 .hot > .bp-hot { display: block; animation: bob 1.2s ease-in-out infinite; }
+
+/* profile title picker */
+.pf-id { position: relative; }
+.pf-tsel { display: inline-flex; align-items: center; gap: 4px; margin: 2px 0 4px; padding: 0; background: none; border: 0; cursor: pointer; }
+.pf-tsel .bp-title { margin: 0; }
+.pf-tsel i { font-style: normal; font-size: 11px; color: #e9ddff; }
+.bp-title.none { background: #4a4a51; color: #d6d8de; }
+.pf-tpick { position: fixed; z-index: 1000; min-width: 200px; display: flex; flex-direction: column; gap: 4px; padding: 8px; border: 3px solid #111; border-radius: 10px; background: #2a2a31; box-shadow: 0 5px 0 #111; animation: pvIn .15s ease-out; }
+.pf-tp-h { font-family: var(--num); font-size: 10px; letter-spacing: .12em; color: #9aa0a6; text-transform: uppercase; margin: 0 2px 2px; }
+.pf-tpick button { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 6px; border: 2px solid transparent; border-radius: 8px; background: #33333a; cursor: pointer; }
+.pf-tpick button.on { border-color: #ffd23f; }
+.pf-tpick button .bp-title { margin: 0; }
+.pf-tpick button > svg { width: 14px; height: 14px; color: #ffd23f; }

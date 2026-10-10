@@ -370,10 +370,37 @@
     // a season ball can't be bought while its season runs; afterwards it's in the shop like any other
     seasonLocked(it) { const sd = it && it.seasonBall && SEASONS.find((x) => x.n === it.seasonBall); return !!sd && S.now() < +sd.end; },
     owns(key) { return !!(BB.meta.data().cosm || {})[key]; },
+    // profile titles: the player picks which one to wear (or none)
+    ownedTitles() { const m = BB.meta.data(); m.cosm = m.cosm || {}; return Object.keys(TITLES).filter((id) => m.cosm['title:' + id]); },
+    titleSel() {
+      const m = BB.meta.data(), own = S.ownedTitles();
+      if (m.titleSel === 'none') return null;
+      if (m.titleSel && own.includes(m.titleSel)) return m.titleSel;
+      return own.includes('s1e') ? 's1e' : own[0] || null; // default: the best one owned
+    },
     titleHtml() {
-      const m = BB.meta.data(); m.cosm = m.cosm || {};
-      const best = m.cosm['title:s1e'] ? 's1e' : m.cosm['title:s1v'] ? 's1v' : null;
-      return best ? `<div class="bp-title ${TITLES[best].cls}">${BB.ICON.star}${TITLES[best].name}</div>` : '';
+      if (!S.ownedTitles().length) return '';
+      const t = S.titleSel();
+      return `<button class="pf-tsel" aria-label="Choose your title">${t ? `<span class="bp-title ${TITLES[t].cls}">${BB.ICON.star}${TITLES[t].name}</span>` : '<span class="bp-title none">No title</span>'}<i>&#9662;</i></button>`;
+    },
+    bindTitle(root) {
+      const btn = root.querySelector('.pf-tsel'); if (!btn) return;
+      btn.onclick = (ev) => {
+        ev.stopPropagation(); BB.audio.play('click');
+        document.querySelectorAll('.pf-tpick').forEach((x) => x.remove());
+        const cur = S.titleSel(), pick = el('div', 'pf-tpick');
+        pick.innerHTML = '<div class="pf-tp-h">Choose a title</div>' + [...S.ownedTitles().map((id) => [id, `<span class="bp-title ${TITLES[id].cls}">${BB.ICON.star}${TITLES[id].name}</span>`]), ['none', '<span class="bp-title none">No title</span>']]
+          .map(([id, h]) => `<button data-t="${id}" class="${(cur || 'none') === id ? 'on' : ''}">${h}${(cur || 'none') === id ? BB.ICON.check : ''}</button>`).join('');
+        document.body.appendChild(pick);
+        const r = btn.getBoundingClientRect(); pick.style.left = Math.max(8, Math.min(innerWidth - pick.offsetWidth - 8, r.left)) + 'px'; pick.style.top = (r.bottom + 6) + 'px';
+        const close = (e) => { if (!pick.contains(e.target)) { pick.remove(); document.removeEventListener('pointerdown', close, true); } };
+        setTimeout(() => document.addEventListener('pointerdown', close, true), 0);
+        pick.querySelectorAll('button').forEach((b) => b.onclick = () => {
+          BB.meta.data().titleSel = b.dataset.t; BB.save.write(); BB.audio.play('click');
+          pick.remove(); document.removeEventListener('pointerdown', close, true);
+          const nb = el('div', null, S.titleHtml()).firstChild; btn.replaceWith(nb); S.bindTitle(root);
+        });
+      };
     },
 
     // ---------------------------------------------------------------- reward visuals

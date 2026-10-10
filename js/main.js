@@ -524,7 +524,7 @@
           case 'shoot': BB.audio.play('shoot', e); break;
           case 'boom': BB.audio.play('boom', e); App.vibrate(30); break;
           case 'nova': BB.audio.play('kamiSlam'); App.shake = 18; App.vibrate(60); break; // Nova's supernova
-          case 'death': BB.audio.play('death'); if (e.main) App.vibrate(60); if (e.main && e.kami) { App.kamiKill = true; App.kamiAsc = !!e.asc; } break;
+          case 'death': BB.audio.play('death'); if (e.main) App.vibrate(60); if (e.main && e.kami) { App.kamiKill = true; App.kamiAsc = !!e.asc; } if (e.main && e.ballKill) App.ballKill = true; break;
           case 'kami': {
             const cine = App.st().kamiCine !== false;
             if (e.k === 'dodge') { BB.audio.play('kamiDodge'); BB.meta.track('kamidodge', 1); break; }
@@ -570,6 +570,12 @@
               App.impact = { t: 0, dur: App.kamiAsc ? 3.0 : 2.8, kamiFin: true, asc: !!App.kamiAsc, x: 0, y: 0, seed: (Math.random() * 1e6) | 0, foe: foe ? BB.itemColor(foe.def.id) : '#e8473f' };
               BB.audio.play('kamiFinisher');
               setTimeout(() => BB.ui.banner('K.O.!', 900), App.kamiAsc ? 2900 : 2700);
+            } else if (App.ballKill && e.winner >= 0 && App.st().finisher && BB.ballFinisher) {
+              // BALL (or one of its summons) lands the final blow: its rainbow finisher
+              const foe = sim.balls.find((b) => b.main && !b.alive && b.team !== e.winner);
+              App.impact = { t: 0, dur: 2.5, ballFin: true, x: 0, y: 0, seed: (Math.random() * 1e6) | 0, foe: foe ? BB.itemColor(foe.def.id) : '#e8473f' };
+              BB.audio.play('kamiSlam'); setTimeout(() => BB.audio.play('boom'), 850);
+              setTimeout(() => BB.ui.banner('K.O.!', 900), 2400);
             } else if (e.timeup) {
               BB.ui.banner(e.winner < 0 ? 'DRAW!' : 'TIME UP!', 1000);
             } else {
@@ -581,7 +587,7 @@
         }
       }
       sim.events.length = 0;
-      App.kamiKill = false; App.kamiAsc = false;
+      App.kamiKill = false; App.kamiAsc = false; App.ballKill = false;
     },
 
     // ------------------------------------------------------------- loop

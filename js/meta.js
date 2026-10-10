@@ -428,6 +428,7 @@
             <div class="pf-coll"><span>${ownedL.length} / ${all.length} balls</span><div class="m-bar sm"><i style="width:${(ownedL.length / all.length) * 100}%"></i></div></div>
             <div class="pf-grid">${stat(levels, 'Mastery levels')}${stat(mastered, 'Mastered')}${stat(m.gauntletBest, 'Best Gauntlet')}${stat(m.gift.streak || 0, 'Login streak')}</div></div>
           ${top.length ? `<div class="pf-sec"><div class="pf-h">Top balls</div><div class="pf-top">${top.map((i, n) => { const lp = M.levelProgress(i.id); return `<div class="pf-tb"><em>#${n + 1}</em><img src="${BB.icon(i.id)}" alt=""><div class="m-mid"><div class="m-name">${esc(i.name)}</div><div class="m-bar sm"><i style="width:${lp.pct}%"></i></div></div><span class="mlv${lp.l >= 10 ? ' max' : ''}">Lv${lp.l}</span></div>`; }).join('')}</div></div>` : ''}`;
+        if (BB.season) BB.season.bindTitle(body);
         const row = document.createElement('div'); row.className = 'pf-btns';
         const mb = document.createElement('button'); mb.className = 'btn primary'; mb.innerHTML = BB.ICON.star + ' Ball Mastery';
         mb.onclick = () => { BB.audio.play('click'); M.openMastery(); };

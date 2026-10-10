@@ -283,7 +283,7 @@
       if (src && src.alive !== undefined) src.kills++;
       this.burst(b.x, b.y, 30, [BB.TEAMS[b.team].fill, '#ffffff', BB.TEAMS[b.team].dark], 380, 5);
       this.ring(b.x, b.y, b.r, b.r * 3, BB.TEAMS[b.team].fill, 0.4);
-      this.emit({ type: 'death', x: b.x, y: b.y, team: b.team, main: b.main, kami: !!(src && src.def && (src.def.kami || (src.owner && src.owner.def.kami))), asc: !!(src && (src.ascended || (src.owner && src.owner.ascended))) });
+      this.emit({ type: 'death', x: b.x, y: b.y, team: b.team, main: b.main, kami: !!(src && src.def && (src.def.kami || (src.owner && src.owner.def.kami))), asc: !!(src && (src.ascended || (src.owner && src.owner.ascended))), ballKill: !!(src && src.def && (src.def.id === 'ball' || (src.owner && src.owner.def && src.owner.def.id === 'ball'))) });
       if (this.potato && this.potato.holder === b) { this.potato.holder = this.pickPotatoHolder(); this.potato.t = Math.max(this.potato.t, 4); }
       if (b.def.splits && b.main) {
         for (let k = 0; k < 2; k++) {

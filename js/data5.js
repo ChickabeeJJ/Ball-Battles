@@ -137,6 +137,94 @@
     ctx.restore();
   }
 
+  // ================================================================ BALL's finisher (~2.5s)
+  // Black void with rainbow speed lines; BALL charges in out of a rainbow portal, then IMPACT: the
+  // frame inverts into a manga-style rainbow shockwave, the foe shatters, and "BALL!!" slams in letter
+  // by letter, each in a different colour.
+  const ease = (x) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
+  const back = (x) => { x = Math.min(1, Math.max(0, x)); const c = 2.4; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+  let ballImg = null;
+  function ballFinisher(R, imp) {
+    const ctx = R.ctx, W = R.c.width, H = R.c.height, T = imp.t, D = imp.dur, cx = W / 2, cy = H / 2, U = Math.min(W, H);
+    if (!ballImg) { ballImg = new Image(); ballImg.src = BB.icon('ball', 256); }
+    if (!imp.sh) {
+      const r = BB.RNG(imp.seed); imp.sh = [];
+      for (let i = 0; i < 16; i++) imp.sh.push({ a: (i / 16) * TAU + r() * 0.3, v: 0.5 + r() * 0.9, s: 0.05 + r() * 0.06, spin: (r() - 0.5) * 9, c: RAINBOW[i % 5] });
+      imp.lines = Array.from({ length: 48 }, () => [r() * TAU, 0.25 + r() * 0.75, r()]);
+    }
+    const HIT = 0.85;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const fade = T > D - 0.35 ? (T - (D - 0.35)) / 0.35 : 0;
+    ctx.globalAlpha = 1 - fade;
+    const hit = T >= HIT, k = hit ? ease((T - HIT) / 0.5) : 0;
+    // background: void before the hit, a flashing rainbow-tinted white after
+    ctx.fillStyle = hit ? (T - HIT < 0.08 ? '#ffffff' : '#0b0712') : '#05040a'; ctx.fillRect(0, 0, W, H);
+    if (hit) {
+      // radial rainbow burst behind everything
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(T * 0.6);
+      for (let i = 0; i < 20; i++) { ctx.rotate(TAU / 20); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(U * 1.2, -U * 0.09); ctx.lineTo(U * 1.2, U * 0.09); ctx.closePath(); ctx.fillStyle = RAINBOW[i % 5]; ctx.globalAlpha = (1 - fade) * 0.35 * k; ctx.fill(); }
+      ctx.restore(); ctx.globalAlpha = 1 - fade;
+    }
+    // speed lines rushing to the centre (rainbow)
+    for (const [a, len, ph] of imp.lines) {
+      const sp = ((T * 2.2 + ph) % 1), r0 = U * (0.75 - sp * 0.5), r1 = r0 + U * 0.25 * len;
+      ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0); ctx.lineTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+      ctx.strokeStyle = RAINBOW[Math.floor(ph * 5)]; ctx.lineWidth = hit ? 2 : 3; ctx.globalAlpha = (1 - fade) * (hit ? 0.35 : 0.8); ctx.stroke();
+    }
+    ctx.globalAlpha = 1 - fade;
+    // the foe: a coloured ball in the middle until the hit, then shards flying out
+    if (!hit) {
+      const fr = U * 0.13;
+      ctx.beginPath(); ctx.arc(cx, cy, fr, 0, TAU); ctx.fillStyle = imp.foe || '#e8473f'; ctx.fill(); ctx.lineWidth = U * 0.012; ctx.strokeStyle = '#111'; ctx.stroke();
+      // BALL charging in from the corner with a rainbow trail
+      const c = ease(T / HIT), bx = cx + (1 - c) * W * 0.65, by = cy - (1 - c) * H * 0.55, br = U * (0.06 + 0.1 * c);
+      for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + (W * 0.7) * (1 - c * 0.3) + i * 6, by - H * 0.6 + i * 10); ctx.strokeStyle = RAINBOW[i]; ctx.lineWidth = br * 0.35; ctx.globalAlpha = (1 - fade) * 0.55; ctx.stroke(); }
+      ctx.globalAlpha = 1 - fade;
+      if (ballImg.complete) ctx.drawImage(ballImg, bx - br * 1.5, by - br * 1.5, br * 3, br * 3);
+    } else {
+      // shards of the foe
+      for (const sh of imp.sh) {
+        const d = U * 0.12 + k * U * 0.55 * sh.v, x = cx + Math.cos(sh.a) * d, y = cy + Math.sin(sh.a) * d, s0 = U * sh.s;
+        ctx.save(); ctx.translate(x, y); ctx.rotate(sh.spin * (T - HIT));
+        ctx.beginPath(); ctx.moveTo(-s0, -s0 * 0.6); ctx.lineTo(s0, -s0 * 0.2); ctx.lineTo(s0 * 0.2, s0); ctx.closePath();
+        ctx.fillStyle = imp.foe || '#e8473f'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#111'; ctx.stroke(); ctx.restore();
+      }
+      // five rainbow shockwave rings
+      for (let i = 0; i < 5; i++) {
+        const kk = ease((T - HIT - i * 0.06) / 0.6); if (kk <= 0 || kk >= 1) continue;
+        ctx.beginPath(); ctx.arc(cx, cy, U * (0.1 + 0.75 * kk), 0, TAU); ctx.strokeStyle = RAINBOW[i]; ctx.lineWidth = U * 0.03 * (1 - kk) + 2; ctx.globalAlpha = (1 - fade) * (1 - kk); ctx.stroke();
+      }
+      ctx.globalAlpha = 1 - fade;
+      // BALL, huge, at the centre
+      const bk = back((T - HIT) / 0.35), br = U * 0.16 * bk;
+      if (ballImg.complete && br > 0) { ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.sin(T * 3) * 0.06); ctx.drawImage(ballImg, -br * 1.5, -br * 1.5, br * 3, br * 3); ctx.restore(); }
+      // "BALL!!" stamped letter by letter
+      const txt = 'BALL!!', fs = U * 0.16, y = cy + U * 0.33;
+      ctx.font = `${fs}px Anton, Impact, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+      const ws = [...txt].map((ch) => ctx.measureText(ch).width), tw = ws.reduce((a, b) => a + b, 0) + fs * 0.06 * (txt.length - 1);
+      let x = cx - tw / 2;
+      [...txt].forEach((ch, i) => {
+        const kk = back((T - HIT - 0.25 - i * 0.07) / 0.22);
+        if (kk > 0) {
+          ctx.save(); ctx.translate(x + ws[i] / 2, y); ctx.scale(kk, kk); ctx.rotate((i % 2 ? 1 : -1) * 0.06);
+          ctx.lineWidth = fs * 0.16; ctx.strokeStyle = '#111'; ctx.strokeText(ch, 0, fs * 0.05);
+          ctx.fillStyle = RAINBOW[i % 5]; ctx.fillText(ch, 0, 0); ctx.restore();
+        }
+        x += ws[i] + fs * 0.06;
+      });
+      // halftone dots in the corners for the comic-book frame
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      for (let gx = 0; gx < W; gx += U * 0.04) for (let gy = 0; gy < H; gy += U * 0.04) { const dd = Math.hypot(gx - cx, gy - cy) / (U * 0.7); if (dd > 0.85) { ctx.beginPath(); ctx.arc(gx, gy, U * 0.008 * Math.min(1.6, dd), 0, TAU); ctx.fill(); } }
+    }
+    ctx.restore();
+  }
+  BB.ballFinisher = ballFinisher;
+  const baseImpact = BB.impactFrame;
+  BB.impactFrame = function (R, imp, scale, sx, sy) {
+    if (imp.ballFin) return ballFinisher(R, imp);
+    return baseImpact(R, imp, scale, sx, sy);
+  };
+
   // in battle: a slowly turning rainbow rim on BALL; its summons wear a thin rainbow halo
   const baseBall = BB.drawBallArt;
   BB.drawBallArt = function (ctx, sim, b, lw, R) {
