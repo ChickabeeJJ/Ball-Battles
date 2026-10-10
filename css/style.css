@@ -1270,3 +1270,5 @@ html.cport .stat-row:not(.team) .st { white-space: normal; line-height: 1.15; }
 .pvp-hist .ph:nth-child(n+4) { display: none; }
 @media (max-width: 700px) { .pvp-hist .ph:nth-child(n+3) { display: none; } }
 .touch .pvp-hist .ph:nth-child(n+3) { display: none; }
+/* phones: Kami's two preview buttons stack (Tenshi under Preview) so the text keeps its width */
+@media (max-width: 700px) { .d-acts { flex-direction: column; align-items: stretch; gap: 5px; } .d-acts .d-prev { justify-content: center; padding: 4px 8px; font-size: 12px; } .d-acts { margin-left: 8px; } }
