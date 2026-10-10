@@ -140,7 +140,7 @@
       R.dark = !!BB.save.data.settings.dark;
       const px = Math.min(360, window.innerWidth - 56, window.innerHeight - 220);
       R.resize(Math.max(200, px));
-      let sim = null, t0 = 0, last = performance.now(), acc = 0, seed = 1;
+      let sim = null, t0 = 0, last = performance.now(), acc = 0, seed = 1, imp = null;
       const fresh = () => {
         sim = new BB.Sim({ seed: seed++, map: 'classic', teams: [[{ id, hp: 100, slot: 0 }], [{ id: 'dummy', hp: 400, slot: 1 }]],
           settings: { dmgNumbers: true, callouts: true, hitlag: false, parrylag: false, impact: false, finisher: false, overtime: false } });
@@ -150,9 +150,18 @@
       const loop = (now) => {
         if (!wrap.isConnected) return;
         acc += Math.min(0.1, (now - last) / 1000); last = now;
-        while (acc >= 1 / 120) { sim.step(1 / 120); sim.events.length = 0; acc -= 1 / 120; t0 += 1 / 120; }
-        if (sim.over || t0 > 9) fresh(); // loop the clip
-        R.draw(sim, {});
+        if (imp) { // Kami's art cut-in banner: the clip pauses while it plays, like in a real battle
+          imp.t += Math.min(0.1, acc); acc = 0;
+          if (imp.t >= imp.dur) imp = null;
+        }
+        while (!imp && acc >= 1 / 120) {
+          sim.step(1 / 120); acc -= 1 / 120; t0 += 1 / 120;
+          for (const e of sim.events) if (e.type === 'kami' && !['dodge', 'beamfire', 'gateslam', 'awaken'].includes(e.k)) imp = { t: 0, dur: 0.9, kamiCut: true, k: e.k, asc: !!e.asc, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0 };
+          sim.events.length = 0;
+        }
+        if (sim.over || t0 > 39) fresh(); // loop the clip (about 40s)
+        if (imp) imp.p = Math.min(0.999, imp.t / imp.dur);
+        R.draw(sim, { impact: imp });
         UI.pvRaf = requestAnimationFrame(loop);
       };
       UI.pvRaf = requestAnimationFrame(loop);
