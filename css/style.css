@@ -1514,3 +1514,14 @@ html.cport .bps-txt b { font-size: 13px; } html.cport .bps-txt em { font-size: 1
 /* phones: one stat per line, no dangling separators */
 html.cport .stx-dot { display: none; }
 html.cport .stat-row .st .stx > b { display: block; }
+html.no-season .bp-strip, html.no-season #topbar .pass-btn { display: none !important; }
+
+/* picker: search (shorter) + rarity filter */
+.pk-filter { display: flex; gap: 6px; margin: 2px 0 8px; }
+.pk-filter .pk-search { flex: 1 1 auto; min-width: 0; margin: 0; }
+.pk-rar { flex: 0 0 auto; width: 128px; padding: 9px 26px 9px 22px; border: 3px solid #111; border-radius: 10px; color: #fff; font-family: inherit; font-size: 13px; cursor: pointer; outline: none; -webkit-appearance: none; appearance: none;
+  background: radial-gradient(circle at 11px 50%, var(--rc, #9aa0a6) 0 5px, transparent 5.5px), linear-gradient(45deg, transparent 50%, #c9c2d6 50%) right 12px top 50% / 6px 6px no-repeat, linear-gradient(-45deg, transparent 50%, #c9c2d6 50%) right 7px top 50% / 6px 6px no-repeat, #1d1d22; background-repeat: no-repeat; }
+.pk-rar.on { border-color: var(--rc); }
+.pk-rar:focus { border-color: #ffd23f; }
+.pk-rar option { background: #1d1d22; color: #fff; }
+@media (max-width: 400px) { .pk-rar { width: 112px; font-size: 12px; } }

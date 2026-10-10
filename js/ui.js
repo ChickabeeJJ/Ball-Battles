@@ -208,20 +208,28 @@
         const inTab = (i) => i.cat !== 'hidden' && UI.tabOf(i) === tab;
         if (!inTab(BB.ITEM[sel])) { const first = BB.ITEMS.find((i) => inTab(i)); if (first) sel = first.id; }
         // search: filters this tab's grid by name as you type
-        const sw = el('div', 'pk-search', `<span class="pk-s-ic">${BB.ICON.search || '&#x1F50D;'}</span><input type="search" placeholder="Search balls" aria-label="Search balls" autocomplete="off"><button class="pk-s-x" aria-label="Clear">&times;</button>`);
-        body.appendChild(sw);
+        // search + rarity filter on one row
+        const rars = ['common', 'rare', 'epic', 'legendary', 'iridescent'].filter((r) => BB.ITEMS.some((i) => inTab(i) && i.rarity === r));
+        const fr = el('div', 'pk-filter');
+        const sw = el('div', 'pk-search', `<span class="pk-s-ic">${BB.ICON.search || '&#x1F50D;'}</span><input type="search" placeholder="Search" aria-label="Search balls" autocomplete="off"><button class="pk-s-x" aria-label="Clear">&times;</button>`);
+        const rs = el('select', 'pk-rar', '<option value="">All</option>' + rars.map((r) => `<option value="${r}">${BB.RARITY[r].name}</option>`).join(''));
+        rs.setAttribute('aria-label', 'Filter by rarity');
+        fr.append(sw, rs);
+        body.appendChild(fr);
         const grid = el('div', 'grid');
         body.appendChild(grid);
         const none = el('div', 'pk-none hidden', 'No balls found');
         body.appendChild(none);
         const qIn = sw.querySelector('input');
         const filter = () => {
-          const q = qIn.value.trim().toLowerCase();
+          const q = qIn.value.trim().toLowerCase(), rr = rs.value;
           let n = 0;
-          grid.querySelectorAll('.tile').forEach((t) => { const hit = !q || BB.ITEM[t.dataset.id].name.toLowerCase().includes(q); t.classList.toggle('hidden', !hit); if (hit) n++; });
+          grid.querySelectorAll('.tile').forEach((t) => { const it = BB.ITEM[t.dataset.id], hit = (!q || it.name.toLowerCase().includes(q)) && (!rr || it.rarity === rr); t.classList.toggle('hidden', !hit); if (hit) n++; });
+          rs.style.setProperty('--rc', rr ? BB.RARITY[rr].color : '#9aa0a6'); rs.classList.toggle('on', !!rr);
           none.classList.toggle('hidden', n > 0); sw.classList.toggle('has', !!q);
         };
         qIn.addEventListener('input', filter);
+        rs.addEventListener('change', () => { BB.audio.play('click'); filter(); });
         qIn.addEventListener('keydown', (e) => e.stopPropagation()); // typing never triggers game hotkeys
         sw.querySelector('.pk-s-x').onclick = () => { qIn.value = ''; filter(); qIn.focus(); };
 

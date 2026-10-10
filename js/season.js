@@ -31,8 +31,11 @@
   ];
 
   // ================================================================ seasons
-  const SEASON1 = new Date(2026, 9, 10), SEASON_DAYS = 30, TIERS = 50, PER_TIER = 200, BONUS_XP = 500, BONUS_COINS = 150, ELITE_COST = 7500;
-  const SEASON_NAMES = ['Origins', 'Overdrive', 'Eclipse', 'Frostbite', 'Inferno', 'Ascension'];
+  // The season calendar: only listed seasons run. Between seasons (or after the last one listed) there
+  // is no pass at all: the menu button hides and no Season XP is earned. Each season lasts 30 days.
+  const SEASON_DAYS = 30;
+  const SEASONS = [{ n: 1, name: 'Origins', start: new Date(2026, 9, 10) }].map((s) => Object.assign(s, { end: new Date(+s.start + SEASON_DAYS * DAY) }));
+  const TIERS = 50, PER_TIER = 200, BONUS_XP = 500, BONUS_COINS = 150, ELITE_COST = 7500;
   const RANK = { common: 0, rare: 1, epic: 2, legendary: 3, iridescent: 4 };
   const TITLES = { s1v: { name: 'Season 1 Veteran', cls: 'v' }, s1e: { name: 'Season 1 Elite', cls: 'e' } };
   // one reward per cell: every 10th tier is a ball, everything else is coins (Elite pays a bit more).
@@ -287,13 +290,13 @@
     },
 
     // ================================================================ battle pass
+    // the running season, or null when there isn't one
     season() {
-      const n = Math.max(1, Math.floor((S.now() - +SEASON1) / (SEASON_DAYS * DAY)) + 1);
-      const start = new Date(+SEASON1 + (n - 1) * SEASON_DAYS * DAY), end = new Date(+start + SEASON_DAYS * DAY);
-      return { n, start, end, name: SEASON_NAMES[(n - 1) % SEASON_NAMES.length], rewards: rewards(n) };
+      const t = S.now(), s = SEASONS.find((x) => t >= +x.start && t < +x.end);
+      return s ? Object.assign({ rewards: rewards(s.n) }, s) : null;
     },
     pass() {
-      const m = BB.meta.data(), n = S.season().n;
+      const m = BB.meta.data(), se = S.season(), n = se ? se.n : 0;
       if (!m.pass || m.pass.season !== n) m.pass = { season: n, xp: 0, elite: false, cf: [], ce: [], bonus: 0 };
       m.cosm = m.cosm || {};
       return m.pass;
@@ -306,7 +309,7 @@
       return out;
     },
     addXP(n, why, noWrite) {
-      if (!(n > 0) || !BB.save.data) return;
+      if (!(n > 0) || !BB.save.data || !S.season()) return;
       const p = S.pass(), before = S.tier(p.xp);
       p.xp += Math.round(n); if (!noWrite) BB.save.write();
       const after = S.tier(p.xp);
@@ -346,6 +349,7 @@
       return null;
     },
     claim(list) {
+      if (!S.season()) return [];
       const p = S.pass(), R = S.season().rewards, got = [];
       for (const [track, k] of list) {
         if (track === 'free' ? p.cf.includes(k) : (!p.elite || p.ce.includes(k))) continue;
@@ -364,7 +368,7 @@
       S.reveal([{ t: 'coins', n: n * BONUS_COINS }], 'Bonus rewards');
     },
     // a season ball can't be bought while its season runs; afterwards it's in the shop like any other
-    seasonLocked(it) { return !!(it && it.seasonBall && S.season().n <= it.seasonBall); },
+    seasonLocked(it) { const sd = it && it.seasonBall && SEASONS.find((x) => x.n === it.seasonBall); return !!sd && S.now() < +sd.end; },
     owns(key) { return !!(BB.meta.data().cosm || {})[key]; },
     titleHtml() {
       const m = BB.meta.data(); m.cosm = m.cosm || {};
@@ -405,6 +409,7 @@
       if (!p) { p = el('div', 'bp-pop'); document.body.appendChild(p); }
       const P = S.pass(), t = S.tier(P.xp), inT = t >= TIERS ? 1 : (P.xp - t * PER_TIER) / PER_TIER;
       p.className = 'bp-pop' + (tierUp ? ' up' : '');
+      if (!S.season()) return;
       p.innerHTML = `<span class="bp-pop-h">S${S.season().n}</span><span>${tierUp ? 'TIER ' + tierUp + ' REACHED!' : '+' + n + ' Season XP'}</span><i><b style="width:${Math.round(inT * 100)}%"></b></i>`;
       void p.offsetWidth; p.classList.add('on');
       clearTimeout(S._popT); S._popT = setTimeout(() => p.classList.remove('on'), tierUp ? 3000 : 2200);
@@ -424,7 +429,10 @@
     },
     refreshStrip() {
       const s = $('bpStrip'); if (!s || !BB.save.data) return;
-      const se = S.season(), p = S.pass(), t = S.tier(p.xp), inT = t >= TIERS ? 100 : Math.round(((p.xp - t * PER_TIER) / PER_TIER) * 100);
+      const se = S.season();
+      document.documentElement.classList.toggle('no-season', !se);
+      if (!se) return;
+      const p = S.pass(), t = S.tier(p.xp), inT = t >= TIERS ? 100 : Math.round(((p.xp - t * PER_TIER) / PER_TIER) * 100);
       const ready = S.claimable(p).length + S.bonusAvail(p) > 0;
       const pb = $('btnPass'); if (pb) { pb.classList.toggle('ready', ready); pb.classList.toggle('elite', p.elite); pb.querySelector('b').textContent = t; pb.style.setProperty('--p', inT + '%'); }
       s.classList.toggle('ready', ready); s.classList.toggle('elite', p.elite);
@@ -433,6 +441,7 @@
 
     // ---------------------------------------------------------------- pass screen
     openPass() {
+      if (!S.season()) { BB.ui.toast('No season is running right now. Check back soon!'); S.refreshStrip(); return; }
       const se = S.season(), p = S.pass(), R = se.rewards, t = S.tier(p.xp);
       const inT = t >= TIERS ? PER_TIER : p.xp - t * PER_TIER;
       BB.ui.open((sheet) => {

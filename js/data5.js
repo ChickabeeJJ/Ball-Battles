@@ -42,7 +42,7 @@
   // Soaks up the damage it takes into a star core; every 6s the core goes supernova and blasts
   // everything nearby for 60% of what it absorbed (at least 4).
   add({
-    id: 'nova', name: 'Nova', cat: 'special', rarity: 'legendary', color: '#ffb347', price: 2500, seasonBall: 1,
+    id: 'nova', name: 'Nova', cat: 'special', rarity: 'legendary', color: '#ffb347', price: 10000, seasonBall: 1,
     desc: 'Absorbs the damage it takes into a star core. Every 6s the core goes supernova, blasting a huge area for all of the damage it absorbed (at least 6) and hurling enemies away. Slams for 1.5, +0.5 every hit.',
     base: { damage: 1.5 }, contact: true,
     init(w, b) { w.timer = 6; w.charge = 0; w.prev = null; w.nova = 0; },
