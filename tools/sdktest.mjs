@@ -75,7 +75,7 @@ check('audio restored after unmute', await page.evaluate(() => BB.audio.blocked 
 await page.evaluate(() => BB.app.sim.balls.filter((b) => b.team === 1).forEach((b) => (b.hp = 0.5)));
 await page.waitForSelector('.result', { timeout: 30000 });
 log = await page.evaluate(() => __log.slice());
-check('gameplayStop on results', log[log.length - 1] === 'gameplayStop' || log.slice(-3).includes('gameplayStop'));
+check('gameplayStop on results', log.lastIndexOf('gameplayStop') > log.lastIndexOf('gameplayStart'));
 check('progress saved via SDK data module', log.includes('data.setItem') && (await page.evaluate(() => !!__data.ballbattles_save_v1)));
 
 // rewarded ad: audio muted while the ad plays, coins tripled after

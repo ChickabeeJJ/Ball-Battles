@@ -184,12 +184,15 @@
     closePreview() { cancelAnimationFrame(UI.pvRaf); document.querySelectorAll('.pv-wrap').forEach((w) => w.remove()); },
 
     // ------------------------------------------------------------- item picker / shop
+    // Specials tab: only the balls you can't buy with coins (King, Kami, event balls). Every other
+    // ball, coin-bought ones included, lives in the Weapons tab.
+    tabOf(it) { return it.kami || it.dailyOnly || it.eventOnly ? 'special' : 'weapon'; },
     pickItem(slotIdx, tab) {
       const app = BB.app, save = BB.save.data;
       const s = save.setup.slots[slotIdx];
       const mine = true; // every slot uses only unlocked balls
       let sel = s.id;
-      tab = tab === 'iridescent' ? 'special' : tab || (BB.ITEM[s.id].cat === 'special' ? 'special' : 'weapon');
+      tab = tab === 'iridescent' ? 'special' : tab || UI.tabOf(BB.ITEM[s.id]);
 
       UI.open((sheet) => {
         const body = UI.head(sheet, app.teamOfSlot(slotIdx) === 0 ? 'Choose Your Ball' : 'Choose Opponent', { onX: () => UI.editSlot(slotIdx) });
@@ -202,10 +205,25 @@
         body.appendChild(tabs);
         const detail = el('div', 'detail');
         body.appendChild(detail);
-        const inTab = (i) => i.cat === tab;
+        const inTab = (i) => i.cat !== 'hidden' && UI.tabOf(i) === tab;
         if (!inTab(BB.ITEM[sel])) { const first = BB.ITEMS.find((i) => inTab(i)); if (first) sel = first.id; }
+        // search: filters this tab's grid by name as you type
+        const sw = el('div', 'pk-search', `<span class="pk-s-ic">${BB.ICON.search || '&#x1F50D;'}</span><input type="search" placeholder="Search balls" aria-label="Search balls" autocomplete="off"><button class="pk-s-x" aria-label="Clear">&times;</button>`);
+        body.appendChild(sw);
         const grid = el('div', 'grid');
         body.appendChild(grid);
+        const none = el('div', 'pk-none hidden', 'No balls found');
+        body.appendChild(none);
+        const qIn = sw.querySelector('input');
+        const filter = () => {
+          const q = qIn.value.trim().toLowerCase();
+          let n = 0;
+          grid.querySelectorAll('.tile').forEach((t) => { const hit = !q || BB.ITEM[t.dataset.id].name.toLowerCase().includes(q); t.classList.toggle('hidden', !hit); if (hit) n++; });
+          none.classList.toggle('hidden', n > 0); sw.classList.toggle('has', !!q);
+        };
+        qIn.addEventListener('input', filter);
+        qIn.addEventListener('keydown', (e) => e.stopPropagation()); // typing never triggers game hotkeys
+        sw.querySelector('.pk-s-x').onclick = () => { qIn.value = ''; filter(); qIn.focus(); };
 
         const foot = el('div', 'sh-foot');
         sheet.appendChild(foot);
@@ -229,6 +247,8 @@
             const b = el('button', 'btn green', 'Equip');
             b.onclick = () => { BB.audio.play('click'); s.id = sel; BB.save.write(); UI.editSlot(slotIdx); };
             foot.appendChild(b);
+          } else if (it.eventOnly) {
+            foot.appendChild(el('div', 'daily-only ev-only', '<b>Event exclusive</b><span>' + esc(it.eventOnly) + '</span>'));
           } else if (it.dailyOnly) {
             // daily-reward exclusive: no coins, no ad trial
             foot.appendChild(el('div', 'daily-only', '<b>Daily reward exclusive</b><span>Log in 7 days in a row to claim it (Daily Rewards, Day 7).</span>'));
@@ -276,7 +296,7 @@
           const t = el('button', 'tile' + (mine && !owned ? ' locked' : '') + (it.rarity === 'iridescent' ? ' iri' : ''));
           t.dataset.id = it.id;
           t.innerHTML = `<img src="${BB.icon(it.id)}" alt=""><span class="t-n">${esc(it.name)}</span>${BB.meta.starHtml(it.id)}<span class="rar" style="background:${BB.RARITY[it.rarity].color}"></span>`;
-          if (!owned) t.innerHTML += it.dailyOnly ? '<span class="price daily">DAY 7</span>' : `<span class="price">${coinHtml(it.price)}</span>`;
+          if (!owned) t.innerHTML += it.eventOnly ? '<span class="price daily ev">EVENT</span>' : it.dailyOnly ? '<span class="price daily">DAY 7</span>' : `<span class="price">${coinHtml(it.price)}</span>`;
           else if (app.trials[it.id] && !save.unlocked[it.id]) t.innerHTML += '<span class="badge">TRIAL</span>';
           t.onclick = () => { BB.audio.play('click'); sel = it.id; renderDetail(); };
           grid.appendChild(t);

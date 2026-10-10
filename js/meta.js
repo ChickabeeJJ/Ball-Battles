@@ -249,7 +249,9 @@
       if (!BB.save.data) return;
       const m = M.data();
       const claimable = m.quests.some((q) => !q.claimed && q.p >= QUEST_POOL.find((x) => x.id === q.id).goal);
-      const qb = $('btnQuests'); if (qb) qb.classList.toggle('ready', claimable);
+      const ev = BB.season && BB.season.event();
+      const qb = $('btnQuests'); if (qb) { qb.classList.toggle('ready', claimable || !!(BB.season && BB.season.eventReady())); qb.classList.toggle('has-ev', !!ev); }
+      if (BB.season) BB.season.refreshStrip();
       const gb = $('btnGift'); if (gb) gb.classList.toggle('ready', m.gift.day !== today() || M.playReady().length > 0);
     },
 
@@ -314,9 +316,10 @@
         btn.onclick = () => {
           const amt = REWARDS[dayIdx];
           m.gift.streak = streak + 1; m.gift.day = today();
-          if (kingDay) { BB.save.data.unlocked.king = true; BB.save.write(); BB.audio.play('unlock'); BB.sdk.happytime(); M.claimGift('daily'); BB.ui.toast('The King is yours!'); BB.app.refreshMenu(); return; }
+          if (kingDay) { if (BB.season) BB.season.addXP(BB.season.XP.gift, 'Daily reward'); BB.save.data.unlocked.king = true; BB.save.write(); BB.audio.play('unlock'); BB.sdk.happytime(); M.claimGift('daily'); BB.ui.toast('The King is yours!'); BB.app.refreshMenu(); return; }
           BB.save.data.coins += amt; BB.save.write();
           BB.app.refreshCoins(); BB.audio.play('coin');
+          if (BB.season) BB.season.addXP(BB.season.XP.gift, 'Daily reward');
           if (dayIdx === 6) BB.sdk.happytime();
           M.claimGift('daily');
           BB.ui.toast('+' + amt + ' coins!');
@@ -355,6 +358,7 @@
           const ready = M.playReady(); if (!ready.length) return;
           const p = M.playData(); let amt = 0;
           for (const i of ready) { p.got.push(i); amt += M.PLAYTIME[i][1]; }
+          if (BB.season) BB.season.addXP(BB.season.XP.play * ready.length, 'Playtime reward');
           BB.save.data.coins += amt; BB.save.write(); BB.app.refreshCoins();
           BB.audio.play('coin'); if (ready.includes(M.PLAYTIME.length - 1)) BB.sdk.happytime();
           BB.ui.toast('+' + amt + ' coins!'); render(); M.refreshBadges();
@@ -413,7 +417,7 @@
         const stat = (v, l) => `<div><b>${v}</b><span>${l}</span></div>`;
         body.innerHTML += `<div class="pf-hero" style="--rc:${M.RANKS[k][2]}">
             ${pic}
-            <div class="pf-id"><div class="pf-name">${name}</div>
+            <div class="pf-id"><div class="pf-name">${name}</div>${BB.season ? BB.season.titleHtml() : ''}
               <div class="pf-rankrow">${M.rankHtml(pv.rating)}<b>${pv.rating}</b></div>
               <div class="pvp-rankbar"><i style="width:${rpct}%"></i></div>
               <div class="pf-next">${next ? (next[0] - pv.rating) + ' rating to ' + next[1] : 'Top rank reached'}</div></div>
@@ -443,10 +447,24 @@
     },
 
     // ------------------------------------------------------------- quests
-    openQuests() {
-      const m = M.data();
+    // Quests screen, two tabs: Daily (3 new quests a day) and Event (limited-time event quests).
+    openQuests(tab) {
+      const m = M.data(), S = BB.season;
+      // first visit during an event: the intro cinematic plays, then the Event tab opens
+      if (S && S.needsIntro()) { S.playIntro(() => M.openQuests('event')); return; }
+      tab = tab || 'daily';
       BB.ui.open((sheet) => {
-        const body = BB.ui.head(sheet, 'Daily Quests');
+        const body = BB.ui.head(sheet, 'Quests');
+        const tabs = document.createElement('div'); tabs.className = 'tabs rw-tabs';
+        for (const [k, n] of [['daily', 'Daily'], ['event', 'Event']]) {
+          const t = document.createElement('button'); t.className = 'tab' + (k === tab ? ' on' : '') + (k === 'event' && S && S.event() ? ' ev-tab' : '');
+          const dot = k === 'event' ? S && S.eventReady() : M.dailyReady();
+          t.innerHTML = n + (k === 'event' && S && S.event() ? ' <i class="ev-live">LIVE</i>' : '') + (dot && k !== tab ? '<i class="rw-dot"></i>' : '');
+          t.onclick = () => { if (k === tab) return; BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); M.openQuests(k); };
+          tabs.appendChild(t);
+        }
+        body.appendChild(tabs);
+        if (tab === 'event') { S.renderEvent(body, sheet); return; }
         body.appendChild(Object.assign(document.createElement('div'), { className: 'f-s', textContent: 'New quests every day. Progress counts in every mode.' }));
         for (const q of m.quests) {
           const def = QUEST_POOL.find((x) => x.id === q.id);
@@ -461,7 +479,9 @@
           btn.disabled = q.claimed || !done;
           btn.onclick = () => {
             q.claimed = true; BB.save.data.coins += def.reward; BB.save.write();
-            BB.audio.play('coin'); BB.app.refreshCoins(); M.openQuests();
+            BB.audio.play('coin'); BB.app.refreshCoins();
+            M.track('dailyq', 1); if (S) S.addXP(S.XP.daily, 'Daily quest');
+            BB.ui.onClose = null; BB.ui.close(); M.openQuests('daily');
           };
           row.appendChild(btn);
           body.appendChild(row);
@@ -474,8 +494,9 @@
         const mb = document.createElement('button'); mb.className = 'btn primary'; mb.innerHTML = BB.ICON.star + ' Ball Mastery';
         mb.onclick = () => { BB.audio.play('click'); M.openMastery(); };
         body.appendChild(mb);
-      }, { width: '480px' });
+      }, { width: '520px', onClose: () => M.refreshBadges() });
     },
+    dailyReady() { return M.data().quests.some((q) => !q.claimed && q.p >= (QUEST_POOL.find((x) => x.id === q.id) || { goal: 1e9 }).goal); },
 
     // ------------------------------------------------------------- ball picker for events
     pickBall(title, sub, onPick) {

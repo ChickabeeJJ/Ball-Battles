@@ -218,6 +218,12 @@
     else if (skin === 'gold') { g.addColorStop(0, '#fff6c2'); g.addColorStop(0.35, '#f6c431'); g.addColorStop(0.75, '#c8901a'); g.addColorStop(1, '#7a4f06'); }
     else { g.addColorStop(0, shade(col, 0.28)); g.addColorStop(0.55, col); g.addColorStop(1, shade(col, -0.28)); }
     ctx.fillStyle = g; ctx.fill();
+    if (skin === 'aurora') {
+      // Season 1 Elite: a slowly turning aurora of violet, cyan, mint and pink
+      const a = T * 0.9, lg = ctx.createLinearGradient(-Math.cos(a) * r, -Math.sin(a) * r, Math.cos(a) * r, Math.sin(a) * r);
+      lg.addColorStop(0, '#7b2ff7'); lg.addColorStop(0.36, '#00c6ff'); lg.addColorStop(0.68, '#35e09a'); lg.addColorStop(1, '#ff5fa2');
+      ctx.fillStyle = lg; ctx.fill();
+    }
     ctx.save(); ctx.clip();
     if (skin === 'shadow') {
       // faint coloured ember-glow pooling at the bottom of the obsidian

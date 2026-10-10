@@ -217,7 +217,7 @@
     botMatch() {
       const M = BB.meta, pv = M.pvpData(), rng = Math.random;
       MM.matched = true;
-      const pool = BB.ITEMS.filter((i) => i.cat !== 'hidden' && i.id !== 'kami' && i.id !== 'dummy' && !i.dailyOnly);
+      const pool = BB.ITEMS.filter((i) => i.cat !== 'hidden' && i.id !== 'kami' && i.id !== 'dummy' && !i.dailyOnly && !i.eventOnly);
       const tier = { common: 0, rare: 1, epic: 2, legendary: 3 };
       const myTier = MM.ids.reduce((n, id) => n + (tier[BB.ITEM[id].rarity] || 0), 0) / 3;
       const pick = [];
