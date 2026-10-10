@@ -52,6 +52,36 @@
     if (k < 0.2 && !w.tag2) { w.tag2 = true; sim.fxTag(b.x, b.y - b.r - 24, 'BERSERK!', '#ff4757'); sim.ring(b.x, b.y, b.r, b.r * 3, '#ff4757', 0.4); }
   };
 
+  // ---------------------------------------------------------------- shooters aim before they fire
+  // Crossbow and Javelin used to fire wherever the spinning weapon happened to point. Now the
+  // weapon snaps onto the nearest enemy for the shot.
+  for (const id of ['crossbow', 'javelin']) {
+    const it = I[id], up = it.update;
+    it.update = function (sim, b, w, dt) {
+      if (w.timer - dt <= 0) { const e = sim.nearestEnemy(b.team, b.x, b.y); if (e) w.angle = Math.atan2(e.y - b.y, e.x - b.x); }
+      up(sim, b, w, dt);
+    };
+  }
+  // aimed shots are much deadlier: slower reload and gentler scaling to compensate
+  for (const [id, gap] of [['crossbow', 1.7], ['javelin', 1.6]]) {
+    const it = I[id], up = it.update;
+    it.update = function (sim, b, w, dt) { const before = w.timer; up(sim, b, w, dt); if (w.timer > before) w.timer = gap; };
+    it.onHit = (sim, b, w) => { w.damage += 0.5; };
+  }
+  I.crossbow.desc = 'Takes aim and fires heavy bolts that pierce through everything. +0.5 damage every hit.';
+  I.javelin.desc = 'Takes aim and throws heavy javelins that pierce. +0.5 damage every hit.';
+
+  // ---------------------------------------------------------------- Duplicator: a real army
+  // Clones are tougher and grow with every hit the Duplicator lands (up to 8 at once).
+  I.duplicator.desc = 'Every hit spawns a mini clone that fights too (up to 8). Clones get stronger the more it hits.';
+  I.duplicator.onHit = function (sim, b, w) {
+    if (sim.miniCount(b) >= 8) return;
+    sim.spawnMini(b);
+    const m = sim.balls[sim.balls.length - 1];
+    m.hp = m.maxHp = 20; m.w.damage = 1 + w.hits * 0.25;
+    sim.burst(m.x, m.y, 8, ['#ff6fb5', '#ffffff'], 220, 3);
+  };
+
   if (typeof document === 'undefined') return;
   // ================================================================ art
   const OUT = '#1d1d22';
