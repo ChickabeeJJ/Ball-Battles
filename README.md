@@ -16,11 +16,11 @@ The game also runs without the SDK (opened from disk, other hosts, ad blockers).
 
 | | |
 |---|---|
-| Weapons (45) | Sword, Dagger, Spear, Axe, Unarmed, Bow, Shuriken, Katana, Hammer, Torch, Scythe, Poison Flask, Wrench, Boomerang, Shield, Grimoire, Cannon, Lance, Dummy |
-| Specials (21) | Fibonacci, Speedy, Grower, Spiky, Gravitron, Splodey, Orbital, Duplicator, Vampire |
+| Weapons (62) | Sword, Dagger, Spear, Axe, Unarmed, Bow, Shuriken, Katana, Hammer, Torch, Scythe, Poison Flask, Wrench, Boomerang, Shield, Grimoire, Cannon, Lance, Dummy, … plus (js/data4.js) Yo-Yo, Drill, Harpoon, Kusarigama, Tuning Fork, Plasma Blade, Laser Pointer, Chakram, Scissors, Pillow, Baseball Bat, Storm Hammer |
+| Specials (37) | Fibonacci, Speedy, Grower, Spiky, Gravitron, Splodey, Orbital, Duplicator, Vampire, … plus (js/data4.js) Magma, Meteor, Chrono, Balloon, Disco, Prism, Golem, Clover, King, Zombie, Hypno, Comet. Paid balls get signature flair in `js/flair.js` (Phoenix rebirth, Rage, Vampire wings, rarity sparkles). 100 balls in total. |
 | Iridescent (1) | **Kami (神)**: 25,000 coins. Locked at 1 HP; Divine Grace dodges every attack while charged (4 charges, refills over time). Three divine arts on cooldowns with anime cut-ins (Seraph Beam, Golden Gates, Heaven's Arsenal) and its own finisher cutscene. Logic and art live in `js/kami.js`. | Kami has 20 mastery levels (11-20 are a long grind); Lv20 unlocks the **Tenshi** skin: Kami refuses its first death (full-screen 「私が？ 死んだ？」 → 「否」 awakening), revives ascended with crimson-enhanced arts, Angelic Touch (spear hits restore Grace) and Heavenly Servants, and an enhanced finisher. Off in PvP (determinism). Japanese text uses tiny bundled subsets of Yuji Syuku and Noto Serif JP (OFL, `fonts/`).
 | Modes | 1v1, 2v2, 3v3, Free For All |
-| PvP matchmaking (CrazyGames) | Live: the public PeerJS server pairs two online players through 10 shared quick-match slots (same approach as Nexo TD), then they swap squads/ratings and the host picks maps + seed; both screens play the identical seeded 3-round series. `js/match.js`, `lib/peerjs.min.js` (MIT). |
+| PvP matchmaking (CrazyGames) | Live, one tap (your last squad is reused). Before every round both players aim their ball (6s slingshot drag or WASD/arrows, random if idle, `js/shoot.js`); aims are swapped over the link so both screens run the same fight. Pairing: the public PeerJS server pairs two online players through 10 shared quick-match slots (same approach as Nexo TD), then they swap squads/ratings and the host picks maps + seed; both screens play the identical seeded 3-round series. `js/match.js`, `lib/peerjs.min.js` (MIT). |
 | PvP (CrazyGames) | Async 3-ball series via invite links. Each side picks 3 different balls in order; the receiver picks blind, then lineups are revealed; all 3 rounds play (1v1, 2v2, 3v3 by slot) and most wins takes it. Seeded fights replay identically on both screens; a result link sends the outcome (and a replay) back to the challenger. Elo rating with ranks. |
 | Maps | Classic, Large, Bouncy (gravity), Pillars, Saws, Shrinking, Hot Potato, Meteors |
 | Per ball | Health, size, and overrides for damage, spin and speed |
@@ -84,7 +84,7 @@ node tools/seeds.js       # finds seeds whose battles end with a K.O. inside a c
 
 **Title:** Ball Vs Ball
 
-**Description:** Pick a weapon, drop two balls into the arena and watch them fight! Every weapon gets stronger with each hit. Swords hit harder, daggers spin faster, bows fire more arrows. A ball whose hits follow the Fibonacci sequence can turn a fight around in one slam. Mix 66 weapons and special balls across 1v1, 2v2, 3v3 and Free For All on 8 maps with saws, meteors, gravity and a hot potato bomb. Earn coins and unlock legendary gear.
+**Description:** Pick a weapon, drop two balls into the arena and watch them fight! Every weapon gets stronger with each hit. Swords hit harder, daggers spin faster, bows fire more arrows. A ball whose hits follow the Fibonacci sequence can turn a fight around in one slam. Mix 100 weapons and special balls across 1v1, 2v2, 3v3 and Free For All on 8 maps with saws, meteors, gravity and a hot potato bomb. Earn coins and unlock legendary gear.
 
 **Controls:** Mouse / touch for menus. Space or Enter starts a battle. P or Esc pauses.
 

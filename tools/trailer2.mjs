@@ -17,10 +17,10 @@ const sl = (ids, hp) => ids.map((id) => ({ id, hp, scale: 1, ov: { damage: 0, sp
 // asc: start the Kami already ascended (Tenshi). kill: force the knockout `kill` seconds into the shot.
 const CLIPS = [
   { mode: '1v1', map: 'classic', ids: ['claymore', 'chainsaw'], hp: 100, seed: 3, skip: 1.2, secs: 2.2, cap: 'PICK A WEAPON' },
-  { mode: 'ffa', map: 'saws', ids: ['glaive', 'frost', 'shocker', 'nunchaku'], hp: 100, seed: 8, skip: 3.0, secs: 2.0, cap: '76 BALLS' },
+  { mode: 'ffa', map: 'saws', ids: ['harpoon', 'meteor', 'disco', 'stormhammer'], hp: 100, seed: 8, skip: 3.0, secs: 2.2, cap: 'MANY BALLS' },
   { mode: '3v3', map: 'meteor', ids: ['sword', 'flail', 'mace', 'rapier', 'trident', 'sai'], hp: 100, seed: 6, skip: 2.0, secs: 2.2, cap: 'TEAM BATTLES' },
   { mode: '1v1', map: 'pillars', ids: ['phoenix', 'halberd'], hp: 100, seed: 4, skip: 2.0, secs: 1.8 },
-  { mode: 'ffa', map: 'potato', ids: ['splodey', 'vampire', 'tank', 'spiky'], hp: 100, seed: 5, skip: 3.0, secs: 2.0, cap: 'FREE FOR ALL' },
+  { mode: 'ffa', map: 'potato', ids: ['phoenix', 'king', 'magma', 'chakram'], hp: 100, seed: 5, skip: 3.0, secs: 2.0, cap: 'FREE FOR ALL' },
   { mode: '1v1', map: 'classic', ids: ['kami', 'claymore'], hp: 100, seed: 11, skip: 3.0, secs: 2.0 },
   { mode: '2v2', map: 'shrink', ids: ['whip', 'sickle', 'umbrella', 'pan'], hp: 100, seed: 9, skip: 5.0, secs: 1.8 },
   { mode: '1v1', map: 'bouncy', ids: ['axe', 'katana'], hp: 100, seed: 2, skip: 2.0, secs: 2.6, kill: 0.5, cap: 'K.O.!' },

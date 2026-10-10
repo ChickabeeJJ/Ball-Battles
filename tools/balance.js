@@ -2,10 +2,11 @@
 // ball's damage multiplier toward a 50% win rate. Writes js/balance.js.
 // node tools/balance.js [iterations]
 global.window = globalThis;
-for (const f of ['core', 'data', 'data2', 'abilities', 'sim', 'data3']) require('../js/' + f + '.js');
+for (const f of ['core', 'data', 'data2', 'abilities', 'balance', 'sim', 'data3', 'data4', 'flair']) require('../js/' + f + '.js');
 const fs = require('fs');
 const BB = globalThis.BB;
-BB.BALANCE = {};
+// start from the current multipliers (new balls start at 1) so a re-run converges quickly
+BB.BALANCE = Object.assign({}, BB.BALANCE);
 const ids = BB.ITEMS.filter((i) => i.id !== 'dummy' && i.rarity !== 'iridescent').map((i) => i.id);
 const SETTINGS = { hitlag: true, parrylag: true, dmgNumbers: false };
 function duel(a, b, seed) {

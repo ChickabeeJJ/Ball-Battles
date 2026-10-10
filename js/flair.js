@@ -1,0 +1,149 @@
+// Flair: signature gimmicks and animations for the paid balls, so buying one feels special.
+// Phoenix gets a real rebirth; the legendaries/epics get visual identity in battle.
+// Loaded after data4.js. Gameplay randomness uses sim.rng(); visuals use sim.frng().
+(function () {
+  const BB = window.BB, I = BB.ITEM, TAU = Math.PI * 2;
+
+  // ---------------------------------------------------------------- Phoenix: rebirth in fire
+  // Instead of silently popping back: it hovers untouchable in a pillar of flame for 0.9s,
+  // then erupts in a fire nova that burns and blasts back every enemy nearby.
+  const ph = I.phoenix;
+  ph.revive = false;
+  ph.desc = 'Rises from the ashes once: a pillar of fire, then a burning nova blasts enemies away and it returns with 50% health. Burning slams, +0.5 every hit.';
+  ph.beforeDeath = function (sim, b) {
+    if (b.reborn || !b.main) return false;
+    b.reborn = true; b.hp = 1; b.w.rebirth = 0.9; b.hold = true;
+    sim.fxTag(b.x, b.y - b.r - 28, 'REBIRTH', '#ffb142');
+    sim.ring(b.x, b.y, b.r, b.r * 2.2, '#ffd23f', 0.4);
+    sim.emit({ type: 'boom', x: b.x, y: b.y, small: true });
+    return true;
+  };
+  ph.reduce = (sim, b, a) => (b.w.rebirth > 0 ? 0 : a); // untouchable while reforming
+  const phUp = ph.update;
+  ph.update = function (sim, b, w, dt) {
+    if (phUp) phUp(sim, b, w, dt);
+    if (!(w.rebirth > 0)) return;
+    w.rebirth -= dt;
+    b.hp = Math.min(b.maxHp * 0.5, b.hp + b.maxHp * 0.5 * (dt / 0.9));
+    for (let i = 0; i < 3; i++) sim.fx.push({ k: 'p', x: b.x + (sim.frng() - 0.5) * b.r * 1.6, y: b.y + b.r, vx: (sim.frng() - 0.5) * 40, vy: -220 - sim.frng() * 160, life: 0.6, max: 0.6, c: sim.frng() < 0.5 ? '#ff7a1a' : '#ffd23f', s: 4 });
+    if (w.rebirth > 0) return;
+    b.hold = false; b.hp = b.maxHp * 0.5;
+    const R = b.r * 5.5;
+    sim.ring(b.x, b.y, b.r, R, '#ff7a1a', 0.5); sim.ring(b.x, b.y, b.r, R * 0.7, '#ffd23f', 0.4);
+    sim.burst(b.x, b.y, 40, ['#ffd23f', '#ff7a1a', '#ff3d1f', '#ffffff'], 520, 6);
+    for (const e of sim.balls) {
+      if (!e.alive || e.team === b.team || (e.x - b.x) ** 2 + (e.y - b.y) ** 2 > (R + e.r) ** 2) continue;
+      sim.damage(e, 3, b, { x: e.x, y: e.y, lag: true });
+      if (e._dg) continue;
+      e.burnLvl = Math.max(e.burnLvl, 2); e.burnT = Math.max(e.burnT, 3);
+      sim.knock(e, b.x, b.y, 560); sim.launch(e, b.x, b.y);
+    }
+    sim.fxTag(b.x, b.y - b.r - 28, 'REBORN!', '#ff7a1a');
+    sim.emit({ type: 'boom', x: b.x, y: b.y });
+  };
+  ph.stats = (w, b) => ['Damage: ' + BB.fmt(w.damage), b && b.reborn ? 'Reborn' : 'Rebirth ready'];
+
+  // ---------------------------------------------------------------- Rage: it visibly boils over
+  const rageUp = I.rage.update;
+  I.rage.update = function (sim, b, w, dt) {
+    rageUp(sim, b, w, dt);
+    const k = b.hp / b.maxHp;
+    if (k < 0.5 && !w.tag1) { w.tag1 = true; sim.fxTag(b.x, b.y - b.r - 24, 'ENRAGED', '#ff4757'); }
+    if (k < 0.2 && !w.tag2) { w.tag2 = true; sim.fxTag(b.x, b.y - b.r - 24, 'BERSERK!', '#ff4757'); sim.ring(b.x, b.y, b.r, b.r * 3, '#ff4757', 0.4); }
+  };
+
+  if (typeof document === 'undefined') return;
+  // ================================================================ art
+  const OUT = '#1d1d22';
+  const RARE_FX = { epic: ['#c56cf0', '#ffffff'], legendary: ['#ffd23f', '#fff6d6'] };
+
+  function wing(ctx, x, y, r, side, flap, fill, edge) {
+    ctx.save(); ctx.translate(x, y); ctx.scale(side, 1); ctx.rotate(-0.35 - flap * 0.45);
+    ctx.beginPath(); ctx.moveTo(r * 0.5, 0);
+    ctx.quadraticCurveTo(r * 1.6, -r * 1.3, r * 2.3, -r * 0.6);
+    ctx.quadraticCurveTo(r * 1.9, -r * 0.35, r * 2.05, -r * 0.05);
+    ctx.quadraticCurveTo(r * 1.6, -r * 0.1, r * 1.65, r * 0.3);
+    ctx.quadraticCurveTo(r * 1.1, r * 0.1, r * 0.5, r * 0.35); ctx.closePath();
+    ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = edge; ctx.stroke();
+    ctx.restore();
+  }
+
+  const baseBall = BB.drawBallArt;
+  BB.drawBallArt = function (ctx, sim, b, lw, R) {
+    const id = b.def.id, w = b.w, t = sim.t, r = b.r;
+    // ---- under the ball
+    if (id === 'phoenix') {
+      const flap = 0.5 + 0.5 * Math.sin(t * (b.reborn ? 9 : 6));
+      const g = ctx.createLinearGradient(b.x, b.y - r, b.x, b.y + r);
+      g.addColorStop(0, '#ffd23f'); g.addColorStop(1, '#ff3d1f');
+      ctx.save(); ctx.globalAlpha = b.reborn ? 0.95 : 0.8;
+      wing(ctx, b.x, b.y, r, 1, flap, g, '#b33939'); wing(ctx, b.x, b.y, r, -1, flap, g, '#b33939');
+      ctx.restore();
+      if (w.rebirth > 0) {
+        // pillar of fire while it reforms
+        const k = w.rebirth / 0.9, H = r * 7;
+        const pg = ctx.createLinearGradient(b.x, b.y + r, b.x, b.y - H);
+        pg.addColorStop(0, 'rgba(255,190,40,0.85)'); pg.addColorStop(0.5, 'rgba(255,110,20,0.6)'); pg.addColorStop(1, 'rgba(255,61,31,0)');
+        ctx.save(); ctx.fillStyle = pg;
+        const wdt = r * (1.1 + 0.25 * Math.sin(t * 30));
+        ctx.beginPath(); ctx.moveTo(b.x - wdt, b.y + r); ctx.quadraticCurveTo(b.x - wdt * 0.6, b.y - H * 0.5, b.x, b.y - H); ctx.quadraticCurveTo(b.x + wdt * 0.6, b.y - H * 0.5, b.x + wdt, b.y + r); ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = 1 - k; ctx.beginPath(); ctx.arc(b.x, b.y, r * (1.2 + (1 - k) * 0.8), 0, TAU); ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 4; ctx.stroke();
+        ctx.restore();
+      }
+    }
+    if (id === 'vampire') {
+      const flap = 0.5 + 0.5 * Math.sin(t * 8);
+      for (const sd of [1, -1]) {
+        ctx.save(); ctx.translate(b.x, b.y); ctx.scale(sd, 1); ctx.rotate(-0.2 - flap * 0.5);
+        ctx.beginPath(); ctx.moveTo(r * 0.6, -r * 0.2); ctx.lineTo(r * 2.1, -r * 0.9); ctx.quadraticCurveTo(r * 1.9, -r * 0.3, r * 2.2, r * 0.1);
+        ctx.quadraticCurveTo(r * 1.7, -r * 0.05, r * 1.6, r * 0.4); ctx.quadraticCurveTo(r * 1.2, r * 0.1, r * 0.9, r * 0.45); ctx.closePath();
+        ctx.fillStyle = '#2d0a14'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#b3122e'; ctx.stroke(); ctx.restore();
+      }
+    }
+    if (id === 'lance' && b.speedMul > 1.2) {
+      const sp = Math.hypot(b.vx, b.vy) || 1, ux = -b.vx / sp, uy = -b.vy / sp, k = Math.min(1, (b.speedMul - 1.2) / 1.5);
+      ctx.save(); ctx.lineCap = 'round';
+      for (let i = -2; i <= 2; i++) { const ox = -uy * i * r * 0.35, oy = ux * i * r * 0.35, L = r * (1.5 + (2 - Math.abs(i)) * 0.7) * (0.5 + k);
+        ctx.beginPath(); ctx.moveTo(b.x + ux * r + ox, b.y + uy * r + oy); ctx.lineTo(b.x + ux * (r + L) + ox, b.y + uy * (r + L) + oy); ctx.strokeStyle = 'rgba(255,255,255,' + 0.7 * (0.4 + k) + ')'; ctx.lineWidth = 3; ctx.stroke(); }
+      ctx.restore();
+    }
+    if (id === 'rage') {
+      const k = 1 - b.hp / b.maxHp, pulse = 0.5 + 0.5 * Math.sin(t * (4 + k * 10));
+      const g = ctx.createRadialGradient(b.x, b.y, r * 0.8, b.x, b.y, r * (1.4 + k * 1.2));
+      g.addColorStop(0, 'rgba(255,40,60,' + (0.2 + k * 0.5) * (0.6 + pulse * 0.4) + ')'); g.addColorStop(1, 'rgba(255,40,60,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, r * (1.4 + k * 1.2), 0, TAU); ctx.fill();
+      if (sim.frng() < 0.1 + k * 0.5) sim.fx.push({ k: 'p', x: b.x + (sim.frng() - 0.5) * r * 1.2, y: b.y - r * 0.8, vx: (sim.frng() - 0.5) * 30, vy: -90, life: 0.6, max: 0.6, c: 'rgba(230,230,230,0.8)', s: 5 });
+    }
+    if (id === 'duplicator') {
+      const wob = Math.sin(t * 5) * 0.08;
+      ctx.save(); ctx.globalAlpha = 0.45; ctx.beginPath();
+      ctx.ellipse(b.x - r * 0.25, b.y, r * (1.12 + wob), r * (1.05 - wob), 0, 0, TAU); ctx.ellipse(b.x + r * 0.25, b.y, r * (1.12 - wob), r * (1.05 + wob), 0, 0, TAU);
+      ctx.fillStyle = BB.itemColor('duplicator'); ctx.fill(); ctx.restore();
+    }
+    baseBall(ctx, sim, b, lw, R);
+    // ---- over the ball (rim details; the middle stays clear for the HP number)
+    if (id === 'grimoire') {
+      for (let i = 0; i < 3; i++) {
+        const a = t * 1.2 + (i / 3) * TAU, x = b.x + Math.cos(a) * (r + 14), y = b.y + Math.sin(a) * (r + 14) * 0.7 - 4;
+        ctx.save(); ctx.translate(x, y); ctx.rotate(Math.sin(t * 3 + i) * 0.3);
+        ctx.beginPath(); ctx.rect(-6, -4, 12, 8); ctx.fillStyle = '#f5ecd7'; ctx.fill(); ctx.lineWidth = 1.4; ctx.strokeStyle = '#8e44ad'; ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, -4); ctx.lineTo(0, 4); ctx.moveTo(-4, -1); ctx.lineTo(-1, -1); ctx.moveTo(1, 1); ctx.lineTo(4, 1); ctx.strokeStyle = '#8e44ad'; ctx.lineWidth = 1; ctx.stroke(); ctx.restore();
+      }
+    }
+    if (id === 'thunderrod' && Math.sin(t * 17) > 0.2) {
+      ctx.save(); ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 2; ctx.lineJoin = 'round';
+      for (let i = 0; i < 2; i++) { const a = t * 7 + i * Math.PI, x0 = b.x + Math.cos(a) * r, y0 = b.y + Math.sin(a) * r;
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + Math.cos(a + 0.6) * 7, y0 + Math.sin(a + 0.6) * 7); ctx.lineTo(x0 + Math.cos(a - 0.3) * 12, y0 + Math.sin(a - 0.3) * 12); ctx.stroke(); }
+      ctx.restore();
+    }
+    if (id === 'vampire') {
+      for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(b.x + sd * r * 0.22, b.y + r * 0.62); ctx.lineTo(b.x + sd * r * 0.14, b.y + r * 0.85); ctx.lineTo(b.x + sd * r * 0.06, b.y + r * 0.62); ctx.fillStyle = '#ffffff'; ctx.fill(); }
+    }
+    // rarity sparkles: epic and legendary balls glitter a little
+    const fx = b.main && RARE_FX[b.def.rarity];
+    if (fx && sim.frng() < 0.08) {
+      const a = sim.frng() * TAU;
+      sim.fx.push({ k: 'p', x: b.x + Math.cos(a) * r * 1.1, y: b.y + Math.sin(a) * r * 1.1, vx: 0, vy: -25, life: 0.6, max: 0.6, c: fx[sim.frng() < 0.6 ? 0 : 1], s: 2.5 });
+    }
+  };
+})();

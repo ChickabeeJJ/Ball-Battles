@@ -302,6 +302,14 @@
       } else {
         ctx.rotate(w.angle);
         BB.drawWeapon(ctx, id, r + w.gap, w.len, w.width, lw, sim.t, tm.fill);
+        // a glint runs up the weapon every couple of seconds (staggered per ball)
+        const gp = ((sim.t * 0.55 + b.id * 0.37) % 1.6);
+        if (gp < 1 && b.def.melee) {
+          const gx = r + w.gap + w.len * (0.15 + gp * 0.8), gw = Math.max(3, w.width * 0.5);
+          ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = Math.sin(gp * Math.PI) * 0.7;
+          const g = ctx.createLinearGradient(gx - gw, 0, gx + gw, 0); g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, 'rgba(255,255,255,0.9)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+          ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(gx, 0, gw, w.width * 0.42, 0, 0, TAU); ctx.fill(); ctx.restore();
+        }
       }
       ctx.restore();
     }

@@ -247,7 +247,8 @@
       if (target.phase > 0 && !(info && info.dot)) { this.fxNum(target.x, target.y - target.r - 4, 'MISS', '#8da2c0'); return 0; }
       // per-ball balance multiplier (tools/balance.js) and painted targets take extra damage
       const pow = src && src.def ? (BB.BALANCE[src.def.id] || 1) : 1;
-      const a = amt * this.dmgMul * pow * (target.paintT > 0 ? 1.3 : 1);
+      let a = amt * this.dmgMul * pow * (target.paintT > 0 ? 1.3 : 1);
+      if (target.def.reduce) a = target.def.reduce(this, target, a, info); // armour (Golem)
       target.hp -= a;
       target.flash = 0.12;
       const x = info && info.x != null ? info.x : target.x;
@@ -737,6 +738,7 @@
             if (e._dg) { if (p.owner && p.owner.alive) this.onHit(p.owner, e, 0); continue; } // dodged: boost still counts, the projectile flies on through
             if (p.burn) { e.burnLvl = Math.max(e.burnLvl, p.burn); e.burnT = 3; e.burnPow = BB.BALANCE[p.owner.def.id] || 1; }
             if (p.slow) e.slowT = Math.max(e.slowT, p.slow);
+            if (p.onHit) p.onHit(this, p, e); // per-projectile gimmicks (harpoon pull, ...)
             this.knock(e, p.x - p.vx, p.y - p.vy, p.knock || 90);
             if ((p.knock || 0) >= 250) this.launch(e, p.x, p.y);
             this.onHit(p.owner, e, dealt);
