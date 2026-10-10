@@ -205,9 +205,8 @@
         const renderDetail = () => {
           const it = BB.ITEM[sel];
           const r = BB.RARITY[it.rarity];
-          detail.innerHTML = `<img src="${BB.icon(sel)}" alt=""><div style="flex:1;min-width:0"><div class="d-n">${esc(it.name)}</div>
-            <div class="d-r" style="color:${r.color}">${r.name}</div><div class="d-d">${esc(it.desc)}</div>
-            <div class="d-acts"><button class="d-prev" aria-label="Preview ${esc(it.name)}">${BB.ICON.play}<span>Preview</span></button></div></div>`;
+          detail.innerHTML = `<img src="${BB.icon(sel)}" alt=""><div style="flex:1;min-width:0"><div class="d-acts"><button class="d-prev" aria-label="Preview ${esc(it.name)}">${BB.ICON.play}<span>Preview</span></button></div><div class="d-n">${esc(it.name)}</div>
+            <div class="d-r" style="color:${r.color}">${r.name}</div><div class="d-d">${esc(it.desc)}</div></div>`;
           detail.querySelector('.d-prev').onclick = () => { BB.audio.play('click'); UI.preview(sel); };
           if (it.kami) { // second preview for the revived form
             const tb = el('button', 'd-prev d-prev2', BB.ICON.play + '<span>Tenshi</span>');
