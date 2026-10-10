@@ -16,26 +16,31 @@
   add({
     id: 'ball', name: 'BALL', cat: 'special', rarity: 'legendary', color: '#f5f6fa',
     eventOnly: 'Reward for finishing every quest in the Ball VS Ball Release! event. It will never return.',
-    desc: 'Every 6s it summons a random ball from the whole roster to fight beside it, at half of BALL\'s current health (up to 2 at once). Slams for 2, +0.5 every hit.',
+    desc: 'Every 6s it summons 1 to 5 random balls from the whole roster to fight beside it, each at half of BALL\'s current health (up to 5 at once). Slams for 2, +0.5 every hit.',
     base: { damage: 2 }, contact: true,
     init(w) { w.timer = 1.5; w.summons = 0; },
     update(sim, b, w, dt) {
       w.timer -= dt;
       if (w.timer > 0) return;
       w.timer = 6;
-      if (sim.balls.filter((m) => m.alive && m.owner === b).length >= 2) return;
-      const P = pool(), def = P[Math.floor(sim.rng() * P.length)];
-      const a = sim.rng() * TAU, d = b.r * 2.2, lim = sim.W / 2 - b.r;
-      const x = BB.clamp(b.x + Math.cos(a) * d, -lim, lim), y = BB.clamp(b.y + Math.sin(a) * d, -lim, lim);
-      const m = sim.makeBall(def, b.team, x, y, { hp: Math.max(5, Math.round(b.hp * 0.5)), scale: b.scale * 0.8, main: false, owner: b });
-      m.name = def.name; m.summoned = true; w.summons++;
-      sim.ring(x, y, 4, 46, '#ffffff', 0.35);
-      sim.burst(x, y, 16, ['#ff5e7e', '#ffd23f', '#35d047', '#3d8bf2', '#a259ff'], 300, 4);
-      sim.fxTag(x, y - m.r - 22, def.name.toUpperCase() + '!', BB.itemColor(def.id));
-      sim.emit({ type: 'build', x, y });
+      const room = 5 - sim.balls.filter((m) => m.alive && m.owner === b).length;
+      if (room <= 0) return;
+      // a random-sized wave (1-5), spread evenly around BALL
+      const n = Math.min(room, 1 + Math.floor(sim.rng() * 5)), P = pool(), a0 = sim.rng() * TAU, lim = sim.W / 2 - b.r;
+      for (let i = 0; i < n; i++) {
+        const def = P[Math.floor(sim.rng() * P.length)], a = a0 + (i / n) * TAU, d = b.r * 2.4;
+        const x = BB.clamp(b.x + Math.cos(a) * d, -lim, lim), y = BB.clamp(b.y + Math.sin(a) * d, -lim, lim);
+        const m = sim.makeBall(def, b.team, x, y, { hp: Math.max(5, Math.round(b.hp * 0.5)), scale: b.scale * 0.8, main: false, owner: b });
+        m.name = def.name; m.summoned = true; w.summons++;
+        sim.ring(x, y, 4, 46, '#ffffff', 0.35);
+        sim.burst(x, y, 12, ['#ff5e7e', '#ffd23f', '#35d047', '#3d8bf2', '#a259ff'], 300, 4);
+        if (n === 1) sim.fxTag(x, y - m.r - 22, def.name.toUpperCase() + '!', BB.itemColor(def.id));
+      }
+      if (n > 1) sim.fxTag(b.x, b.y - b.r - 26, 'SUMMON x' + n + '!', '#ffffff');
+      sim.emit({ type: 'build', x: b.x, y: b.y });
     },
     onHit(sim, b, w) { w.damage += 0.5; },
-    stats: (w, b, sim) => ['Damage: ' + fmt(w.damage), 'Allies: ' + (sim && b ? sim.balls.filter((m) => m.alive && m.owner === b).length : 0) + '/2'],
+    stats: (w, b, sim) => ['Damage: ' + fmt(w.damage), 'Allies: ' + (sim && b ? sim.balls.filter((m) => m.alive && m.owner === b).length : 0) + '/5'],
   });
 
   // ---------------------------------------------------------------- Nova (Season 1 Elite Pass, tier 30)
