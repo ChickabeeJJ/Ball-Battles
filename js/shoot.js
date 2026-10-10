@@ -42,10 +42,20 @@
       const app = BB.app, sim = app.sim;
       const mySide = sr.flip ? 1 : 0, foeSide = 1 - mySide;
       const me = sim.balls.find((b) => b.main && b.team === mySide), foe = sim.balls.find((b) => b.main && b.team === foeSide);
-      S.st = { round: sr.round, sr, sim, me, foe, mySide, foeSide, t: AIM_TIME, wait: 0, my: null, drag: null, keyT: 0 };
+      S.st = { round: sr.round, sr, sim, me, foe, mySide, foeSide, t: AIM_TIME, wait: 0, my: null, drag: null, touched: false, aim: me && foe ? Math.atan2(foe.y - me.y, foe.x - me.x) : 0 };
       S.active = true;
       S.pill(true);
+      if (sr.bot) S.botAim(S.st);
       BB.audio.play('click');
+    },
+    // stand-in opponent: thinks for a moment, then fires roughly at you (sometimes rushed or off)
+    botAim(st) {
+      const round = st.round, delay = 1200 + Math.random() * 3800;
+      setTimeout(() => {
+        if (!S.st || S.st.round !== round || S.inbox[round] != null) return;
+        const b = st.foe, me = st.me, off = Math.random() < 0.2 ? (Math.random() - 0.5) * 2.4 : (Math.random() - 0.5) * 0.7;
+        S.onPeer({ r: round, a: Math.atan2(me.y - b.y, me.x - b.x) + off });
+      }, delay);
     },
     lock(a) {
       const st = S.st;
@@ -81,10 +91,12 @@
     tick(dt) {
       const st = S.st;
       if (!st) return;
-      if (st.keyT > 0) { st.keyT -= dt; if (st.keyT <= 0) S.keyLock(); }
       if (st.my == null) {
+        // A / Left turns the arrow counterclockwise, D / Right clockwise (hold to keep turning)
+        const k = BB.app.keys, turn = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0);
+        if (turn) { st.aim += turn * 2.4 * dt; st.touched = true; }
         st.t -= dt;
-        if (st.t <= 0) S.lock(st.drag && st.drag.len > 12 ? st.drag.a : S.fallback(st.sr.seed, st.round, st.mySide));
+        if (st.t <= 0) S.lock(st.drag && st.drag.len > 12 ? st.drag.a : st.touched ? st.aim : S.fallback(st.sr.seed, st.round, st.mySide));
       } else {
         st.wait += dt;
         if (st.wait > PEER_WAIT && S.inbox[st.round] == null) { S.gone = true; S.check(); }
@@ -93,20 +105,17 @@
     },
 
     // ------------------------------------------------------------- input
-    down(p) { const st = S.st; if (!st || st.my != null) return false; st.drag = { x0: p.x, y0: p.y, a: 0, len: 0 }; S.move(p); return true; },
+    down(p) { const st = S.st; if (!st || st.my != null) return false; st.drag = { x0: p.x, y0: p.y, a: st.aim, len: 0 }; return true; },
     move(p) {
       const st = S.st;
       if (!st || !st.drag || st.my != null) return;
-      // slingshot: pull away from where you want to go
+      // slingshot: pull away from where you want to go; the arrow follows live
       const dx = st.drag.x0 - p.x, dy = st.drag.y0 - p.y, len = Math.hypot(dx, dy);
-      st.drag.len = len; if (len > 4) st.drag.a = Math.atan2(dy, dx);
+      st.drag.len = len; if (len > 6) { st.drag.a = Math.atan2(dy, dx); st.aim = st.drag.a; st.touched = true; }
     },
-    up() { const st = S.st; if (!st || !st.drag || st.my != null) return; if (st.drag.len > 18) S.lock(st.drag.a); else st.drag = null; },
-    key() { const st = S.st; if (!st || st.my != null) return; st.keyT = 0.09; }, // short delay so diagonals register
-    keyLock() {
-      const k = BB.app.keys, x = (k.ArrowRight || k.KeyD ? 1 : 0) - (k.ArrowLeft || k.KeyA ? 1 : 0), y = (k.ArrowDown || k.KeyS ? 1 : 0) - (k.ArrowUp || k.KeyW ? 1 : 0);
-      if (x || y) S.lock(Math.atan2(y, x));
-    },
+    up() { const st = S.st; if (!st || !st.drag || st.my != null) return; if (st.drag.len > 22) S.lock(st.drag.a); st.drag = null; },
+    // keyboard: A/D (or Left/Right) turn, W / Up / Space / Enter fires
+    key(code) { const st = S.st; if (!st || st.my != null) return; if (/^(KeyW|ArrowUp|Space|Enter)$/.test(code)) S.lock(st.aim); else st.touched = true; },
 
     // ------------------------------------------------------------- drawing (world space, over the arena)
     overlay(ctx) {
@@ -117,15 +126,28 @@
       ctx.save();
       ctx.beginPath(); ctx.arc(b.x, b.y, r + 10 + Math.sin(t * 6) * 3, 0, TAU);
       ctx.strokeStyle = 'rgba(255,210,63,0.9)'; ctx.lineWidth = 4; ctx.setLineDash([10, 8]); ctx.lineDashOffset = -t * 30; ctx.stroke(); ctx.setLineDash([]);
-      const a = st.my != null ? st.my : st.drag && st.drag.len > 4 ? st.drag.a : null;
+      const a = st.my != null ? st.my : st.aim;
+      if (st.my == null) { // dotted path with one wall bounce, so you can see where the shot goes
+        const hw = st.sim.W / 2 - r, hh = st.sim.H / 2 - r; let x = b.x, y = b.y, vx = Math.cos(a), vy = Math.sin(a), bounced = 0;
+        ctx.fillStyle = '#ffffff'; ctx.strokeStyle = 'rgba(17,17,17,0.8)'; ctx.lineWidth = 2;
+        for (let i = 1; i <= 46; i++) {
+          x += vx * 14; y += vy * 14;
+          if (x < -hw || x > hw) { vx = -vx; x = Math.max(-hw, Math.min(hw, x)); bounced++; }
+          if (y < -hh || y > hh) { vy = -vy; y = Math.max(-hh, Math.min(hh, y)); bounced++; }
+          if (bounced > 1) break;
+          if (i % 2 && i > 9) { ctx.globalAlpha = 0.9 * (1 - i / 50); ctx.beginPath(); ctx.arc(x, y, 4, 0, TAU); ctx.fill(); ctx.stroke(); }
+        }
+        ctx.globalAlpha = 1;
+      }
       if (a != null) {
-        const pull = st.my != null ? 1 : Math.min(1, st.drag.len / 120);
-        const L = r + 40 + 90 * pull, ca = Math.cos(a), sa = Math.sin(a);
-        // dotted trajectory + arrow head
-        ctx.strokeStyle = st.my != null ? '#35d047' : '#ffd23f'; ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = 7; ctx.lineCap = 'round';
-        ctx.setLineDash([2, 14]); ctx.beginPath(); ctx.moveTo(b.x + ca * (r + 8), b.y + sa * (r + 8)); ctx.lineTo(b.x + ca * L, b.y + sa * L); ctx.stroke(); ctx.setLineDash([]);
-        ctx.beginPath(); ctx.moveTo(b.x + ca * (L + 22), b.y + sa * (L + 22)); ctx.lineTo(b.x + ca * L - sa * 14, b.y + sa * L + ca * 14); ctx.lineTo(b.x + ca * L + sa * 14, b.y + sa * L - ca * 14); ctx.closePath();
-        ctx.lineWidth = 4; ctx.strokeStyle = '#111'; ctx.stroke(); ctx.fill();
+        const pull = st.my != null ? 1 : st.drag ? Math.min(1, st.drag.len / 120) : 0.5;
+        const L = r + 60 + 70 * pull, ca = Math.cos(a), sa = Math.sin(a), col = st.my != null ? '#35d047' : '#ffd23f';
+        // a bold arrow: outlined shaft + big head
+        const x0 = b.x + ca * (r + 10), y0 = b.y + sa * (r + 10), x1 = b.x + ca * L, y1 = b.y + sa * L;
+        ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.strokeStyle = '#111'; ctx.lineWidth = 15; ctx.stroke(); ctx.strokeStyle = col; ctx.lineWidth = 9; ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(b.x + ca * (L + 34), b.y + sa * (L + 34)); ctx.lineTo(x1 - sa * 22, y1 + ca * 22); ctx.lineTo(x1 + sa * 22, y1 - ca * 22); ctx.closePath();
+        ctx.fillStyle = col; ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = '#111'; ctx.fill(); ctx.stroke();
         // the elastic band while pulling
         if (st.drag && st.my == null) {
           ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x - ca * (r + 30 * pull), b.y - sa * (r + 30 * pull));

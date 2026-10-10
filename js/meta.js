@@ -261,7 +261,8 @@
       const dayIdx = claimedToday ? (streak - 1) % 7 : streak % 7; // today's slot on the track
       BB.ui.open((sheet) => {
         const body = BB.ui.head(sheet, 'Daily Rewards');
-        body.appendChild(Object.assign(document.createElement('div'), { className: 'f-s', textContent: claimedToday ? 'Come back tomorrow for the next reward!' : 'Log in every day. Day 7 is a big one!' }));
+        const hasKing = BB.app.isOwned('king') && !BB.app.trials.king;
+        body.appendChild(Object.assign(document.createElement('div'), { className: 'f-s', textContent: claimedToday ? 'Come back tomorrow for the next reward!' : hasKing ? 'Log in every day. Day 7 is a big one!' : 'Log in 7 days in a row to unlock the legendary King!' }));
         const track = document.createElement('div');
         track.className = 'daily';
         REWARDS.forEach((r, k) => {
@@ -269,18 +270,24 @@
           const now = k === dayIdx && !claimedToday;
           const d = document.createElement('div');
           d.className = 'day' + (done ? ' done' : '') + (now ? ' now' : '') + (k === 6 ? ' big' : '');
-          d.innerHTML = `<div class="day-n">Day ${k + 1}</div><div class="day-ic">${done ? BB.ICON.star : '<span class="coin-ic"></span>'}</div><div class="day-r">${r}</div>`;
+          // Day 7 gives the King (daily-reward exclusive) until you own it, then 500 coins
+          const king = k === 6 && !hasKing;
+          d.innerHTML = king
+            ? `<div class="day-n">Day 7</div><div class="day-ic king">${done ? BB.ICON.star : `<img src="${BB.icon('king', 64)}" alt="">`}</div><div class="day-r">KING</div>`
+            : `<div class="day-n">Day ${k + 1}</div><div class="day-ic">${done ? BB.ICON.star : '<span class="coin-ic"></span>'}</div><div class="day-r">${r}</div>`;
           track.appendChild(d);
         });
         body.appendChild(track);
         const foot = document.createElement('div'); foot.className = 'sh-foot';
         const btn = document.createElement('button');
         btn.className = 'btn ' + (claimedToday ? '' : 'primary');
-        btn.innerHTML = claimedToday ? 'Claimed today' : 'Claim ' + coin(REWARDS[dayIdx]);
+        const kingDay = dayIdx === 6 && !hasKing;
+        btn.innerHTML = claimedToday ? 'Claimed today' : kingDay ? 'Claim the King!' : 'Claim ' + coin(REWARDS[dayIdx]);
         btn.disabled = claimedToday;
         btn.onclick = () => {
           const amt = REWARDS[dayIdx];
           m.gift.streak = streak + 1; m.gift.day = today();
+          if (kingDay) { BB.save.data.unlocked.king = true; BB.save.write(); BB.audio.play('unlock'); BB.sdk.happytime(); M.claimGift(); BB.ui.toast('The King is yours!'); BB.app.refreshMenu(); return; }
           BB.save.data.coins += amt; BB.save.write();
           BB.app.refreshCoins(); BB.audio.play('coin');
           if (dayIdx === 6) BB.sdk.happytime();
@@ -509,7 +516,27 @@
     RANKS: [[0, 'Bronze', '#d08a4a'], [1000, 'Silver', '#c9d1db'], [1125, 'Gold', '#ffd23f'], [1250, 'Diamond', '#7fe3ff'], [1400, 'Legend', '#ff6fd8']],
     rankOf(r) { let k = 0; M.RANKS.forEach((x, i) => { if (r >= x[0]) k = i; }); return k; },
     rankName(r) { return M.RANKS[M.rankOf(r)][1]; },
-    rankHtml(r) { const k = M.rankOf(r); return `<span class="pvp-badge" style="--rc:${M.RANKS[k][2]}">${M.RANKS[k][1]}</span>`; },
+    rankHtml(r) { const k = M.rankOf(r); return `<span class="pvp-badge" style="--rc:${M.RANKS[k][2]}">${M.rankIcon(k)}${M.RANKS[k][1]}</span>`; },
+    // A distinct emblem per rank: Bronze shield, Silver winged shield, Gold crowned shield, Diamond gem, Legend flaming crown.
+    rankIcon(k) {
+      const g = (id, a, b) => `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient>`;
+      const S = 'stroke="#111" stroke-width="3" stroke-linejoin="round"';
+      const shield = 'M32 8l20 7v15c0 13-9 22-20 27-11-5-20-14-20-27V15z';
+      const uid = 'rk' + k + '_' + Math.random().toString(36).slice(2, 7);
+      const parts = [
+        // Bronze
+        `<defs>${g(uid, '#f0b27a', '#9c5b23')}</defs><path d="${shield}" fill="url(#${uid})" ${S}/><path d="M22 30l10 7 10-7" fill="none" stroke="#fff3e0" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 30l10 7 10-7" fill="none" stroke="#111" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".35"/>`,
+        // Silver: wings + double chevron
+        `<defs>${g(uid, '#ffffff', '#8e9aa6')}</defs><path d="M12 22c-7 1-10 7-9 13 4-3 7-4 10-4M52 22c7 1 10 7 9 13-4-3-7-4-10-4" fill="#dfe6ec" ${S}/><path d="${shield}" fill="url(#${uid})" ${S}/><path d="M22 25l10 7 10-7M22 34l10 7 10-7" fill="none" stroke="#5f6b77" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+        // Gold: crown + star
+        `<defs>${g(uid, '#fff1a8', '#d39a0b')}</defs><path d="M20 12l4-8 8 6 8-6 4 8z" fill="#ffd23f" ${S}/><path d="${shield}" fill="url(#${uid})" ${S}/><path d="M32 20l3.6 7.4 8 1.2-5.8 5.6 1.4 8L32 38.4l-7.2 3.8 1.4-8-5.8-5.6 8-1.2z" fill="#fff" ${S.replace('3', '2')}/>`,
+        // Diamond: faceted gem
+        `<defs>${g(uid, '#e6fbff', '#2bb7e6')}</defs><path d="M14 22l9-12h18l9 12-18 32z" fill="url(#${uid})" ${S}/><path d="M14 22h36M23 10l9 12 9-12M32 22v32M23 10l-1 12 10 32M41 10l1 12-10 32" fill="none" stroke="#111" stroke-width="1.6" opacity=".55"/><path d="M20 18l4-5" stroke="#fff" stroke-width="3" stroke-linecap="round"/>`,
+        // Legend: flaming crown with a gem
+        `<defs>${g(uid, '#ffd1f4', '#c2185b')}<linearGradient id="${uid}f" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff6fd8"/><stop offset="1" stop-color="#ffe066"/></linearGradient></defs><path d="M14 30c-2-8 4-12 4-20 5 4 6 8 6 12 2-6 6-10 8-16 2 6 6 10 8 16 0-4 1-8 6-12 0 8 6 12 4 20z" fill="url(#${uid}f)" ${S}/><path d="M12 30l6 22h28l6-22-10 8-10-12-10 12z" fill="url(#${uid})" ${S}/><circle cx="32" cy="42" r="5" fill="#7fe3ff" ${S.replace('3', '2.5')}/><path d="M18 52h28" stroke="#111" stroke-width="3"/>`,
+      ];
+      return `<svg class="rank-ic" viewBox="0 0 64 64">${parts[Math.max(0, Math.min(4, k))]}</svg>`;
+    },
     cleanName(n) { return String(n || '').replace(/[^\w .-]/g, '').trim().slice(0, 16) || 'Rival'; },
     async myName() {
       if (M._name) return M._name;
@@ -673,7 +700,7 @@
         const body = BB.ui.head(sheet, 'PvP Arena');
         body.innerHTML += `
           <div class="pvx-hero" style="--rc:${M.RANKS[k][2]}">
-            <div class="pvx-emblem"><svg viewBox="0 0 40 46"><path d="M20 2l17 6v13c0 11-7.5 19-17 23C10.5 40 3 32 3 21V8z" fill="var(--rc)" stroke="#111" stroke-width="3"/><path d="M20 12l3.2 6.6 7.2 1-5.2 5 1.3 7.2L20 28.4l-6.5 3.4 1.3-7.2-5.2-5 7.2-1z" fill="#fff" stroke="#111" stroke-width="2"/></svg></div>
+            <div class="pvx-emblem">${M.rankIcon(k)}</div>
             <div class="pvx-info">
               <div class="pvx-rankname">${M.RANKS[k][1]}</div>
               <div class="pvx-rating">${pv.rating}<small>rating</small></div>
@@ -809,8 +836,9 @@
         teams: sr.flip ? [[Object.assign(b, { slot: 0 })], [Object.assign(a, { slot: 1 })]] : [[Object.assign(a, { slot: 0 })], [Object.assign(b, { slot: 1 })]],
         onOver: (w) => M.pvpRound(w),
       };
+      app.pvpLiveAim = !!(sr.live && !sr.spectate);
       app.startBattle();
-      if (sr.live && !sr.spectate) BB.shoot.begin(sr); // both players aim, then the fight launches
+      if (app.pvpLiveAim) BB.shoot.begin(sr); // both players aim, then the fight launches
     },
 
     pvpRound(w) {

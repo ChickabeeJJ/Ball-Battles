@@ -129,11 +129,11 @@
     // ------------------------------------------------------------- ball preview
     // A small looping "video" of the ball fighting a training dummy, so players can see what a
     // weapon does before picking or buying it. Opens over the current sheet; tap outside / X closes.
-    preview(id) {
+    preview(id, opts) {
       UI.closePreview();
-      const it = BB.ITEM[id];
+      const it = BB.ITEM[id], tenshi = !!(opts && opts.tenshi);
       const wrap = el('div', 'pv-wrap');
-      wrap.innerHTML = `<div class="pv-box"><div class="pv-h"><img src="${BB.icon(id)}" alt=""><b>${esc(it.name)}</b><button class="x-btn pv-x" aria-label="Close">×</button></div>
+      wrap.innerHTML = `<div class="pv-box"><div class="pv-h"><img src="${BB.icon(id)}" alt=""><b>${esc(it.name)}${tenshi ? ' <span class="pv-tag">Tenshi</span>' : ''}</b><button class="x-btn pv-x" aria-label="Close">×</button></div>
         <canvas class="pv-c"></canvas><div class="pv-d">${esc(it.desc)}</div></div>`;
       document.body.appendChild(wrap);
       const cv = wrap.querySelector('.pv-c'), R = new BB.Renderer(cv);
@@ -142,9 +142,13 @@
       R.resize(Math.max(200, px));
       let sim = null, t0 = 0, last = performance.now(), acc = 0, seed = 1, imp = null;
       const fresh = () => {
-        sim = new BB.Sim({ seed: seed++, map: 'classic', teams: [[{ id, hp: 100, slot: 0 }], [{ id: 'dummy', hp: 400, slot: 1 }]],
+        sim = new BB.Sim({ seed: seed++, map: 'classic', teams: [[{ id, hp: 100, slot: 0 }], [{ id: 'dummy', hp: 100, slot: 1 }]],
           settings: { dmgNumbers: true, callouts: true, hitlag: false, parrylag: false, impact: false, finisher: false, overtime: false } });
         t0 = 0;
+        if (tenshi) { // showcase Kami's revived (Tenshi) form
+          const k = sim.balls[0];
+          k.tenshi = true; k.ascended = true; k.w.regenMul = 1.3; k.w.touch = {}; k.w.servCd = 1.5; k.w.cool = { beam: 1.2, gate: 4.5, rain: 2.6 };
+        }
       };
       fresh();
       const loop = (now) => {
@@ -156,10 +160,10 @@
         }
         while (!imp && acc >= 1 / 120) {
           sim.step(1 / 120); acc -= 1 / 120; t0 += 1 / 120;
-          for (const e of sim.events) if (e.type === 'kami' && !['dodge', 'beamfire', 'gateslam', 'awaken'].includes(e.k)) imp = { t: 0, dur: 0.9, kamiCut: true, k: e.k, asc: !!e.asc, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0 };
+          for (const e of sim.events) if (e.type === 'kami' && !['dodge', 'beamfire', 'gateslam', 'awaken'].includes(e.k)) imp = { t: 0, dur: 0.9, kamiCut: true, forceText: true, k: e.k, asc: !!e.asc, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0 };
           sim.events.length = 0;
         }
-        if (sim.over || t0 > 39) fresh(); // loop the clip (about 40s)
+        if (sim.over || t0 > 45) fresh(); // loop when the dummy is knocked out, or after 45s
         if (imp) imp.p = Math.min(0.999, imp.t / imp.dur);
         R.draw(sim, { impact: imp });
         UI.pvRaf = requestAnimationFrame(loop);
@@ -205,6 +209,11 @@
             <div class="d-r" style="color:${r.color}">${r.name}</div><div class="d-d">${esc(it.desc)}</div></div>
             <button class="d-prev" aria-label="Preview ${esc(it.name)}">${BB.ICON.play}<span>Preview</span></button>`;
           detail.querySelector('.d-prev').onclick = () => { BB.audio.play('click'); UI.preview(sel); };
+          if (it.kami) { // second preview for the revived form
+            const tb = el('button', 'd-prev d-prev2', BB.ICON.play + '<span>Tenshi</span>');
+            tb.onclick = () => { BB.audio.play('click'); UI.preview(sel, { tenshi: true }); };
+            detail.appendChild(tb);
+          }
           if (it.kami) detail.insertAdjacentHTML('beforeend', '<div class="k-abil">' + [['Divine Grace', 'Teleports away from any attack while charged. Refills slower as it drains and only trickles back at 20% or below. HP locked at 1.'], ['Seraph Beam', 'Angel wings unfurl, then a beam of light pierces the arena. 20 dmg · ' + BB.KAMI.AB.beam.cd + 's'], ['Golden Gates', 'Imprisons a foe in a golden cage, then slams it shut. 18 dmg · ' + BB.KAMI.AB.gate.cd + 's'], ['Heaven\'s Arsenal', 'Portals open and rain ' + BB.KAMI.AB.rain.swords + ' holy swords. 3 dmg each · ' + BB.KAMI.AB.rain.cd + 's'], ['Tenshi (Mastery Lv20 skin)', 'Refuses its first death and ascends: crimson arts that hit harder, Angelic Touch (brush-spear hits on foes restore Grace), faster Grace recharge above 60% (very fast above 90%) and Heavenly Servants. Not used in PvP.']].map(([n, d]) => `<div><b>${n}</b><span>${d}</span></div>`).join('') + '</div>');
           if (app.isOwned(sel)) { detail.insertAdjacentHTML('beforeend', '<div class="m-inline">' + BB.meta.masteryBlock(sel) + '</div>'); BB.meta.bindSkins(detail, sel, () => app.refreshMenu()); }
           foot.innerHTML = '';
@@ -213,6 +222,9 @@
             const b = el('button', 'btn green', 'Equip');
             b.onclick = () => { BB.audio.play('click'); s.id = sel; BB.save.write(); UI.editSlot(slotIdx); };
             foot.appendChild(b);
+          } else if (it.dailyOnly) {
+            // daily-reward exclusive: no coins, no ad trial
+            foot.appendChild(el('div', 'daily-only', '<b>Daily reward exclusive</b><span>Log in 7 days in a row to claim it (Daily Rewards, Day 7).</span>'));
           } else {
             const buy = el('button', 'btn primary', 'Unlock ' + coinHtml(it.price));
             if (save.coins < it.price) buy.disabled = true;
@@ -257,7 +269,7 @@
           const t = el('button', 'tile' + (mine && !owned ? ' locked' : '') + (it.rarity === 'iridescent' ? ' iri' : ''));
           t.dataset.id = it.id;
           t.innerHTML = `<img src="${BB.icon(it.id)}" alt=""><span class="t-n">${esc(it.name)}</span>${BB.meta.starHtml(it.id)}<span class="rar" style="background:${BB.RARITY[it.rarity].color}"></span>`;
-          if (!owned) t.innerHTML += `<span class="price">${coinHtml(it.price)}</span>`;
+          if (!owned) t.innerHTML += it.dailyOnly ? '<span class="price daily">DAY 7</span>' : `<span class="price">${coinHtml(it.price)}</span>`;
           else if (app.trials[it.id] && !save.unlocked[it.id]) t.innerHTML += '<span class="badge">TRIAL</span>';
           t.onclick = () => { BB.audio.play('click'); sel = it.id; renderDetail(); };
           grid.appendChild(t);

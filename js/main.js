@@ -166,7 +166,7 @@
     // PvP uses fixed settings so both players see the same thing: ability text and finishers on,
     // impact frames off, speed locked at 1x.
     isPvpBattle() { return !!(App.pvp || (App.event && App.event.kind === 'pvp3')); },
-    st() { const s = BB.save.data.settings; return App.isPvpBattle() ? Object.assign({}, s, { callouts: true, kamiCine: true, finisher: true, impact: false, speed: 1 }) : s; },
+    st() { const s = BB.save.data.settings; return App.isPvpBattle() ? Object.assign({}, s, { callouts: true, kamiCine: true, finisher: true, impact: false, speed: 1.33 }) : s; },
     refreshSpeed() { $('btnSpeed').textContent = (BB.save.data.settings.speed || 1) + 'x'; },
 
     vibrate(ms) {
@@ -420,7 +420,7 @@
       // Kami brings its own theme into any battle it fights in
       if (BB.music) { if (App.sim.balls.some((b) => b.def.kami)) BB.music.playTheme(BB.music.KAMI_THEME); else BB.music.endTheme(); }
       BB.audio.play('start');
-      BB.ui.banner('FIGHT!', 700);
+      if (!(App.event && App.event.kind === 'pvp3' && App.pvpLiveAim)) BB.ui.banner('FIGHT!', 700); // live PvP shows it after the aim phase
       BB.sdk.gameplayStart();
     },
 
@@ -689,7 +689,7 @@
         if (blockKeys.has(e.code) && !typing) e.preventDefault();
         if (typing) return;
         App.keys[e.code] = true;
-        if (BB.shoot.active && /^(Arrow(Up|Down|Left|Right)|Key[WASD])$/.test(e.code)) BB.shoot.key();
+        if (BB.shoot.active && /^(Arrow(Up|Down|Left|Right)|Key[WASD]|Space|Enter)$/.test(e.code)) BB.shoot.key(e.code);
         if ((e.code === 'Escape' || e.code === 'KeyP') && App.state === 'battle' && !App.resultsShown && !App.isPvpBattle()) {
           if (App.paused) App.resume(); else App.pause();
         }

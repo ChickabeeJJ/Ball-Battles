@@ -82,6 +82,65 @@
     sim.burst(m.x, m.y, 8, ['#ff6fb5', '#ffffff'], 220, 3);
   };
 
+  // ---------------------------------------------------------------- Lance: lines up, then charges
+  const lance = I.lance;
+  lance.desc = 'Charges at an enemy whenever the lance lines up with it. Damage depends on speed; each hit makes it 6% faster.';
+  lance.update = function (sim, b, w, dt) {
+    w.dashCd = (w.dashCd || 0.8) - dt;
+    if (w.dashCd > 0 || b.stunT > 0) return;
+    const e = sim.nearestEnemy(b.team, b.x, b.y);
+    if (!e || (e.x - b.x) ** 2 + (e.y - b.y) ** 2 > 420 * 420) return;
+    let da = Math.atan2(e.y - b.y, e.x - b.x) - w.angle;
+    while (da > Math.PI) da -= TAU; while (da < -Math.PI) da += TAU;
+    if (Math.abs(da) > 0.16) return;
+    w.dashCd = 2.2;
+    const a = Math.atan2(e.y - b.y, e.x - b.x), sp = b.speed * b.speedMul * 2.4;
+    b.vx = Math.cos(a) * sp; b.vy = Math.sin(a) * sp; b.flyT = 0.4;
+    sim.fxTag(b.x, b.y - b.r - 22, 'CHARGE!', '#ff6b6b');
+    sim.emit({ type: 'shoot', x: b.x, y: b.y, small: true });
+  };
+
+  // ---------------------------------------------------------------- King: daily-reward exclusive, a real court
+  const king = I.king;
+  king.dailyOnly = true; // Day 7 of the daily rewards, can't be bought
+  king.desc = 'Daily-reward exclusive. Summons a knight every 5s (up to 3) that grows with the King. Every 9s a Royal Decree sends all knights charging while the King is guarded. Once per battle a knight takes a killing blow for it. Slams for 2, +0.5 every hit.';
+  king.init = (w) => { w.timer = 1.5; w.decree = 6; w.guard = 0; };
+  king.update = function (sim, b, w, dt) {
+    w.timer -= dt; w.decree -= dt; if (w.guard > 0) w.guard -= dt;
+    const court = sim.balls.filter((m) => m.alive && m.owner === b);
+    for (const k of court) k.w.damage = Math.max(k.w.damage, 1 + w.hits * 0.3);
+    if (w.timer <= 0) {
+      w.timer = 5;
+      if (court.length < 3) {
+        const a = sim.rng() * TAU, k = sim.makeBall(BB.ITEM.knight, b.team, b.x + Math.cos(a) * b.r * 2, b.y + Math.sin(a) * b.r * 2, { hp: 30, scale: 0.62, main: false, owner: b });
+        k.name = 'Knight'; k.w.damage = 1 + w.hits * 0.3;
+        sim.ring(k.x, k.y, 4, 40, '#f1c40f', 0.35); sim.fxTag(b.x, b.y - b.r - 24, 'ARISE, KNIGHT', '#f1c40f');
+      }
+    }
+    if (w.decree <= 0 && court.length) {
+      w.decree = 9; w.guard = 1.5;
+      const e = sim.nearestEnemy(b.team, b.x, b.y);
+      for (const k of court) if (e) { const a = Math.atan2(e.y - k.y, e.x - k.x), sp = k.speed * 2.8; k.vx = Math.cos(a) * sp; k.vy = Math.sin(a) * sp; k.flyT = 0.4; }
+      sim.ring(b.x, b.y, b.r, b.r * 4, '#ffd23f', 0.45);
+      sim.fxTag(b.x, b.y - b.r - 24, 'ROYAL DECREE', '#ffd23f');
+      sim.emit({ type: 'boom', x: b.x, y: b.y, small: true });
+    }
+  };
+  king.reduce = (sim, b, a) => (b.w.guard > 0 ? a * 0.5 : a);
+  // Long live the King: once per battle a knight takes the killing blow
+  king.beforeDeath = function (sim, b) {
+    if (b.w.saved || !b.main) return false;
+    const k = sim.balls.find((m) => m.alive && m.owner === b);
+    if (!k) return false;
+    b.w.saved = true; b.hp = b.maxHp * 0.35;
+    k.alive = false; sim.burst(k.x, k.y, 16, ['#f1c40f', '#ffffff'], 300, 4);
+    sim.ring(b.x, b.y, b.r, b.r * 4, '#f1c40f', 0.5);
+    sim.fxTag(b.x, b.y - b.r - 26, 'LONG LIVE THE KING!', '#ffd23f');
+    sim.emit({ type: 'boom', x: b.x, y: b.y });
+    return true;
+  };
+  king.stats = (w) => ['Damage: ' + BB.fmt(w.damage), 'Decree: ' + Math.max(0, Math.ceil(w.decree)) + 's'];
+
   if (typeof document === 'undefined') return;
   // ================================================================ art
   const OUT = '#1d1d22';
@@ -150,7 +209,15 @@
       ctx.ellipse(b.x - r * 0.25, b.y, r * (1.12 + wob), r * (1.05 - wob), 0, 0, TAU); ctx.ellipse(b.x + r * 0.25, b.y, r * (1.12 - wob), r * (1.05 + wob), 0, 0, TAU);
       ctx.fillStyle = BB.itemColor('duplicator'); ctx.fill(); ctx.restore();
     }
+    if (id === 'king' && w.guard > 0) {
+      ctx.save(); ctx.globalAlpha = Math.min(1, w.guard * 2) * 0.7; ctx.beginPath(); ctx.arc(b.x, b.y, r + 9, 0, TAU);
+      ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 5; ctx.setLineDash([6, 5]); ctx.lineDashOffset = -t * 40; ctx.stroke(); ctx.restore();
+    }
     baseBall(ctx, sim, b, lw, R);
+    if (id === 'knight') { // a little helmet plume so knights read as the King's court
+      ctx.save(); ctx.beginPath(); ctx.moveTo(b.x - r * 0.2, b.y - r * 0.9); ctx.quadraticCurveTo(b.x + r * 0.2, b.y - r * 1.9, b.x + r * 0.9, b.y - r * 1.4);
+      ctx.quadraticCurveTo(b.x + r * 0.3, b.y - r * 1.3, b.x + r * 0.2, b.y - r * 0.85); ctx.closePath(); ctx.fillStyle = '#e74c3c'; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = OUT; ctx.stroke(); ctx.restore();
+    }
     // ---- over the ball (rim details; the middle stays clear for the HP number)
     if (id === 'grimoire') {
       for (let i = 0; i < 3; i++) {

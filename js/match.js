@@ -83,7 +83,7 @@
     },
 
     stop() {
-      MM.token++; MM.searching = false;
+      MM.token++; MM.searching = false; clearTimeout(MM.botTimer);
       clearInterval(MM.probe); MM.probe = null; clearInterval(MM.uiTimer);
       Net.destroy(MM.host); Net.destroy(MM.client); MM.host = MM.client = null;
     },
@@ -114,6 +114,8 @@
       const tok = ++MM.token;
       MM.searching = true; MM.matched = false;
       MM.showSearch();
+      // nobody around: after 30-50s pair up with a stand-in opponent instead of waiting forever
+      MM.botTimer = setTimeout(() => { if (MM.live(tok)) MM.botMatch(); }, 26000 + Math.random() * 20000);
       try { await Net.loadLib(); } catch (e) { return MM.fail(tok, 'Could not load multiplayer. Check your connection and try again.'); }
       let failures = 0;
       while (MM.live(tok)) {
@@ -202,8 +204,40 @@
       BB.audio.play('unlock'); BB.sdk.happytime();
       M.series = { mine: ids, theirs: opp.ids, maps, seed, foeRating: rating, foeName: name, round: 0, score: [0, 0], results: [], live: true, flip: !iAmHost };
       if (conn) BB.shoot.link(M.series, conn, keep);
-      BB.sdk.updateRoom('m' + seed, false); // in a live 1v1 room (full)
+      else Net.destroy(keep); // stand-in opponent: close the slot we were waiting in
+      if (conn) BB.sdk.updateRoom('m' + seed, false); // in a live 1v1 room (full)
       M.lineup();
+    },
+
+    // A stand-in opponent: realistic name, rating near yours, a sensible squad. It aims like a
+    // person (see BB.shoot.botAim) and the series plays exactly like a live one.
+    botMatch() {
+      const M = BB.meta, pv = M.pvpData(), rng = Math.random;
+      MM.matched = true;
+      const pool = BB.ITEMS.filter((i) => i.cat !== 'hidden' && i.id !== 'kami' && i.id !== 'dummy' && !i.dailyOnly);
+      const tier = { common: 0, rare: 1, epic: 2, legendary: 3 };
+      const myTier = MM.ids.reduce((n, id) => n + (tier[BB.ITEM[id].rarity] || 0), 0) / 3;
+      const pick = [];
+      while (pick.length < 3) {
+        const it = pool[Math.floor(rng() * pool.length)];
+        if (pick.includes(it.id) || Math.abs((tier[it.rarity] || 0) - myTier) > 1.5) continue;
+        pick.push(it.id);
+      }
+      const opp = { name: MM.botName(), rating: Math.max(0, Math.round(pv.rating + (rng() - 0.5) * 140)), ids: pick };
+      const maps = [0, 1, 2].map(() => BB.MAPS[Math.floor(rng() * BB.MAPS.length)].id), seed = (rng() * 2147483647) | 0;
+      MM.begin(opp, maps, seed, true, null);
+      M.series.bot = true;
+      M.series.send = () => {};
+      BB.shoot.reset();
+    },
+    botName() {
+      const r = (a) => a[Math.floor(Math.random() * a.length)];
+      const A = ['Shadow', 'Pixel', 'Turbo', 'Mega', 'Night', 'Blaze', 'Frost', 'Lucky', 'Crazy', 'Dark', 'Epic', 'Silent', 'Rapid', 'Cosmic', 'Golden', 'Iron', 'Neon', 'Royal', 'Wild', 'Sly'];
+      const B = ['Wolf', 'Ninja', 'Gamer', 'Ball', 'Knight', 'Fox', 'Tiger', 'Dragon', 'Slayer', 'Sniper', 'King', 'Panda', 'Hawk', 'Storm', 'Ace', 'Viper', 'Rider', 'Bandit', 'Spark', 'Bolt'];
+      const F = ['alex', 'sam', 'leo', 'mia', 'noah', 'zoe', 'max', 'kai', 'liam', 'emma', 'jay', 'nina', 'theo', 'ruby', 'finn', 'ella', 'omar', 'lucas', 'ivy', 'ben'];
+      const n = () => String(Math.floor(Math.random() * (Math.random() < 0.5 ? 100 : 10000)));
+      const forms = [() => r(A) + r(B), () => r(A) + r(B) + n(), () => r(F) + n(), () => r(F) + '_' + r(B).toLowerCase(), () => 'xX' + r(B) + 'Xx', () => r(F).charAt(0).toUpperCase() + r(F).slice(1) + r(['YT', 'TV', 'GG', 'Pro', '']), () => r(B).toLowerCase() + r(['_', '.', '']) + n()];
+      return BB.meta.cleanName(r(forms)());
     },
 
     fail(tok, msg) {

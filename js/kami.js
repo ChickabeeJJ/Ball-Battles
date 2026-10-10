@@ -755,7 +755,7 @@
     const tx = -W * 0.04 + (1 - ease((p - 0.04) / 0.14)) * W * 0.5;
     ctx.save(); ctx.transform(1, 0, -0.18, 1, 0, 0);
     // the ability name follows the Ability Text setting
-    if (BB.save && (BB.app && BB.app.st ? BB.app.st() : BB.save.data.settings).callouts === false) ctx.globalAlpha = 0;
+    if (!imp.forceText && BB.save && (BB.app && BB.app.st ? BB.app.st() : BB.save.data.settings).callouts === false) ctx.globalAlpha = 0;
     ctx.lineWidth = H * 0.06; ctx.strokeStyle = '#1d1d22'; ctx.strokeText(def.title, tx, -H * 0.04);
     const tg = ctx.createLinearGradient(0, -H * 0.16, 0, H * 0.08); tg.addColorStop(0, '#fffbe0'); tg.addColorStop(1, red ? '#ffd23f' : '#ffc93a');
     ctx.fillStyle = tg; ctx.fillText(def.title, tx, -H * 0.04);
