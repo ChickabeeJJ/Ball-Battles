@@ -77,7 +77,7 @@
     start(pick) {
       const M = BB.meta, pv = M.pvpData();
       const ban = M.banLeft();
-      if (ban) { BB.ui.toast(`You left recent matches. Matchmaking unlocks in ${Math.floor(ban / 60)}:${String(ban % 60).padStart(2, '0')}.`, 3500); M.openPvp(); return; }
+      if (ban) { BB.ui.toast(`PvP is disabled for leaving matches. It unlocks in ${Math.floor(ban / 60)}:${String(ban % 60).padStart(2, '0')}.`, 3500); M.openPvp(); return; }
       if (M.ownedCount() < 3) { BB.ui.toast('Unlock at least 3 balls to play PvP'); return; }
       const last = pv.squad;
       if (!pick && Array.isArray(last) && M.validIds(last) && last.every((id) => BB.app.isOwned(id))) { MM.ids = last.slice(); MM.search(); return; }

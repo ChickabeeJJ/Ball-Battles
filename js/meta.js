@@ -268,6 +268,7 @@
         const body = BB.ui.head(sheet, 'Daily Rewards');
         const hasKing = BB.app.isOwned('king') && !BB.app.trials.king;
         body.appendChild(Object.assign(document.createElement('div'), { className: 'f-s', textContent: claimedToday ? 'Come back tomorrow for the next reward!' : hasKing ? 'Log in every day. Day 7 is a big one!' : 'Log in 7 days in a row to unlock the legendary King!' }));
+        const btn = document.createElement('button'); // declared first: the highlighted day also claims
         const track = document.createElement('div');
         track.className = 'daily';
         REWARDS.forEach((r, k) => {
@@ -280,11 +281,11 @@
           d.innerHTML = king
             ? `<div class="day-n">Day 7</div><div class="day-ic king">${done ? BB.ICON.star : `<img src="${BB.icon('king', 64)}" alt="">`}</div><div class="day-r">KING</div>`
             : `<div class="day-n">Day ${k + 1}</div><div class="day-ic">${done ? BB.ICON.star : '<span class="coin-ic"></span>'}</div><div class="day-r">${r}</div>`;
+          if (now) { d.style.cursor = 'pointer'; d.onclick = () => btn.click(); }
           track.appendChild(d);
         });
         body.appendChild(track);
         const foot = document.createElement('div'); foot.className = 'sh-foot';
-        const btn = document.createElement('button');
         btn.className = 'btn ' + (claimedToday ? '' : 'primary');
         const kingDay = dayIdx === 6 && !hasKing;
         btn.innerHTML = claimedToday ? 'Claimed today' : kingDay ? 'Claim the King!' : 'Claim ' + coin(REWARDS[dayIdx]);
@@ -705,6 +706,7 @@
         const body = BB.ui.head(sheet, 'PvP Arena');
         body.innerHTML += `
           <div class="pvx-hero" style="--rc:${M.RANKS[k][2]}">
+            <div class="pvx-hon">Honour: <b>${M.honour()}</b> <span>(PvP will be disabled when below 25)</span></div>
             <div class="pvx-emblem">${M.rankIcon(k)}</div>
             <div class="pvx-info">
               <div class="pvx-rankname">${M.RANKS[k][1]}</div>
@@ -714,7 +716,7 @@
             </div>
           </div>
           <div class="pvx-rec"><div class="w"><b>${pv.w}</b><span>Won</span></div><div class="d"><b>${pv.d}</b><span>Drawn</span></div><div class="l"><b>${pv.l}</b><span>Lost</span></div><div><b>${wr}</b><span>Win rate</span></div></div>
-          ${M.banLeft() ? `<div class="pvx-ban">Matchmaking locked for <b>${Math.ceil(M.banLeft() / 60)} min</b> for leaving matches early.</div>` : (pv.leaves || []).filter((t) => Date.now() - t < 864e5).length ? '<div class="pvx-ban warn">Leaving a match counts as a loss. Leave again and matchmaking gets locked.</div>' : ''}
+          ${M.banLeft() ? `<div class="pvx-ban">PvP disabled for <b>${Math.ceil(M.banLeft() / 60)} min</b> for leaving matches early.</div>` : ''}
           <div class="pvx-quick">
             <div class="pvx-qh"><b>Quick Match</b><span class="pvx-live"><i></i>Play online now</span></div>
             <div class="pvx-squad">${[0, 1, 2].map((i) => `<div class="pvx-slot">${squad ? `<img src="${BB.icon(squad[i])}" alt="">` : '<span>?</span>'}<em>R${i + 1}</em></div>`).join('')}
@@ -722,7 +724,7 @@
             <button class="pvx-find">${BB.ICON.swords}<span>Find a match</span></button>
           </div>
           <div class="pvx-friend"><div class="pvx-ft"><b>Play a Friend</b><span>Send a code, they answer it. 3 rounds, most wins takes it.</span></div><div class="pvx-fb"></div></div>
-          ${pv.hist.length ? `<div class="section-t">Recent series</div><div class="pvp-hist">${pv.hist.map((h) => `<div class="ph ${h.r > 0 ? 'w' : h.r < 0 ? 'l' : 'd'}"><span class="ph-r">${h.r > 0 ? 'WIN' : h.r < 0 ? 'LOSS' : 'DRAW'}</span><span class="ph-n">vs ${esc(h.n)}</span><b>${esc(h.s)}</b><small>${h.d >= 0 ? '+' : ''}${h.d}</small></div>`).join('')}</div>` : ''}
+          ${pv.hist.length ? `<div class="section-t">Recent matches</div><div class="pvp-hist">${pv.hist.map((h) => `<div class="ph ${h.r > 0 ? 'w' : h.r < 0 ? 'l' : 'd'}"><span class="ph-r">${h.r > 0 ? 'WIN' : h.r < 0 ? 'LOSS' : 'DRAW'}</span><span class="ph-n">vs ${esc(h.n)}</span><b>${esc(h.s)}</b><small>${h.d >= 0 ? '+' : ''}${h.d}</small></div>`).join('')}</div>` : ''}
           <button class="pvx-help">? How PvP works</button>`;
         const go = document.createElement('button'); go.className = 'btn primary'; go.innerHTML = BB.ICON.swords + ' Create';
         go.onclick = () => {
@@ -864,6 +866,7 @@
       const won = sr.score[0] > sr.score[1], draw = sr.score[0] === sr.score[1];
       const delta = sr.party ? 0 : M.applyRating(pv, sr.foeRating, won ? 1 : draw ? 0.5 : 0); // friend rooms are unranked
       M.track('pvpplay', 1); if (won) M.track('pvpwin', 1);
+      if (sr.live && !sr.party) M.honourUp(5); // finishing a match earns honour back
       M.pushHist(pv, sr.foeName, sr.score[0] + '-' + sr.score[1], delta, won ? 1 : draw ? 0 : -1);
       const coinsWon = won ? 150 : draw ? 80 : 50;
       BB.save.data.coins += coinsWon; BB.save.write(); app.refreshCoins();
@@ -874,24 +877,28 @@
 
     // ------------------------------------------------------------- leaving live matches
     // A live series is recorded when it starts and cleared when it ends. If the game closes in
-    // between, the next start counts it as a loss (rating + record). Repeat leavers get a
-    // matchmaking cooldown that grows: 2 leaves in a day = 2 min, 3 = 10 min, 5+ = 30 min.
+    // between, the next start counts it as a loss and costs 25 honour (starts at 100). Below 25,
+    // PvP is disabled for 1 hour, after which honour comes back at 50. Finished matches add 5.
     markLive(sr) { const pv = M.pvpData(); pv.live = { foe: sr.foeRating, name: sr.foeName, t: Date.now() }; BB.save.write(); },
     clearLive() { const pv = M.pvpData(); if (pv.live) { delete pv.live; BB.save.write(); } },
+    honour() { const pv = M.pvpData(); M.banLeft(); return pv.honour == null ? 100 : pv.honour; },
+    honourUp(n) { const pv = M.pvpData(); pv.honour = Math.min(100, M.honour() + n); BB.save.write(); },
     checkAbandon() {
       const pv = M.pvpData();
       if (!pv.live) return;
       const L = pv.live; delete pv.live;
-      const delta = M.applyRating(pv, L.foe, 0);
-      M.pushHist(pv, L.name, 'left', delta, -1);
-      const now = Date.now();
-      pv.leaves = (pv.leaves || []).filter((t) => now - t < 864e5); pv.leaves.push(now);
-      const n = pv.leaves.length, mins = n >= 5 ? 30 : n >= 3 ? 10 : n >= 2 ? 2 : 0;
-      if (mins) pv.banUntil = now + mins * 60000;
+      M.pushHist(pv, L.name, 'left', M.applyRating(pv, L.foe, 0), -1);
+      const prev = M.honour(), cur = Math.max(0, prev - 25);
+      pv.honour = cur;
+      if (cur < 25) pv.banUntil = Date.now() + 3600e3;
       BB.save.write();
-      setTimeout(() => BB.ui.toast(mins ? `You left a match: counted as a loss (${delta}). Matchmaking locked for ${mins} min.` : `You left your last match: counted as a loss (${delta}). Leaving again will lock matchmaking.`, 4500), 1200);
+      setTimeout(() => BB.ui.toast(`Honour dropped from ${prev} to ${cur}` + (cur < 25 ? '. PvP is disabled for 1 hour.' : ''), 4500), 1200);
     },
-    banLeft() { const pv = M.pvpData(); return Math.max(0, Math.ceil(((pv.banUntil || 0) - Date.now()) / 1000)); },
+    banLeft() {
+      const pv = M.pvpData(), left = Math.max(0, Math.ceil(((pv.banUntil || 0) - Date.now()) / 1000));
+      if (!left && pv.banUntil) { delete pv.banUntil; if ((pv.honour == null ? 100 : pv.honour) < 50) pv.honour = 50; BB.save.write(); }
+      return left;
+    },
 
     applyRating(pv, foe, score) {
       const exp = 1 / (1 + Math.pow(10, (foe - pv.rating) / 400));
