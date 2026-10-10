@@ -118,6 +118,7 @@
       }
       // A friend's challenge link takes priority; otherwise first-time players get the tutorial.
       BB.meta.checkAbandon();
+      setInterval(() => App.bgTick(), 250);
       window.addEventListener('beforeunload', (e) => { if (BB.meta.pvpData().live) { e.preventDefault(); e.returnValue = 'Leaving now counts as a loss.'; } });
       const handled = App.pvpAvailable() && App.openInvite((k) => BB.sdk.getInviteParam(k));
       // CrazyGames instant multiplayer: the party leader opens a friend room straight away
@@ -577,16 +578,24 @@
 
     // ------------------------------------------------------------- loop
     frame(ts) {
-      const dt = Math.min(0.05, Math.max(0, (ts - (App.last || ts)) / 1000));
+      // PvP keeps real time (both screens must stay in step), so a slow frame is caught up instead of dropped
+      const dt = Math.min(App.isPvpBattle() ? 3 : 0.05, Math.max(0, (ts - (App.last || ts)) / 1000));
       App.last = ts;
       App.tick(dt);
       requestAnimationFrame(App.frame);
+    },
+    // background tabs stop animation frames: keep a PvP battle ticking anyway
+    bgTick() {
+      if (!document.hidden || !App.isPvpBattle() || App.state !== 'battle') return;
+      const now = performance.now(), dt = Math.min(3, Math.max(0, (now - (App.last || now)) / 1000));
+      App.last = now; App.tick(dt);
     },
 
     tick(dt) {
       if (App.state === 'battle' && App.sim) {
         if (BB.shoot.active) BB.shoot.tick(dt); // live PvP: frozen while both players aim
-        const running = !App.paused && !BB.sdk.adPlaying && !document.hidden && !App.cine && !BB.shoot.active;
+        const pvp = App.isPvpBattle(); // PvP can't be paused by anything: no pause, no tab-switch freeze
+        const running = (pvp || (!App.paused && !BB.sdk.adPlaying && !document.hidden)) && !App.cine && !BB.shoot.active;
         if (App.impactCd > 0) App.impactCd -= dt;
         if (running && App.impact) {
           App.impact.t += dt;
@@ -597,8 +606,9 @@
           App.acc += dt * (App.st().speed || 1);
           let n = 0;
           if (App.slowmo > 0) { App.slowmo -= dt; App.acc -= dt * 0.65; } // slow-motion knockout
-          while (App.acc >= STEP - 1e-9 && n < 12) { App.sim.step(STEP); App.acc -= STEP; n++; }
-          if (n >= 12) App.acc = 0;
+          const maxN = pvp ? 800 : 12;
+          while (App.acc >= STEP - 1e-9 && n < maxN) { App.sim.step(STEP); App.acc -= STEP; n++; }
+          if (n >= maxN) App.acc = 0;
           App.handleEvents(App.sim);
           App._statT = (App._statT || 0) - dt;
           if (App._statT <= 0) { App._statT = 0.15; App.renderStats(App.sim); }
