@@ -1257,7 +1257,9 @@ html.cport .stat-row:not(.team) .st { white-space: normal; line-height: 1.15; }
 .daily-only b { color: #ffd23f; font-family: var(--display); font-weight: 400; font-size: 18px; } .daily-only span { font-size: 12px; color: #e8dcc0; }
 .d-prev2 { top: 52px; background: linear-gradient(135deg, #ff4d6d, #8e1030); }
 .pv-tag { font-size: 13px; padding: 1px 8px; border-radius: 999px; background: #ff4d6d; border: 2px solid #111; vertical-align: middle; }
-.d-acts { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.d-acts { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; }
+.detail .d-n, .detail .d-r { padding-right: 120px; }
+.detail:has(.d-prev2) .d-n, .detail:has(.d-prev2) .d-r { padding-right: 215px; }
 .d-acts .d-prev { position: static; }
 .detail .d-n { padding-right: 0; }
 .pvx-ban { margin-top: 10px; padding: 8px 12px; border: 3px solid #111; border-radius: 10px; background: #5a1a1f; color: #ffd0d3; font-size: 12px; } .pvx-ban.warn { background: #4a3a12; color: #ffe9a8; } .pvx-ban b { color: #fff; }
