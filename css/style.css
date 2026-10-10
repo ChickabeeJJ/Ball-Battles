@@ -669,7 +669,7 @@ html.cland .is-battle #topbar { left: 10px; width: auto; }
 #topbar .icon-btn { width: 40px; height: 40px; box-sizing: border-box; }
 #topbar .icon-btn svg { width: 20px; height: 20px; }
 html.cland #topbar .coins, html.cland #topbar .icon-btn { height: 36px; } html.cland #topbar .icon-btn { width: 36px; }
-#btnProfile { color: #ffd23f; }
+#btnProfile { color: #ffffff; }
 .pf-head { display: flex; align-items: center; gap: 12px; }
 .pf-pic { width: 64px; height: 64px; border-radius: 50%; border: 3px solid #111; object-fit: cover; background: #3c3c42; }
 .pf-none { display: grid; place-items: center; color: #ffd23f; } .pf-none .ico { width: 30px; height: 30px; }
