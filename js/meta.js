@@ -663,19 +663,34 @@
 
     openPvp() {
       const pv = M.pvpData(), k = M.rankOf(pv.rating), next = M.RANKS[k + 1];
+      // first visit: a short, skippable tutorial with demos, then the arena
+      if (!pv.tutDone && BB.pvpTut) { BB.ui.onClose = null; BB.ui.close(); BB.pvpTut.open(() => M.openPvp()); return; }
       const lo = M.RANKS[k][0], pct = next ? Math.max(0, Math.min(100, ((pv.rating - lo) / (next[0] - lo)) * 100)) : 100;
+      const games = pv.w + pv.d + pv.l, wr = games ? Math.round((pv.w / games) * 100) + '%' : '-';
+      const squad = Array.isArray(pv.squad) && pv.squad.length === 3 ? pv.squad : null;
       BB.ui.open((sheet) => {
+        sheet.classList.add('pvx-sheet');
         const body = BB.ui.head(sheet, 'PvP Arena');
-        body.innerHTML += `<div class="pvp-hero" style="--rc:${M.RANKS[k][2]}">${M.rankHtml(pv.rating)}<div class="pvp-rating">${pv.rating}</div>
-            <div class="pvp-rankbar"><i style="width:${pct}%"></i></div>
-            <div class="pvp-rec">${next ? (next[0] - pv.rating) + ' to ' + next[1] : 'Top rank'} · ${pv.w} W · ${pv.d} D · ${pv.l} L</div></div>
-          <div class="pvp-modes">
-            <div class="pvp-mode mm"><div class="pm-h">${BB.ICON.swords}<b>Quick Match</b></div>
-              <span>Play someone online right now. Aim your shot, then watch the same fight together.</span>
-              ${Array.isArray(pv.squad) && pv.squad.length === 3 ? `<div class="pm-squad">${pv.squad.map((id) => `<img src="${BB.icon(id)}" alt="">`).join('')}<button class="pm-change">Change</button></div>` : ''}
-              <button class="btn green pm-find">${BB.ICON.play} Find a match</button></div>
-            <div class="pvp-mode code"><div class="pm-h">${BB.ICON.scroll}<b>Play a Friend</b></div><span>Send a code. All 3 rounds play, most wins takes it.</span><div class="pm-btns"></div></div>
-          </div>`;
+        body.innerHTML += `
+          <div class="pvx-hero" style="--rc:${M.RANKS[k][2]}">
+            <div class="pvx-emblem"><svg viewBox="0 0 40 46"><path d="M20 2l17 6v13c0 11-7.5 19-17 23C10.5 40 3 32 3 21V8z" fill="var(--rc)" stroke="#111" stroke-width="3"/><path d="M20 12l3.2 6.6 7.2 1-5.2 5 1.3 7.2L20 28.4l-6.5 3.4 1.3-7.2-5.2-5 7.2-1z" fill="#fff" stroke="#111" stroke-width="2"/></svg></div>
+            <div class="pvx-info">
+              <div class="pvx-rankname">${M.RANKS[k][1]}</div>
+              <div class="pvx-rating">${pv.rating}<small>rating</small></div>
+              <div class="pvx-bar"><i style="width:${pct}%"></i></div>
+              <div class="pvx-next">${next ? `<b>${next[0] - pv.rating}</b> to ${next[1]}` : 'Top rank reached'}</div>
+            </div>
+          </div>
+          <div class="pvx-rec"><div class="w"><b>${pv.w}</b><span>Won</span></div><div class="d"><b>${pv.d}</b><span>Drawn</span></div><div class="l"><b>${pv.l}</b><span>Lost</span></div><div><b>${wr}</b><span>Win rate</span></div></div>
+          <div class="pvx-quick">
+            <div class="pvx-qh"><b>Quick Match</b><span class="pvx-live"><i></i>Play online now</span></div>
+            <div class="pvx-squad">${[0, 1, 2].map((i) => `<div class="pvx-slot">${squad ? `<img src="${BB.icon(squad[i])}" alt="">` : '<span>?</span>'}<em>R${i + 1}</em></div>`).join('')}
+              <button class="pvx-change">${squad ? 'Change' : 'Pick squad'}</button></div>
+            <button class="pvx-find">${BB.ICON.swords}<span>Find a match</span></button>
+          </div>
+          <div class="pvx-friend"><div class="pvx-ft"><b>Play a Friend</b><span>Send a code, they answer it. 3 rounds, most wins takes it.</span></div><div class="pvx-fb"></div></div>
+          ${pv.hist.length ? `<div class="section-t">Recent series</div><div class="pvp-hist">${pv.hist.map((h) => `<div class="ph ${h.r > 0 ? 'w' : h.r < 0 ? 'l' : 'd'}"><span class="ph-r">${h.r > 0 ? 'WIN' : h.r < 0 ? 'LOSS' : 'DRAW'}</span><span class="ph-n">vs ${esc(h.n)}</span><b>${esc(h.s)}</b><small>${h.d >= 0 ? '+' : ''}${h.d}</small></div>`).join('')}</div>` : ''}
+          <button class="pvx-help">? How PvP works</button>`;
         const go = document.createElement('button'); go.className = 'btn primary'; go.innerHTML = BB.ICON.swords + ' Create';
         go.onclick = () => {
           BB.audio.play('click');
@@ -684,16 +699,11 @@
         };
         const enter = document.createElement('button'); enter.className = 'btn blue'; enter.innerHTML = BB.ICON.play + ' Enter code';
         enter.onclick = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); M.enterCode(); };
-        if (pv.hist.length) {
-          body.innerHTML += `<div class="section-t">Recent series</div><div class="pvp-hist">${pv.hist.map((h) => `<div class="ph ${h.r > 0 ? 'w' : h.r < 0 ? 'l' : 'd'}"><span class="ph-r">${h.r > 0 ? 'WIN' : h.r < 0 ? 'LOSS' : 'DRAW'}</span><span class="ph-n">vs ${esc(h.n)}</span><b>${esc(h.s)}</b><small>${h.d >= 0 ? '+' : ''}${h.d}</small></div>`).join('')}</div>`;
-        }
-        body.querySelector('.pm-btns').append(go, enter);
-        const fm = body.querySelector('.pm-find');
-        if (fm) fm.onclick = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); BB.match.start(); };
-        const pc = body.querySelector('.pm-change');
-        if (pc) pc.onclick = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); BB.match.start(true); };
-        const rm = body.querySelector('.pm-room');
-        if (rm) rm.onclick = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); if (BB.party.active()) BB.party.lobby(); else BB.party.create(); };
+        body.querySelector('.pvx-fb').append(go, enter);
+        const away = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); };
+        body.querySelector('.pvx-find').onclick = () => { away(); BB.match.start(); };
+        body.querySelector('.pvx-change').onclick = () => { away(); BB.match.start(true); };
+        body.querySelector('.pvx-help').onclick = () => { away(); BB.pvpTut.open(() => M.openPvp()); };
       }, { width: '460px' });
     },
 
