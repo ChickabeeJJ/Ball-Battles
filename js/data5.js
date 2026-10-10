@@ -38,6 +38,33 @@
     stats: (w, b, sim) => ['Damage: ' + fmt(w.damage), 'Allies: ' + (sim && b ? sim.balls.filter((m) => m.alive && m.owner === b).length : 0) + '/2'],
   });
 
+  // ---------------------------------------------------------------- Nova (Season 1 Elite Pass, tier 30)
+  // Soaks up the damage it takes into a star core; every 6s the core goes supernova and blasts
+  // everything nearby for 60% of what it absorbed (at least 4).
+  add({
+    id: 'nova', name: 'Nova', cat: 'special', rarity: 'legendary', color: '#ffb347', price: 2500, seasonBall: 1,
+    desc: 'Absorbs the damage it takes into a star core. Every 6s the core goes supernova, blasting nearby enemies for 60% of what it absorbed (at least 4). Slams for 1.5, +0.5 every hit.',
+    base: { damage: 1.5 }, contact: true,
+    init(w, b) { w.timer = 6; w.charge = 0; w.prev = null; w.nova = 0; },
+    update(sim, b, w, dt) {
+      if (w.prev == null) w.prev = b.hp;
+      if (b.hp < w.prev) w.charge += w.prev - b.hp;
+      w.prev = b.hp;
+      if (w.nova > 0) w.nova -= dt;
+      w.timer -= dt;
+      if (w.timer > 0) return;
+      w.timer = 6;
+      const dmg = Math.max(4, w.charge * 0.6), R = b.r * 4.5;
+      w.charge = 0; w.nova = 0.5;
+      sim.explode(b, b.x, b.y, R, dmg);
+      sim.ring(b.x, b.y, b.r, R, '#ffb347', 0.45);
+      sim.burst(b.x, b.y, 26, ['#fff6c2', '#ffb347', '#ff6b3d'], 420, 5);
+      sim.fxTag(b.x, b.y - b.r - 24, 'SUPERNOVA ' + fmt(dmg), '#ffb347');
+    },
+    onHit(sim, b, w) { w.damage += 0.5; },
+    stats: (w) => ['Damage: ' + fmt(w.damage), 'Core: ' + fmt(Math.max(4, (w.charge || 0) * 0.6))],
+  });
+
   if (typeof document === 'undefined') return;
   // ================================================================ art
   const OUT = '#1d1d22', RAINBOW = ['#ff5e7e', '#ffd23f', '#35d047', '#3d8bf2', '#a259ff'];
@@ -46,6 +73,17 @@
   const baseIcon = BB.drawIcon;
   BB.drawIcon = function (ctx, id, x, y, size, opts) {
     baseIcon(ctx, id, x, y, size, opts);
+    if (id === 'nova') {
+      // a bright star core with four flare points
+      const r = size * 0.33;
+      ctx.save(); ctx.translate(x, y);
+      const g = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 0.6); g.addColorStop(0, '#ffffff'); g.addColorStop(0.5, '#fff1b8'); g.addColorStop(1, 'rgba(255,241,184,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r * 0.6, 0, TAU); ctx.fill();
+      ctx.beginPath(); for (let i = 0; i < 8; i++) { const a = (i / 8) * TAU - Math.PI / 2, rr = i % 2 ? r * 0.2 : r * 0.62; ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); } ctx.closePath();
+      ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.lineWidth = Math.max(1, size * 0.015); ctx.strokeStyle = '#ff8a1f'; ctx.stroke();
+      ctx.restore();
+      return;
+    }
     if (id !== 'ball') return;
     const r = size * 0.33, lw = Math.max(1.5, size * 0.03);
     ctx.save(); ctx.translate(x, y);
@@ -59,6 +97,18 @@
   const baseBall = BB.drawBallArt;
   BB.drawBallArt = function (ctx, sim, b, lw, R) {
     baseBall(ctx, sim, b, lw, R);
+    if (b.def.id === 'nova' && b.alive) {
+      // the core brightens as it charges; the supernova flashes a white shell
+      const w = b.w, k = Math.min(1, (w.charge || 0) / 30), pulse = 0.5 + 0.5 * Math.sin(sim.t * (4 + k * 8));
+      ctx.save();
+      const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r * 0.55);
+      g.addColorStop(0, 'rgba(255,255,255,' + (0.55 + 0.4 * k * pulse) + ')'); g.addColorStop(1, 'rgba(255,241,184,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.55, 0, TAU); ctx.fill();
+      const t = 1 - Math.max(0, w.timer) / 6;
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 4, -Math.PI / 2, -Math.PI / 2 + t * TAU); ctx.strokeStyle = 'rgba(255,179,71,0.85)'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.stroke();
+      if (w.nova > 0) { ctx.globalAlpha = w.nova / 0.5; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * (1 + (0.5 - w.nova) * 6), 0, TAU); ctx.strokeStyle = '#fff6c2'; ctx.lineWidth = 6; ctx.stroke(); }
+      ctx.restore();
+    }
     const isBall = b.def.id === 'ball', isAlly = b.owner && b.owner.def && b.owner.def.id === 'ball';
     if (!b.alive || (!isBall && !isAlly)) return;
     const r = b.r, t = sim.t;

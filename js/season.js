@@ -31,30 +31,26 @@
   ];
 
   // ================================================================ seasons
-  const SEASON1 = new Date(2026, 9, 10), SEASON_DAYS = 30, TIERS = 30, PER_TIER = 300, BONUS_XP = 500, BONUS_COINS = 150, ELITE_COST = 3000;
+  const SEASON1 = new Date(2026, 9, 10), SEASON_DAYS = 30, TIERS = 50, PER_TIER = 200, BONUS_XP = 500, BONUS_COINS = 150, ELITE_COST = 7500;
   const SEASON_NAMES = ['Origins', 'Overdrive', 'Eclipse', 'Frostbite', 'Inferno', 'Ascension'];
   const RANK = { common: 0, rare: 1, epic: 2, legendary: 3, iridescent: 4 };
   const TITLES = { s1v: { name: 'Season 1 Veteran', cls: 'v' }, s1e: { name: 'Season 1 Elite', cls: 'e' } };
-  // one reward per cell; milestone tiers (every 5th) carry the big stuff
+  // one reward per cell: every 10th tier is a ball, everything else is coins (Elite pays a bit more).
+  // Elite tier 30 is the season's own exclusive ball (Season 1: Nova).
+  const SEASON_BALL = { 1: 'nova' };
   function rewards(season) {
     const out = [];
     for (let k = 1; k <= TIERS; k++) {
-      let free, elite;
-      if (k === 30) free = season === 1 ? { t: 'title', id: 's1v' } : { t: 'coins', n: 1000 };
-      else if (k === 15) free = { t: 'ball', min: 'epic' };
-      else if (k % 5 === 0) free = { t: 'ball', min: 'rare' };
-      else if (k === 29) free = { t: 'coins', n: 600 };
-      else free = { t: 'coins', n: Math.round((40 + k * 6) / 5) * 5 };
-      if (k === 30) elite = season === 1 ? { t: 'skin', id: 'aurora' } : { t: 'coins', n: 3000 };
-      else if (k === 29) elite = season === 1 ? { t: 'title', id: 's1e' } : { t: 'coins', n: 1500 };
-      else if (k === 15 || k === 25) elite = { t: 'ball', min: 'legendary' };
-      else if (k === 10 || k === 20) elite = { t: 'ball', min: 'epic' };
-      else if (k % 5 === 0 || k === 2) elite = { t: 'ball', min: 'rare' };
-      else elite = { t: 'coins', n: Math.round((100 + k * 12) / 5) * 5 };
+      const base = Math.round((40 + k * 4) / 5) * 5;
+      const free = k % 10 === 0 ? { t: 'ball', min: 'rare' } : { t: 'coins', n: base };
+      const elite = k === 30 && SEASON_BALL[season] ? { t: 'item', id: SEASON_BALL[season] } : k % 10 === 0 ? { t: 'ball', min: 'rare' } : { t: 'coins', n: Math.round((base * 1.35) / 5) * 5 };
       out.push({ free, elite });
     }
     return out;
   }
+  // Rare+ ball drop odds: 90% Rare, 9% Epic, 1% Legendary. Never limited balls (Kami, King, event or season exclusives).
+  const ODDS = [['rare', 0.9], ['epic', 0.09], ['legendary', 0.01]];
+  const limited = (i) => i.kami || i.dailyOnly || i.eventOnly || i.seasonBall || i.rarity === 'iridescent';
 
   const S = (BB.season = {
     now: () => Date.now(),
@@ -329,14 +325,22 @@
       const sv = BB.save.data, m = BB.meta.data();
       if (r.t === 'coins') { sv.coins += r.n; return { t: 'coins', n: r.n }; }
       if (r.t === 'skin' || r.t === 'title') { m.cosm[r.t + ':' + r.id] = true; return { t: r.t, id: r.id }; }
+      if (r.t === 'item') { sv.unlocked[r.id] = true; return { t: 'ball', id: r.id, label: 'SEASON EXCLUSIVE' }; }
       if (r.t === 'ball') {
-        // a random ball you don't own yet, at least this rarity; already own them all = coins instead
-        const pool = BB.ITEMS.filter((i) => i.cat !== 'hidden' && i.id !== 'dummy' && !i.kami && !i.dailyOnly && !i.eventOnly && !sv.unlocked[i.id] && RANK[i.rarity] >= RANK[r.min] && i.rarity !== 'iridescent');
-        if (!pool.length) { const n = BB.RARITY[r.min].price + 200; sv.coins += n; return { t: 'coins', n, note: 'Duplicate converted' }; }
-        const best = Math.min(...pool.map((i) => RANK[i.rarity])), tierPool = pool.filter((i) => RANK[i.rarity] === best);
-        const it = tierPool[Math.floor(Math.random() * tierPool.length)];
-        sv.unlocked[it.id] = true;
-        return { t: 'ball', id: it.id };
+        // roll the rarity (90 / 9 / 1), then a random ball of it you don't own. If you own every ball of
+        // that rarity, the nearest rarity that still has one is used; own them all = coins instead.
+        const own = (i) => i.cat !== 'hidden' && i.id !== 'dummy' && !limited(i) && !sv.unlocked[i.id];
+        let x = Math.random(), want = 'legendary';
+        for (const [rar, p] of ODDS) { if (x < p) { want = rar; break; } x -= p; }
+        const order = [want, ...['rare', 'epic', 'legendary'].filter((q) => q !== want).sort((a, b) => Math.abs(RANK[a] - RANK[want]) - Math.abs(RANK[b] - RANK[want]))];
+        for (const rar of order) {
+          const pool = BB.ITEMS.filter((i) => own(i) && i.rarity === rar);
+          if (!pool.length) continue;
+          const it = pool[Math.floor(Math.random() * pool.length)];
+          sv.unlocked[it.id] = true;
+          return { t: 'ball', id: it.id };
+        }
+        const n = BB.RARITY.rare.price + 200; sv.coins += n; return { t: 'coins', n, note: 'Duplicate converted' };
       }
       return null;
     },
@@ -358,6 +362,8 @@
       p.bonus += n; BB.save.data.coins += n * BONUS_COINS; BB.save.write(); BB.app.refreshCoins(); BB.audio.play('coin');
       S.reveal([{ t: 'coins', n: n * BONUS_COINS }], 'Bonus rewards');
     },
+    // a season ball can't be bought while its season runs; afterwards it's in the shop like any other
+    seasonLocked(it) { return !!(it && it.seasonBall && S.season().n <= it.seasonBall); },
     owns(key) { return !!(BB.meta.data().cosm || {})[key]; },
     titleHtml() {
       const m = BB.meta.data(); m.cosm = m.cosm || {};
@@ -369,6 +375,7 @@
     rewardHtml(r, big) {
       if (r.t === 'coins') return `<div class="rw-ic rw-coins${r.n >= 1000 ? ' lots' : ''}"><span class="coin-ic"></span><span class="coin-ic"></span><span class="coin-ic"></span></div><b>${r.n}</b>`;
       if (r.t === 'ball') return `<div class="rw-ic rw-orb r-${r.min}"><span>?</span></div><b>${BB.RARITY[r.min].name}+ Ball</b>`;
+      if (r.t === 'item') return `<div class="rw-ic rw-item"><img src="${BB.icon(r.id)}" alt=""></div><b>${esc(BB.ITEM[r.id].name)}</b>`;
       if (r.t === 'skin') return `<div class="rw-ic rw-skin"><i class="sw sw-aurora"></i></div><b>Aurora Skin</b>`;
       if (r.t === 'title') return `<div class="rw-ic rw-title ${TITLES[r.id].cls}">${BB.ICON.star}</div><b>${big ? TITLES[r.id].name : 'Title'}</b>`;
       return '';
@@ -434,8 +441,8 @@
             <div class="bp-meta"><span>${BB.ICON.clock}Ends in <b>${left(+se.end - S.now())}</b></span><span>${p.xp} XP total</span></div></div>`));
         // Elite card
         if (!p.elite) {
-          const ec = el('div', 'bp-elite', `<div class="bpe-l"><div class="bpe-k">${BB.ICON.gem}ELITE PASS</div><div class="bpe-t">Double the rewards, every tier</div>
-            <ul><li>Up to <b>2 Legendary</b> + 2 Epic balls</li><li>Exclusive <b>Aurora</b> skin for every ball</li><li><b>Season ${se.n} Elite</b> profile title</li><li>Unlocks every tier you've already reached</li></ul></div>`);
+          const ec = el('div', 'bp-elite', `<div class="bpe-l"><div class="bpe-k">${BB.ICON.gem}ELITE PASS</div><div class="bpe-t">The premium track: more on every tier</div>
+            <ul>${SEASON_BALL[se.n] ? `<li>Exclusive Legendary ball <b>${esc(BB.ITEM[SEASON_BALL[se.n]].name)}</b> at tier 30</li>` : ''}<li><b>5 more</b> Rare+ balls (every 10 tiers)</li><li><b>35% more coins</b> on every other tier</li><li>Unlocks every tier you've already reached</li></ul></div>`);
           const buy = el('button', 'btn primary bpe-buy', 'Unlock ' + coin(ELITE_COST));
           buy.disabled = BB.save.data.coins < ELITE_COST;
           if (buy.disabled) buy.title = 'Not enough coins';
@@ -456,7 +463,7 @@
         const track = el('div', 'bp-track');
         let html = '';
         for (let k = 1; k <= TIERS; k++) {
-          const reached = k <= t, cur = k === t + 1, ms = k % 5 === 0;
+          const reached = k <= t, cur = k === t + 1, ms = k % 10 === 0;
           const cell = (track) => {
             const got = (track === 'free' ? p.cf : p.ce).includes(k);
             const lockedE = track === 'elite' && !p.elite;
@@ -479,7 +486,7 @@
         // tooltips for non-claimable cells: say what's inside and when
         track.querySelectorAll('.bp-cell:not(.can):not(.bonus-note)').forEach((c) => c.onclick = () => {
           const k = +c.dataset.k, tr = c.dataset.tr; if (!k) return;
-          const r = R[k - 1][tr], what = r.t === 'coins' ? r.n + ' coins' : r.t === 'ball' ? 'a random ' + BB.RARITY[r.min].name + ' (or better) ball you don\'t own' : r.t === 'skin' ? 'the Aurora skin, usable on every ball' : TITLES[r.id].name + ' title';
+          const r = R[k - 1][tr], what = r.t === 'coins' ? r.n + ' coins' : r.t === 'ball' ? 'a random ball you don\'t own (90% Rare, 9% Epic, 1% Legendary)' : r.t === 'item' ? BB.ITEM[r.id].name + ', a season-exclusive Legendary ball' : r.t === 'skin' ? 'the Aurora skin, usable on every ball' : TITLES[r.id].name + ' title';
           BB.ui.toast(c.classList.contains('got') ? 'Claimed: ' + what : c.classList.contains('elock') ? 'Elite reward: ' + what : 'Tier ' + k + ': ' + what, 2600);
         });
         // how to earn

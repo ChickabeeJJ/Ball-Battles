@@ -186,7 +186,7 @@
     // ------------------------------------------------------------- item picker / shop
     // Specials tab: only the balls you can't buy with coins (King, Kami, event balls). Every other
     // ball, coin-bought ones included, lives in the Weapons tab.
-    tabOf(it) { return it.kami || it.dailyOnly || it.eventOnly ? 'special' : 'weapon'; },
+    tabOf(it) { return it.kami || it.dailyOnly || it.eventOnly || it.seasonBall ? 'special' : 'weapon'; },
     pickItem(slotIdx, tab) {
       const app = BB.app, save = BB.save.data;
       const s = save.setup.slots[slotIdx];
@@ -247,6 +247,8 @@
             const b = el('button', 'btn green', 'Equip');
             b.onclick = () => { BB.audio.play('click'); s.id = sel; BB.save.write(); UI.editSlot(slotIdx); };
             foot.appendChild(b);
+          } else if (BB.season && BB.season.seasonLocked(it)) {
+            foot.appendChild(el('div', 'daily-only ev-only', '<b>Season ' + it.seasonBall + ' exclusive</b><span>Reach tier 30 on the Elite track of the Season ' + it.seasonBall + ' Pass. It goes on sale once the season ends.</span>'));
           } else if (it.eventOnly) {
             foot.appendChild(el('div', 'daily-only ev-only', '<b>Event exclusive</b><span>' + esc(it.eventOnly) + '</span>'));
           } else if (it.dailyOnly) {
@@ -296,7 +298,7 @@
           const t = el('button', 'tile' + (mine && !owned ? ' locked' : '') + (it.rarity === 'iridescent' ? ' iri' : ''));
           t.dataset.id = it.id;
           t.innerHTML = `<img src="${BB.icon(it.id)}" alt=""><span class="t-n">${esc(it.name)}</span>${BB.meta.starHtml(it.id)}<span class="rar" style="background:${BB.RARITY[it.rarity].color}"></span>`;
-          if (!owned) t.innerHTML += it.eventOnly ? '<span class="price daily ev">EVENT</span>' : it.dailyOnly ? '<span class="price daily">DAY 7</span>' : `<span class="price">${coinHtml(it.price)}</span>`;
+          if (!owned) t.innerHTML += BB.season && BB.season.seasonLocked(it) ? '<span class="price daily ev">S' + it.seasonBall + ' PASS</span>' : it.eventOnly ? '<span class="price daily ev">EVENT</span>' : it.dailyOnly ? '<span class="price daily">DAY 7</span>' : `<span class="price">${coinHtml(it.price)}</span>`;
           else if (app.trials[it.id] && !save.unlocked[it.id]) t.innerHTML += '<span class="badge">TRIAL</span>';
           t.onclick = () => { BB.audio.play('click'); sel = it.id; renderDetail(); };
           grid.appendChild(t);

@@ -9,7 +9,7 @@
     common: { name: 'Common', color: '#9aa3ad', price: 0 },
     rare: { name: 'Rare', color: '#3d8bf2', price: 250 },
     epic: { name: 'Epic', color: '#a259ff', price: 600 },
-    legendary: { name: 'Legendary', color: '#ff8a1f', price: 1200 },
+    legendary: { name: 'Legendary', color: '#ff8a1f', price: 1500 },
   };
 
   const ITEMS = (BB.ITEMS = []);
