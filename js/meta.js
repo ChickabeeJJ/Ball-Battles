@@ -10,24 +10,24 @@
   const STAR_REWARD = [50, 120, 250];
 
   const QUEST_POOL = [
-    { id: 'win3', text: 'Win 3 battles', goal: 3, reward: 80, ev: 'win' },
+    { id: 'win3', text: 'Finish 3 battles', goal: 3, reward: 80, ev: 'done' },
     { id: 'play5', text: 'Play 5 battles', goal: 5, reward: 60, ev: 'play' },
     { id: 'dmg800', text: 'Deal 800 total damage', goal: 800, reward: 70, ev: 'damage' },
     { id: 'big3', text: 'Land 3 hits of 15+ damage', goal: 3, reward: 90, ev: 'bighit' },
     { id: 'maps3', text: 'Battle on 3 different maps', goal: 3, reward: 70, ev: 'map' },
-    { id: 'special2', text: 'Win 2 battles with a special ball', goal: 2, reward: 90, ev: 'specialwin' },
-    { id: 'team2', text: 'Win 2 team or Free For All battles', goal: 2, reward: 80, ev: 'teamwin' },
+    { id: 'special2', text: 'Have a special ball win 2 battles', goal: 2, reward: 90, ev: 'specialwin' },
+    { id: 'team2', text: 'Complete 2 team or Free For All battles', goal: 2, reward: 80, ev: 'teamwin' },
     { id: 'cup1', text: 'Play a Cup match', goal: 1, reward: 100, ev: 'cupwin' },
     { id: 'gaunt3', text: 'Reach stage 3 in the Gauntlet', goal: 3, reward: 110, ev: 'gauntlet', max: true },
     { id: 'gaunt6', text: 'Reach stage 6 in the Gauntlet', goal: 6, reward: 200, ev: 'gauntlet', max: true },
-    { id: 'ko5', text: 'Knock out 5 enemy balls', goal: 5, reward: 80, ev: 'ko' },
-    { id: 'flawless', text: 'Win a 1v1 with 75%+ HP left', goal: 1, reward: 120, ev: 'flawless' },
-    { id: 'clutch', text: 'Win a 1v1 with under 15% HP left', goal: 1, reward: 130, ev: 'clutch' },
-    { id: 'blitz', text: 'Win a battle in under 20 seconds', goal: 1, reward: 100, ev: 'blitz' },
+    { id: 'ko5', text: 'Knock out 5 balls', goal: 5, reward: 80, ev: 'ko' },
+    { id: 'flawless', text: 'Finish a 1v1 where the winner has 75%+ HP left', goal: 1, reward: 120, ev: 'flawless' },
+    { id: 'clutch', text: 'Finish a 1v1 where the winner has under 15% HP left', goal: 1, reward: 130, ev: 'clutch' },
+    { id: 'blitz', text: 'Finish a battle in under 20 seconds', goal: 1, reward: 100, ev: 'blitz' },
     { id: 'epic', text: 'Play a battle that lasts 90+ seconds', goal: 1, reward: 90, ev: 'epic' },
-    { id: 'variety3', text: 'Win with 3 different balls', goal: 3, reward: 110, ev: 'winball', uniq: true },
+    { id: 'variety3', text: 'Have 3 different balls win a battle', goal: 3, reward: 110, ev: 'winball', uniq: true },
     { id: 'parry10', text: 'Clash weapons 10 times', goal: 10, reward: 70, ev: 'parry' },
-    { id: 'ffa1', text: 'Win a Free For All', goal: 1, reward: 100, ev: 'ffawin' },
+    { id: 'ffa1', text: 'Complete a Free For All', goal: 1, reward: 100, ev: 'ffawin' },
     { id: 'level1', text: 'Level up any ball\'s mastery', goal: 1, reward: 90, ev: 'levelup' },
     { id: 'dodge5', text: 'Make Kami dodge 5 attacks', goal: 5, reward: 90, ev: 'kamidodge' },
     { id: 'pvp1', text: 'Play a PvP series', goal: 1, reward: 120, ev: 'pvpplay', pvp: true },
@@ -75,22 +75,27 @@
       M.track('map', sim.map.id);
       const side = (app.event && app.event.mySide) || 0;
       const mine = sim.balls.filter((b) => b.main && b.team === side && !b.owner);
-      if (w === side) {
-        M.track('win', 1);
-        if (mine.some((b) => b.def.cat === 'special')) M.track('specialwin', 1);
-        if (!app.pvp && !app.event && (mode.teams[0].length > 1 || mode.teams.length > 2)) M.track('teamwin', 1);
-        if (!app.pvp && !app.event && mode.teams.length > 2) M.track('ffawin', 1);
+      // Quests are about finishing battles, not beating someone: in sandbox modes and the Cup
+      // whichever ball wins counts (both sides are yours); in Gauntlet / PvP only your own does.
+      const anyW = !app.event || app.event.kind === 'cup';
+      const sandbox = !app.pvp && !app.event;
+      if (w >= 0 || sandbox) M.track('done', 1);
+      if (sandbox && (mode.teams[0].length > 1 || mode.teams.length > 2)) M.track('teamwin', 1);
+      if (sandbox && mode.teams.length > 2) M.track('ffawin', 1);
+      if (w >= 0 && (anyW || w === side)) {
+        if (w === side) M.track('win', 1);
+        const winners = sim.balls.filter((b) => b.main && !b.owner && b.team === w);
+        if (winners.some((b) => b.def.cat === 'special')) M.track('specialwin', 1);
         if (sim.t < 20) M.track('blitz', 1);
-        for (const b of mine) M.track('winball', b.def.id);
-        // 1v1 HP quests (fixed-HP balls like Kami don't count)
-        if (mine.length === 1 && sim.balls.filter((b) => b.main && !b.owner).length === 2 && !mine[0].def.fixedHp && mine[0].alive) {
-          const k = mine[0].hp / mine[0].maxHp;
+        for (const b of winners) M.track('winball', b.def.id);
+        if (winners.length === 1 && sim.balls.filter((b) => b.main && !b.owner).length === 2 && !winners[0].def.fixedHp && winners[0].alive) {
+          const k = winners[0].hp / winners[0].maxHp;
           if (k >= 0.75) M.track('flawless', 1);
           if (k < 0.15) M.track('clutch', 1);
         }
       }
       if (sim.t >= 90) M.track('epic', 1);
-      const kos = sim.balls.filter((b) => b.main && !b.owner && b.team !== side && !b.alive).length;
+      const kos = sim.balls.filter((b) => b.main && !b.owner && !b.alive && (anyW || b.team !== side)).length;
       if (kos) M.track('ko', kos);
       // Mastery XP goes only to the winning side (nobody on a draw). In sandbox battles and the Cup
       // both sides are yours, so whichever team wins earns it; in PvP / Gauntlet the other side is an
