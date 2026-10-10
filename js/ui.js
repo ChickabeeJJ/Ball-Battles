@@ -160,12 +160,12 @@
         }
         while (!imp && acc >= 1 / 120) {
           sim.step(1 / 120); acc -= 1 / 120; t0 += 1 / 120;
-          for (const e of sim.events) if (e.type === 'death' && e.main && e.kami) kfin = { asc: !!e.asc, done: false };
-          // Kami's knockout plays its finisher (crimson full-screen one for Tenshi) before the clip restarts
+          for (const e of sim.events) if (e.type === 'death' && e.main && (e.kami || e.ballKill)) kfin = { asc: !!e.asc, ball: !!e.ballKill && !e.kami, done: false };
+          // Kami's (or BALL's) knockout plays its finisher before the clip restarts
           if (sim.over && kfin && !kfin.done && BB.save.data.settings.finisher !== false) {
             kfin.done = true; sim.events.length = 0;
-            imp = { t: 0, dur: kfin.asc ? 3.0 : 2.8, kamiFin: true, asc: kfin.asc, x: 0, y: 0, seed: (Math.random() * 1e6) | 0, foe: BB.itemColor('dummy') };
-            BB.audio.play('kamiFinisher');
+            if (kfin.ball && BB.ballFinisher) { imp = { t: 0, dur: 2.5, ballFin: true, x: 0, y: 0, seed: (Math.random() * 1e6) | 0, foe: BB.itemColor('dummy') }; BB.audio.play('kamiSlam'); setTimeout(() => BB.audio.play('boom'), 850); }
+            else { imp = { t: 0, dur: kfin.asc ? 3.0 : 2.8, kamiFin: true, asc: kfin.asc, x: 0, y: 0, seed: (Math.random() * 1e6) | 0, foe: BB.itemColor('dummy') }; BB.audio.play('kamiFinisher'); }
             break;
           }
           for (const e of sim.events) if (e.type === 'kami' && !['dodge', 'beamfire', 'gateslam', 'awaken'].includes(e.k)) imp = { t: 0, dur: 0.9, kamiCut: true, forceText: true, k: e.k, asc: !!e.asc, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0 };

@@ -466,7 +466,7 @@
       const s = el('button', 'bp-strip'); s.id = 'bpStrip';
       s.onclick = () => { BB.audio.unlock && BB.audio.unlock(); BB.audio.play('click'); S.openPass(); };
       const row = document.querySelector('.feat-row');
-      if (row) row.after(s);
+      if (row) row.appendChild(s); // a full-width row in the menu grid, spaced like the PvP button
       S.refreshStrip();
       // portrait phones get a compact top-bar button instead (the strip would cost the arena its height)
       const pb = $('btnPass'); if (pb) pb.onclick = s.onclick;

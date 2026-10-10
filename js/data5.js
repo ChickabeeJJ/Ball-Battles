@@ -16,7 +16,7 @@
   add({
     id: 'ball', name: 'BALL', cat: 'special', rarity: 'legendary', color: '#f5f6fa',
     eventOnly: 'Reward for finishing every quest in the Ball VS Ball Release! event. It will never return.',
-    desc: 'Every 6s it summons 1 to 5 random balls from the whole roster to fight beside it, each at half of BALL\'s current health (up to 5 at once). Slams for 2, +0.5 every hit.',
+    desc: 'Every 6s it summons a random ball from the whole roster to fight beside it, at half of BALL\'s current health (up to 5 at once). Slams for 2, +0.5 every hit.',
     base: { damage: 2 }, contact: true,
     init(w) { w.timer = 1.5; w.summons = 0; },
     update(sim, b, w, dt) {
@@ -25,8 +25,8 @@
       w.timer = 6;
       const room = 5 - sim.balls.filter((m) => m.alive && m.owner === b).length;
       if (room <= 0) return;
-      // a random-sized wave (1-5), spread evenly around BALL
-      const n = Math.min(room, 1 + Math.floor(sim.rng() * 5)), P = pool(), a0 = sim.rng() * TAU, lim = sim.W / 2 - b.r;
+      // one random ball per summon
+      const n = 1, P = pool(), a0 = sim.rng() * TAU, lim = sim.W / 2 - b.r;
       for (let i = 0; i < n; i++) {
         const def = P[Math.floor(sim.rng() * P.length)], a = a0 + (i / n) * TAU, d = b.r * 2.4;
         const x = BB.clamp(b.x + Math.cos(a) * d, -lim, lim), y = BB.clamp(b.y + Math.sin(a) * d, -lim, lim);

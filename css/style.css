@@ -1558,3 +1558,5 @@ html.no-season .bp-strip, html.no-season #topbar .pass-btn { display: none !impo
 .pf-teq { padding: 4px 12px; border: 2px solid #111; border-radius: 6px; background: #35d047; color: #fff; font-family: inherit; font-size: 12px; cursor: pointer; box-shadow: 0 2px 0 #111; text-shadow: 0 1px 0 #111; }
 .pf-teq.on { background: #4a4a51; color: #ffd23f; box-shadow: none; cursor: default; }
 .pf-trow .bp-title { white-space: nowrap; flex: 0 0 auto; } .pf-trow em { min-width: 0; }
+.feat-row .bp-strip { grid-column: 1 / -1; margin-top: 0; }
+html.cport .feat-row .bp-strip { margin-top: 0; }
