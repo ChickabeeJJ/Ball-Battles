@@ -201,17 +201,29 @@
       const g = ctx.createRadialGradient(b.x, b.y, r * 0.9, b.x, b.y, r * (1.25 + k * 0.5));
       g.addColorStop(0, 'rgba(255,40,60,' + (0.08 + k * 0.22) * (0.6 + pulse * 0.4) + ')'); g.addColorStop(1, 'rgba(255,40,60,0)');
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, r * (1.25 + k * 0.5), 0, TAU); ctx.fill();
-      // eruption: every so often (more often the angrier it gets) lava spurts out of the top
+      // eruption: every so often (more often the angrier it gets) a little mushroom cloud
+      // puffs up out of the top of the ball. Drawn purely from time, nothing touches the battle.
       const every = 2.6 - k * 1.6, n = Math.floor(t / every);
-      if (b.alive && n !== b._erN) {
-        b._erN = n;
-        if (n > 0) {
-          for (let i = 0; i < 9; i++) {
-            const a = -Math.PI / 2 + (sim.frng() - 0.5) * 1.1, s = 110 + sim.frng() * 120;
-            sim.fx.push({ k: 'p', x: b.x + Math.cos(a) * r * 0.7, y: b.y + Math.sin(a) * r * 0.7, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.6, max: 0.6, c: ['#ff3b30', '#ff9f1a', '#ffd23f'][i % 3], s: 5.5 + sim.frng() * 3 });
-          }
-          sim.fx.push({ k: 'r', x: b.x, y: b.y - r * 0.8, r0: r * 0.3, r1: r * 0.75, c: '#ff6b3d', life: 0.2, max: 0.2 });
+      if (b.alive && n !== b._erN) { b._erN = n; if (n > 0) b._erT = t; }
+      const e = b._erT != null && b.alive ? (t - b._erT) / 0.9 : 1;
+      if (e >= 0 && e < 1) {
+        const ease = 1 - Math.pow(1 - e, 3), fade = e < 0.7 ? 1 : 1 - (e - 0.7) / 0.3;
+        const top = b.y - r * 0.9, H = r * (0.6 + 1.3 * ease), cy = top - H, cw = r * (0.4 + 0.65 * ease);
+        ctx.save(); ctx.globalAlpha = 0.9 * fade;
+        // stem: a short column that narrows toward the cap
+        ctx.beginPath(); ctx.moveTo(b.x - r * 0.28, top + r * 0.1); ctx.quadraticCurveTo(b.x - r * 0.12, top - H * 0.5, b.x - r * 0.16, cy + cw * 0.3);
+        ctx.lineTo(b.x + r * 0.16, cy + cw * 0.3); ctx.quadraticCurveTo(b.x + r * 0.12, top - H * 0.5, b.x + r * 0.28, top + r * 0.1); ctx.closePath();
+        ctx.fillStyle = e < 0.35 ? '#ff9a3c' : '#c9bdb4'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(17,17,17,0.6)'; ctx.stroke();
+        // cap: a puffy dome of overlapping billows, glowing orange underneath, cooling to smoke
+        const puffs = [[-0.95, 0.2, 0.4], [0.95, 0.2, 0.4], [-0.5, -0.15, 0.55], [0.5, -0.15, 0.55], [0, -0.35, 0.62], [0, 0.15, 0.55]];
+        const hot = Math.max(0, 1 - e * 1.6);
+        for (const pass of [0, 1]) for (const [px, py, pr] of puffs) {
+          ctx.beginPath(); ctx.arc(b.x + px * cw, cy + py * cw, pr * cw + (pass ? 0 : 2), 0, TAU);
+          ctx.fillStyle = pass ? `rgb(${Math.round(190 + 65 * hot)},${Math.round(180 - 10 * hot)},${Math.round(172 - 112 * hot)})` : 'rgba(17,17,17,0.6)'; ctx.fill();
         }
+        // a skirt ring at the base of the cap
+        ctx.beginPath(); ctx.ellipse(b.x, cy + cw * 0.45, cw * 1.05, cw * 0.22, 0, 0, TAU); ctx.fillStyle = 'rgba(255,140,60,' + 0.5 * hot + ')'; ctx.fill();
+        ctx.restore();
       }
     }
     if (id === 'duplicator') {
