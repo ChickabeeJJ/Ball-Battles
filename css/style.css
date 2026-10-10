@@ -1143,7 +1143,6 @@ html.cport .stat-row:not(.team) .st { white-space: normal; line-height: 1.15; }
 .d-prev { position: absolute; top: 8px; right: 8px; display: flex; align-items: center; gap: 5px; padding: 6px 10px; border: 3px solid #111; border-radius: 8px; background: #3d8bf2; color: #fff; font-family: inherit; font-size: 14px; box-shadow: 0 3px 0 #111; cursor: pointer; }
 .d-prev svg { width: 14px; height: 14px; }
 .d-prev:active { transform: translateY(2px); box-shadow: 0 1px 0 #111; }
-.detail .d-n { padding-right: 96px; }
 .pv-wrap { position: fixed; inset: 0; z-index: 700; background: rgba(8,8,12,.72); display: flex; align-items: center; justify-content: center; padding: 16px; animation: pvIn .18s ease-out; }
 @keyframes pvIn { from { opacity: 0; } }
 .pv-box { background: #2a2a31; border: 3px solid #111; border-radius: 12px; box-shadow: 0 6px 0 #111; padding: 10px; display: flex; flex-direction: column; gap: 8px; max-width: 100%; }
@@ -1258,10 +1257,9 @@ html.cport .stat-row:not(.team) .st { white-space: normal; line-height: 1.15; }
 .d-prev2 { top: 52px; background: linear-gradient(135deg, #ff4d6d, #8e1030); }
 .pv-tag { font-size: 13px; padding: 1px 8px; border-radius: 999px; background: #ff4d6d; border: 2px solid #111; vertical-align: middle; }
 .d-acts { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; }
-.detail .d-n, .detail .d-r { padding-right: 120px; }
+.detail .d-n, .detail .d-r { padding-right: 120px; overflow-wrap: anywhere; }
 .detail:has(.d-prev2) .d-n, .detail:has(.d-prev2) .d-r { padding-right: 215px; }
 .d-acts .d-prev { position: static; }
-.detail .d-n { padding-right: 0; }
 .pvx-ban { margin-top: 10px; padding: 8px 12px; border: 3px solid #111; border-radius: 10px; background: #5a1a1f; color: #ffd0d3; font-size: 12px; } .pvx-ban.warn { background: #4a3a12; color: #ffe9a8; } .pvx-ban b { color: #fff; }
 
 /* honour: a small tag in the hero's top-left corner */
