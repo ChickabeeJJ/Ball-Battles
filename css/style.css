@@ -427,8 +427,7 @@ body.dark { background: radial-gradient(ellipse at 50% 0%, #2a2b33, #17181c 70%)
 .feat { position: relative; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 46px; background: #3c3c42; color: #fff; border: 3px solid #111; border-radius: 4px; box-shadow: 0 3px 0 #111; font-family: var(--display); font-size: 18px; letter-spacing: .03em; }
 .feat:active { transform: translateY(2px); box-shadow: 0 1px 0 #111; }
 .feat-ic { font-size: 18px; }
-#btnCup { background: linear-gradient(135deg, #ffb703, #e07a00); } #btnGauntlet { background: linear-gradient(135deg, #ff3b3b, #b5122e); } #btnQuests { background: linear-gradient(135deg, #2f8cff, #1650d6); }
-#btnCup, #btnGauntlet, #btnQuests { text-shadow: 0 2px 0 rgba(0,0,0,.45); }
+#btnCup { background: #f0a000; } #btnGauntlet { background: #e02b3a; } #btnQuests { background: #2878f0; }
 .dot-badge { display: none; position: absolute; top: -6px; right: -6px; width: 14px; height: 14px; border-radius: 50%; background: #ff3b3b; border: 2.5px solid #111; }
 .ready .dot-badge { display: block; animation: bob 1.2s ease-in-out infinite; }
 @keyframes bob { 50% { transform: translateY(-3px); } }
@@ -566,7 +565,9 @@ body.dark { background: radial-gradient(ellipse at 50% 0%, #2a2b33, #17181c 70%)
 .day-r { font-family: var(--num); font-size: 18px; }
 
 /* PvP arena */
-#btnPvp, .feat-pvp { background: linear-gradient(135deg, #7b2ff7, #c2185b) !important; }
+#btnPvp, .feat-pvp { background: linear-gradient(120deg, #7b2ff7, #c2185b, #ff4d8d, #7b2ff7) 0 0 / 300% 100% !important; animation: pvpFlow 8s ease-in-out infinite alternate; }
+@keyframes pvpFlow { to { background-position: 100% 0; } }
+@media (prefers-reduced-motion: reduce) { #btnPvp, .feat-pvp { animation: none; } }
 .pvp-hero { text-align: center; padding: 12px; background: linear-gradient(135deg, #2a1640, #5b2a6e); border: 3px solid #111; border-radius: 6px; }
 .pvp-rank { font-family: var(--display); font-size: 22px; color: #ffd23f; letter-spacing: .08em; text-transform: uppercase; }
 .pvp-rating { font-family: var(--num); font-size: 44px; color: #fff; text-shadow: 3px 3px 0 #111; }
