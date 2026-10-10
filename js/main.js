@@ -104,6 +104,7 @@
       const warm = () => { const t0 = performance.now(); while (ids.length && performance.now() - t0 < 8) BB.icon(ids.shift()); if (ids.length) setTimeout(warm, 30); };
       setTimeout(warm, 200);
       BB.meta.refreshBadges();
+      if (BB.season) BB.season.boot(); // events + season pass
       setInterval(() => BB.meta.playTick(), 1000); // daily playtime rewards
       $('btnProfile').classList.toggle('hidden', !App.pvpAvailable());
       document.documentElement.classList.toggle('touch', matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window);
@@ -117,7 +118,6 @@
         g.onclick = () => { BB.audio.unlock(); BB.audio.play('click'); BB.meta.openPvp(); };
         $('btnCup').parentNode.prepend(g);
       }
-      if (BB.season) BB.season.boot(); // events + season pass (after the PvP button so the layout counts both)
       // A friend's challenge link takes priority; otherwise first-time players get the tutorial.
       BB.meta.checkAbandon();
       setInterval(() => App.bgTick(), 250);
@@ -337,7 +337,7 @@
       for (const b of mains) {
         const lines = sim.stats(b);
         // each stat is unbreakable, so a long value never splits from its label on narrow screens
-        const txt = '<span class="stx">' + [(one ? '' : b.def.name + ': ') + (lines[0] || ''), ...lines.slice(1)].map((l) => '<b>' + l + '</b>').join(' · ') + '</span>';
+        const txt = '<span class="stx">' + [(one ? '' : b.def.name + ': ') + (lines[0] || ''), ...lines.slice(1)].map((l, i) => '<b>' + (i ? '<i class="stx-dot">·</i>' : '') + l + '</b>').join(' ') + '</span>';
         const pct = Math.max(0, Math.min(100, (b.hp / b.maxHp) * 100)).toFixed(1);
         const c = one ? BB.itemColor(b.def.id) : BB.TEAMS[b.team].fill;
         const grace = b.def.kami ? `<span class="grbar${b.w.grace < BB.KAMI.GRACE.cost ? ' low' : ''}"><i style="width:${Math.round(b.w.grace)}%"></i></span>` : '';

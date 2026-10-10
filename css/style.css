@@ -1498,3 +1498,19 @@ html.cport .bp-strip { margin-top: 6px; padding-top: 4px; padding-bottom: 4px; }
 html.cport .bp-strip { padding: 3px 10px 3px 6px; gap: 8px; }
 html.cport .bps-hex { width: 24px; height: 27px; } html.cport .bps-hex b { font-size: 11px; }
 html.cport .bps-txt b { font-size: 13px; } html.cport .bps-txt em { font-size: 10px; }
+
+/* Season Pass in the top bar (portrait phones only; elsewhere it's the strip under the menu buttons) */
+.pass-btn { display: none; position: relative; margin-right: 8px; background: linear-gradient(135deg, #1b2347, #2c1b4f); }
+.pass-btn.elite { background: linear-gradient(135deg, #5a3d0c, #2c1b4f); }
+.pb-hex { position: relative; width: 26px; height: 29px; display: grid; place-items: center; background: conic-gradient(#ffd23f var(--p, 0%), #4a4f6a 0); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+.pb-hex::before { content: ''; position: absolute; inset: 3px; background: #1b2347; clip-path: inherit; }
+.pb-hex b { position: relative; font-family: var(--num); font-size: 12px; color: #ffd23f; }
+@media (orientation: portrait) and (max-width: 760px) {
+  #topbar .pass-btn { display: grid; place-items: center; margin-left: auto; }
+  #topbar .pass-btn ~ .gift-btn { margin-left: 0 !important; margin-right: 8px !important; }
+  .bp-strip { display: none !important; }
+}
+.stx-dot { font-style: normal; margin: 0 .25em 0 0; }
+/* phones: one stat per line, no dangling separators */
+html.cport .stx-dot { display: none; }
+html.cport .stat-row .st .stx > b { display: block; }

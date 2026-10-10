@@ -418,14 +418,15 @@
       const row = document.querySelector('.feat-row');
       if (row) row.after(s);
       S.refreshStrip();
-      // the arena is sized from the menu panel's real height: re-measure now the strip is in
-      if (BB.app.layout) { BB.app.layout(); requestAnimationFrame(() => BB.app.layout()); }
+      // portrait phones get a compact top-bar button instead (the strip would cost the arena its height)
+      const pb = $('btnPass'); if (pb) pb.onclick = s.onclick;
       setInterval(S.refreshStrip, 60000);
     },
     refreshStrip() {
       const s = $('bpStrip'); if (!s || !BB.save.data) return;
       const se = S.season(), p = S.pass(), t = S.tier(p.xp), inT = t >= TIERS ? 100 : Math.round(((p.xp - t * PER_TIER) / PER_TIER) * 100);
       const ready = S.claimable(p).length + S.bonusAvail(p) > 0;
+      const pb = $('btnPass'); if (pb) { pb.classList.toggle('ready', ready); pb.classList.toggle('elite', p.elite); pb.querySelector('b').textContent = t; pb.style.setProperty('--p', inT + '%'); }
       s.classList.toggle('ready', ready); s.classList.toggle('elite', p.elite);
       s.innerHTML = `<span class="bps-hex"><b>${t}</b></span><span class="bps-txt"><b>Season ${se.n} Pass</b><em>${t >= TIERS ? 'Max tier' : 'Tier ' + t + ' · ' + inT + '%'}</em></span><span class="bps-bar"><i style="width:${t >= TIERS ? 100 : inT}%"></i></span><span class="bps-time">${BB.ICON.clock}${left(+se.end - S.now())}</span>${ready ? '<span class="dot-badge"></span>' : ''}`;
     },
