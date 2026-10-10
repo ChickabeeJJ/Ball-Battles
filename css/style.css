@@ -1532,6 +1532,6 @@ html.no-season .bp-strip, html.no-season #topbar .pass-btn { display: none !impo
 /* top bar: tight, even spacing between the round buttons */
 #topbar { gap: 5px; }
 #topbar .icon-btn { margin-right: 0 !important; }
-/* Season Pass "look here" dot: top-left, yellow */
-.bp-hot { display: none; position: absolute; top: -6px; left: -6px; width: 14px; height: 14px; border-radius: 50%; background: #ffd23f; border: 2.5px solid #111; box-shadow: 0 0 8px rgba(255,210,63,.7); z-index: 2; pointer-events: none; }
+/* Season Pass "look here" dot: top-right, yellow */
+.bp-hot { display: none; position: absolute; top: -6px; right: -6px; width: 14px; height: 14px; border-radius: 50%; background: #ffd23f; border: 2.5px solid #111; box-shadow: 0 0 8px rgba(255,210,63,.7); z-index: 2; pointer-events: none; }
 .hot > .bp-hot { display: block; animation: bob 1.2s ease-in-out infinite; }
