@@ -1548,3 +1548,13 @@ html.no-season .bp-strip, html.no-season #topbar .pass-btn { display: none !impo
 .pf-tpick button.on { border-color: #ffd23f; }
 .pf-tpick button .bp-title { margin: 0; }
 .pf-tpick button > svg { width: 14px; height: 14px; color: #ffd23f; }
+
+/* profile: titles section */
+.pf-trow { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; margin-top: 6px; background: var(--g3); border: 2px solid #111; border-radius: 6px; }
+.pf-trow .bp-title { margin: 0; }
+.pf-trow.locked .bp-title { filter: grayscale(1) brightness(.7); }
+.pf-trow em { display: inline-flex; align-items: center; gap: 4px; font-style: normal; font-size: 11px; color: #9aa0a6; text-align: right; }
+.pf-trow em svg { width: 12px; height: 12px; flex: 0 0 auto; }
+.pf-teq { padding: 4px 12px; border: 2px solid #111; border-radius: 6px; background: #35d047; color: #fff; font-family: inherit; font-size: 12px; cursor: pointer; box-shadow: 0 2px 0 #111; text-shadow: 0 1px 0 #111; }
+.pf-teq.on { background: #4a4a51; color: #ffd23f; box-shadow: none; cursor: default; }
+.pf-trow .bp-title { white-space: nowrap; flex: 0 0 auto; } .pf-trow em { min-width: 0; }

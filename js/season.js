@@ -383,7 +383,26 @@
       const t = S.titleSel();
       return `<button class="pf-tsel" aria-label="Choose your title">${t ? `<span class="bp-title ${TITLES[t].cls}">${BB.ICON.star}${TITLES[t].name}</span>` : '<span class="bp-title none">No title</span>'}<i>&#9662;</i></button>`;
     },
+    // Profile "Titles" section: every title, Equip on the ones you own, how to earn the rest
+    TITLE_HOW: { s1v: 'Season 1 Pass · Free tier 50', s1e: 'Season 1 Pass · Elite tier 40' },
+    titlesSec() {
+      const own = S.ownedTitles(), cur = S.titleSel();
+      const row = (id) => {
+        const has = own.includes(id), on = cur === id;
+        return `<div class="pf-trow${has ? '' : ' locked'}"><span class="bp-title ${TITLES[id].cls}">${BB.ICON.star}${TITLES[id].name}</span>
+          ${has ? `<button class="pf-teq${on ? ' on' : ''}" data-t="${id}">${on ? 'Equipped' : 'Equip'}</button>` : `<em>${BB.ICON.lock}${S.TITLE_HOW[id] || 'Locked'}</em>`}</div>`;
+      };
+      return `<div class="pf-sec pf-titles"><div class="pf-h">Titles</div>${Object.keys(TITLES).map(row).join('')}
+        ${own.length ? `<div class="pf-trow"><span class="bp-title none">No title</span><button class="pf-teq${cur ? '' : ' on'}" data-t="none">${cur ? 'Equip' : 'Equipped'}</button></div>` : ''}</div>`;
+    },
+    equipTitle(root, id) {
+      BB.meta.data().titleSel = id; BB.save.write(); BB.audio.play('click');
+      const head = root.querySelector('.pf-tsel'); if (head) head.replaceWith(el('div', null, S.titleHtml()).firstChild);
+      const sec = root.querySelector('.pf-titles'); if (sec) sec.replaceWith(el('div', null, S.titlesSec()).firstChild);
+      S.bindTitle(root);
+    },
     bindTitle(root) {
+      root.querySelectorAll('.pf-teq').forEach((b) => b.onclick = () => { if (!b.classList.contains('on')) S.equipTitle(root, b.dataset.t); });
       const btn = root.querySelector('.pf-tsel'); if (!btn) return;
       btn.onclick = (ev) => {
         ev.stopPropagation(); BB.audio.play('click');
@@ -396,9 +415,8 @@
         const close = (e) => { if (!pick.contains(e.target)) { pick.remove(); document.removeEventListener('pointerdown', close, true); } };
         setTimeout(() => document.addEventListener('pointerdown', close, true), 0);
         pick.querySelectorAll('button').forEach((b) => b.onclick = () => {
-          BB.meta.data().titleSel = b.dataset.t; BB.save.write(); BB.audio.play('click');
           pick.remove(); document.removeEventListener('pointerdown', close, true);
-          const nb = el('div', null, S.titleHtml()).firstChild; btn.replaceWith(nb); S.bindTitle(root);
+          S.equipTitle(root, b.dataset.t);
         });
       };
     },

@@ -403,7 +403,7 @@
         const tut = el('button', 'btn', 'Show Tutorial');
         tut.onclick = () => { BB.audio.play('click'); UI.onClose = null; UI.close(); app.onSettingsClosed(); if (app.state === 'menu') UI.tutorial(); else UI.toast('Finish the battle to see the tutorial'); };
         body.appendChild(tut);
-        const credits = el('div', 'f-s', 'Fonts: Anton, Pixelify Sans, Lilita One (SIL Open Font License). Battles won: ' + BB.save.data.stats.wins + ' / ' + BB.save.data.stats.battles);
+        const credits = el('div', 'f-s', 'Battles won: ' + BB.save.data.stats.wins + ' / ' + BB.save.data.stats.battles);
         credits.style.textAlign = 'center';
         body.appendChild(credits);
       }, { onClose: () => app.onSettingsClosed() });
