@@ -104,6 +104,7 @@
       const warm = () => { const t0 = performance.now(); while (ids.length && performance.now() - t0 < 8) BB.icon(ids.shift()); if (ids.length) setTimeout(warm, 30); };
       setTimeout(warm, 200);
       BB.meta.refreshBadges();
+      setInterval(() => BB.meta.playTick(), 1000); // daily playtime rewards
       $('btnProfile').classList.toggle('hidden', !App.pvpAvailable());
       document.documentElement.classList.toggle('touch', matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window);
       document.querySelectorAll('[data-ico]').forEach((e) => { e.innerHTML = BB.ICON[e.dataset.ico]; });

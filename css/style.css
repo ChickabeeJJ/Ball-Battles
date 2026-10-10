@@ -1276,3 +1276,12 @@ html.cport .stat-row:not(.team) .st { white-space: normal; line-height: 1.15; }
 @media (max-width: 700px) { .d-acts { flex-direction: column; align-items: stretch; gap: 5px; } .d-acts .d-prev { justify-content: center; padding: 4px 8px; font-size: 12px; } .d-acts { margin-left: 8px; } }
 .shot-go { pointer-events: auto; margin-left: 2px; padding: 6px 14px; border: 3px solid #111; border-radius: 999px; background: #35d047; color: #fff; font-family: 'Lilita One', sans-serif; font-size: 17px; text-shadow: 0 2px 0 #111; box-shadow: 0 3px 0 #111; cursor: pointer; }
 .shot-go:active { transform: translateY(2px); box-shadow: 0 1px 0 #111; }
+
+/* rewards: tabs, playtime track, live playtime line */
+.rw-tabs { margin-bottom: 8px; } .rw-tabs .tab { position: relative; font-size: 15px; }
+.rw-dot { position: absolute; top: -5px; right: -5px; width: 12px; height: 12px; border-radius: 50%; background: #ff4d4f; border: 2px solid #111; }
+.pt-track .day { position: relative; }
+.pt-bar { position: absolute; left: 6px; right: 6px; bottom: 4px; height: 4px; border-radius: 99px; background: rgba(0,0,0,.35); overflow: hidden; }
+.pt-bar i { display: block; height: 100%; background: #ffd23f; }
+.rw-foot { flex-direction: column; align-items: stretch; gap: 6px; }
+.rw-time { text-align: center; font-size: 12px; color: #9aa0a6; } .rw-time b { color: #fff; }

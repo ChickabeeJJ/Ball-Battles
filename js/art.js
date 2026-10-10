@@ -580,12 +580,15 @@
       // every cloud drifts, in three parallax layers (far = slowest), wrapping around the arena
       const drift = (x0, speed, w) => { const span = S + w * 2; return ((((x0 + t * speed) % span) + span) % span) - S / 2 - w; };
       ctx.save();
-      ctx.globalAlpha = 0.55;
-      for (let i = 0; i < 7; i++) celCloud(ctx, drift(i * S * 0.18, 3, S * 0.22), S * 0.16 + (i % 2) * 14, S * 0.22, '#a9c3e6', '#e3eefb');
+      // far: a soft, low cloud bank sitting just above the bounce mat (the horizon)
+      ctx.globalAlpha = 0.5;
+      for (let i = 0; i < 6; i++) celCloud(ctx, drift(i * S * 0.21, 3, S * 0.2), S * 0.31 + (i % 2) * 12, S * 0.2, '#a9c3e6', '#e3eefb');
+      // mid: staggered across the sky (heights and starts spread so they never stack into a band)
       ctx.globalAlpha = 1;
-      for (const [x, y, w, v] of [[S * 0.2, -S * 0.2, S * 0.26, 7], [S * 0.62, -S * 0.02, S * 0.2, 9], [S * 0.12, S * 0.12, S * 0.16, 8]]) celCloud(ctx, drift(x, v, w), y, w, '#9fb6dd', '#f4f8ff');
-      ctx.globalAlpha = 0.9;
-      for (let i = 0; i < 2; i++) { const w = S * (0.14 + i * 0.05); celCloud(ctx, drift(i * S * 0.6, 12 + i * 5, w), -S * 0.3 + i * S * 0.22, w, '#a7bde2', '#ffffff'); }
+      for (const [x, y, w, v] of [[S * 0.05, -S * 0.36, S * 0.17, 6], [S * 0.5, -S * 0.17, S * 0.22, 8], [S * 0.85, S * 0.02, S * 0.17, 7], [S * 0.3, S * 0.17, S * 0.14, 9]]) celCloud(ctx, drift(x, v, w), y, w, '#9fb6dd', '#f4f8ff');
+      // near: two small quick ones
+      ctx.globalAlpha = 0.85;
+      for (let i = 0; i < 2; i++) { const w = S * (0.11 + i * 0.03); celCloud(ctx, drift(S * (0.2 + i * 0.55), 13 + i * 4, w), -S * 0.26 + i * S * 0.33, w, '#a7bde2', '#ffffff'); }
       ctx.restore();
     }
   };

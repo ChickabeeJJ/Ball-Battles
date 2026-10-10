@@ -250,12 +250,32 @@
       const m = M.data();
       const claimable = m.quests.some((q) => !q.claimed && q.p >= QUEST_POOL.find((x) => x.id === q.id).goal);
       const qb = $('btnQuests'); if (qb) qb.classList.toggle('ready', claimable);
-      const gb = $('btnGift'); if (gb) gb.classList.toggle('ready', m.gift.day !== today());
+      const gb = $('btnGift'); if (gb) gb.classList.toggle('ready', m.gift.day !== today() || M.playReady().length > 0);
     },
 
-    // ------------------------------------------------------------- daily gift
-    // Daily rewards screen: a 7-day track; missing a day resets the streak.
-    claimGift() {
+    // ------------------------------------------------------------- playtime rewards
+    // Time spent in the game today (tab visible) unlocks coin milestones, up to 30 minutes.
+    PLAYTIME: [[1, 50], [3, 75], [5, 100], [10, 150], [15, 250], [20, 400], [30, 3000]],
+    playData() {
+      const m = M.data();
+      if (!m.play || m.play.day !== today()) m.play = { day: today(), secs: 0, got: [] };
+      return m.play;
+    },
+    playReady() { const p = M.playData(); return M.PLAYTIME.map((x, i) => i).filter((i) => !p.got.includes(i) && p.secs >= M.PLAYTIME[i][0] * 60); },
+    playTick() {
+      if (!BB.save.data || document.hidden) return;
+      const p = M.playData(), before = M.playReady().length;
+      p.secs = Math.min(86400, p.secs + 1);
+      if (p.secs % 15 === 0) BB.save.write();
+      if (M.playReady().length !== before) M.refreshBadges();
+    },
+    fmtTime(s) { const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = s % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0'); },
+
+    // ------------------------------------------------------------- rewards (daily + playtime)
+    // Rewards screen, two tabs. Daily: a 7-day track; missing a day resets the streak.
+    claimGift(tab) {
+      tab = tab || (M.data().gift.day === today() && M.playReady().length ? 'play' : 'daily');
+      if (tab === 'play') return M.openPlaytime();
       const m = M.data();
       const REWARDS = [50, 75, 100, 150, 200, 250, 500];
       const y = new Date(); y.setDate(y.getDate() - 1);
@@ -265,7 +285,8 @@
       const streak = keep ? m.gift.streak : 0;          // days already claimed in this run
       const dayIdx = claimedToday ? (streak - 1) % 7 : streak % 7; // today's slot on the track
       BB.ui.open((sheet) => {
-        const body = BB.ui.head(sheet, 'Daily Rewards');
+        const body = BB.ui.head(sheet, 'Rewards');
+        M.rewardTabs(body, 'daily');
         const hasKing = BB.app.isOwned('king') && !BB.app.trials.king;
         body.appendChild(Object.assign(document.createElement('div'), { className: 'f-s', textContent: claimedToday ? 'Come back tomorrow for the next reward!' : hasKing ? 'Log in every day. Day 7 is a big one!' : 'Log in 7 days in a row to unlock the legendary King!' }));
         const btn = document.createElement('button'); // declared first: the highlighted day also claims
@@ -293,14 +314,80 @@
         btn.onclick = () => {
           const amt = REWARDS[dayIdx];
           m.gift.streak = streak + 1; m.gift.day = today();
-          if (kingDay) { BB.save.data.unlocked.king = true; BB.save.write(); BB.audio.play('unlock'); BB.sdk.happytime(); M.claimGift(); BB.ui.toast('The King is yours!'); BB.app.refreshMenu(); return; }
+          if (kingDay) { BB.save.data.unlocked.king = true; BB.save.write(); BB.audio.play('unlock'); BB.sdk.happytime(); M.claimGift('daily'); BB.ui.toast('The King is yours!'); BB.app.refreshMenu(); return; }
           BB.save.data.coins += amt; BB.save.write();
           BB.app.refreshCoins(); BB.audio.play('coin');
           if (dayIdx === 6) BB.sdk.happytime();
-          M.claimGift();
+          M.claimGift('daily');
           BB.ui.toast('+' + amt + ' coins!');
         };
-        foot.appendChild(btn); sheet.appendChild(foot);
+        foot.appendChild(btn); M.playFoot(foot); sheet.appendChild(foot);
+      }, { width: '520px', onClose: () => M.refreshBadges() });
+    },
+    rewardTabs(body, on) {
+      const tabs = document.createElement('div'); tabs.className = 'tabs rw-tabs';
+      for (const [k, n] of [['daily', 'Daily Rewards'], ['play', 'Playtime Rewards']]) {
+        const t = document.createElement('button'); t.className = 'tab' + (k === on ? ' on' : '');
+        const dot = k === 'play' ? M.playReady().length : M.data().gift.day !== today();
+        t.innerHTML = n + (dot && k !== on ? '<i class="rw-dot"></i>' : '');
+        t.onclick = () => { if (k === on) return; BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); M.claimGift(k); };
+        tabs.appendChild(t);
+      }
+      body.appendChild(tabs);
+    },
+    // small live "Playtime: m:ss" line at the bottom of the rewards screen
+    playFoot(foot) {
+      const pt = document.createElement('div'); pt.className = 'rw-time';
+      const upd = () => { pt.innerHTML = 'Playtime today: <b>' + M.fmtTime(M.playData().secs) + '</b>'; };
+      upd();
+      const iv = setInterval(() => (pt.isConnected ? upd() : clearInterval(iv)), 1000);
+      foot.classList.add('rw-foot'); foot.appendChild(pt);
+    },
+    openPlaytime() {
+      BB.ui.open((sheet) => {
+        const body = BB.ui.head(sheet, 'Rewards');
+        M.rewardTabs(body, 'play');
+        body.appendChild(Object.assign(document.createElement('div'), { className: 'f-s', textContent: 'Play today to unlock coins. The 30 minute reward is huge! Resets every day.' }));
+        const list = document.createElement('div'); list.className = 'daily pt-track'; body.appendChild(list);
+        const foot = document.createElement('div'); foot.className = 'sh-foot';
+        const btn = document.createElement('button'); btn.className = 'btn';
+        const claim = () => {
+          const ready = M.playReady(); if (!ready.length) return;
+          const p = M.playData(); let amt = 0;
+          for (const i of ready) { p.got.push(i); amt += M.PLAYTIME[i][1]; }
+          BB.save.data.coins += amt; BB.save.write(); BB.app.refreshCoins();
+          BB.audio.play('coin'); if (ready.includes(M.PLAYTIME.length - 1)) BB.sdk.happytime();
+          BB.ui.toast('+' + amt + ' coins!'); render(); M.refreshBadges();
+        };
+        btn.onclick = claim;
+        let sig = '';
+        const render = () => {
+          const p = M.playData(), ready = M.playReady(), s = JSON.stringify([ready, p.got, Math.floor(p.secs / 10)]);
+          if (s === sig) return; sig = s;
+          list.innerHTML = '';
+          M.PLAYTIME.forEach(([min, c], i) => {
+            const got = p.got.includes(i), now = ready.includes(i), big = i === M.PLAYTIME.length - 1;
+            const d = document.createElement('div');
+            d.className = 'day' + (got ? ' done' : '') + (now ? ' now' : '') + (big ? ' big' : '');
+            const pct = Math.min(100, (p.secs / (min * 60)) * 100);
+            d.innerHTML = `<div class="day-n">${min} min</div><div class="day-ic">${got ? BB.ICON.star : '<span class="coin-ic"></span>'}</div><div class="day-r">${c}</div>${!got && !now ? `<div class="pt-bar"><i style="width:${pct}%"></i></div>` : ''}`;
+            if (now) { d.style.cursor = 'pointer'; d.onclick = claim; }
+            list.appendChild(d);
+          });
+          const amt = ready.reduce((n, i) => n + M.PLAYTIME[i][1], 0);
+          btn.className = 'btn' + (amt ? ' primary' : '');
+          btn.disabled = !amt;
+          const next = M.PLAYTIME.find(([min], i) => !p.got.includes(i) && p.secs < min * 60);
+          btn.innerHTML = amt ? 'Claim ' + coin(amt) : next ? 'Next reward in ' + M.fmtTime(next[0] * 60 - p.secs) : 'All claimed today!';
+        };
+        render();
+        const iv = setInterval(() => {
+          if (!list.isConnected) { clearInterval(iv); return; }
+          render();
+          const p = M.playData(), next = M.PLAYTIME.find(([min], i) => !p.got.includes(i) && p.secs < min * 60);
+          if (btn.disabled && next) btn.innerHTML = 'Next reward in ' + M.fmtTime(next[0] * 60 - p.secs);
+        }, 1000);
+        foot.appendChild(btn); M.playFoot(foot); sheet.appendChild(foot);
       }, { width: '520px', onClose: () => M.refreshBadges() });
     },
 
