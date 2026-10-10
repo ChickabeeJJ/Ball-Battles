@@ -197,7 +197,10 @@
       // Cancel velocity heading into the hit, then add the impulse: a real bounce-off.
       const vn = target.vx * dx + target.vy * dy;
       if (vn < 0) { target.vx -= vn * dx; target.vy -= vn * dy; }
-      target.vx += dx * power * m * m; target.vy += dy * power * m * m;
+      // knockback is snappy and readable: a stronger shove plus a squash and a puff of dust
+      const P = power * 1.45;
+      target.vx += dx * P * m * m; target.vy += dy * P * m * m;
+      if (power >= 80) { this.squash(target, Math.atan2(dy, dx), 0.75); this.burst(target.x - dx * target.r, target.y - dy * target.r, 4, ['#ffffff', '#e8dcc6'], 180, 3); }
     }
 
     onHit(attacker, target, dealt) {

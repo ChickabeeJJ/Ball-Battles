@@ -307,9 +307,13 @@
       // Fit against the space actually available (arena width + a little), not the header's own box.
       const ui = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ui')) || 1;
       const avail = Math.min(window.innerWidth - 16, (App.renderer ? App.renderer.px : 400) + 40) / ui;
+      // measure each side's real content (a right-aligned side overflows to the left, which scrollWidth ignores)
+      const w = (el) => { let t = 0; for (const c of el.children) t += c.tagName === 'IMG' ? c.offsetWidth : c.scrollWidth; return t + 8 * Math.max(0, el.children.length - 1); };
       const need = () => { const l = m.querySelector('.mu-side.l'), r = m.querySelector('.mu-side.r'), v = m.querySelector('.vs');
-        return l && r && v ? 2 * Math.max(l.scrollWidth, r.scrollWidth) + v.offsetWidth + 24 : m.scrollWidth; };
-      while (need() > avail && fs > 11) { fs -= 1; m.style.fontSize = fs + 'px'; }
+        return l && r && v ? 2 * Math.max(w(l), w(r)) + v.offsetWidth + 28 : m.scrollWidth; };
+      const sizeImgs = () => m.querySelectorAll('img').forEach((i) => { i.style.width = i.style.height = Math.round(fs * 1.1) + 'px'; });
+      sizeImgs();
+      while (need() > avail && fs > 11) { fs -= 1; m.style.fontSize = fs + 'px'; sizeImgs(); }
       m.querySelectorAll('img').forEach((i) => { i.style.width = i.style.height = Math.round(fs * 1.1) + 'px'; });
     },
 

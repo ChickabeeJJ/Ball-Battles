@@ -44,7 +44,7 @@
       if (!e) return;
       w.timer = 3;
       const a = Math.atan2(e.y - b.y, e.x - b.x);
-      sim.spawnProj({ owner: b, kind: 'harpoon', x: b.x + Math.cos(a) * b.r, y: b.y + Math.sin(a) * b.r, vx: Math.cos(a) * 620, vy: Math.sin(a) * 620, angle: a, r: 6 * b.scale, dmg: w.damage * 1.2, life: 1.4, knock: 0,
+      sim.spawnProj({ owner: b, kind: 'harpoon', x: b.x + Math.cos(a) * b.r, y: b.y + Math.sin(a) * b.r, vx: Math.cos(a) * 620, vy: Math.sin(a) * 620, angle: a, r: 6 * b.scale, dmg: w.damage * 1.2, life: 1.4, knock: 0, homing: 1.6, // a little homing
         onHit(s, p, t) {
           if (!t.alive || !p.owner.alive) return;
           const dx = p.owner.x - t.x, dy = p.owner.y - t.y, d = Math.hypot(dx, dy) || 1;
@@ -210,12 +210,12 @@
         if (e) {
           w.timer = 3.5;
           const lim = sim.W / 2 - 20;
-          w.marks.push({ x: BB.clamp(e.x + e.vx * 0.7, -lim, lim), y: BB.clamp(e.y + e.vy * 0.7, -lim, lim), t: 0.9, max: 0.9, R: 72 * b.scale });
+          w.marks.push({ x: BB.clamp(e.x + e.vx * 0.7, -lim, lim), y: BB.clamp(e.y + e.vy * 0.7, -lim, lim), t: 0.9, max: 0.9, R: 115 * b.scale });
         }
       }
       for (const m of w.marks) {
         m.t -= dt;
-        if (m.t <= 0 && !m.done) { m.done = true; sim.explode(b, m.x, m.y, m.R, w.meteor); sim.burst(m.x, m.y, 14, ['#6d4c41', '#e1b12c', '#ffffff'], 320, 5); }
+        if (m.t <= 0 && !m.done) { m.done = true; sim.explode(b, m.x, m.y, m.R, w.meteor); sim.burst(m.x, m.y, 22, ['#6d4c41', '#e1b12c', '#ffffff'], 420, 6); sim.ring(m.x, m.y, m.R * 0.3, m.R * 1.1, '#ffb347', 0.35); }
       }
       if (w.marks.length && w.marks[0].done) w.marks = w.marks.filter((m) => !m.done);
     },
@@ -523,7 +523,7 @@
       ctx.beginPath(); ctx.arc(m.x, m.y, m.R * k, 0, TAU); ctx.fillStyle = 'rgba(255,80,60,0.18)'; ctx.fill();
       ctx.beginPath(); ctx.moveTo(m.x - 10, m.y); ctx.lineTo(m.x + 10, m.y); ctx.moveTo(m.x, m.y - 10); ctx.lineTo(m.x, m.y + 10); ctx.stroke();
       // the falling rock
-      const fy = m.y - (1 - k) * 360, fx = m.x - (1 - k) * 160, rr = 14 * b.scale * (0.6 + k * 0.6);
+      const fy = m.y - (1 - k) * 360, fx = m.x - (1 - k) * 160, rr = 30 * b.scale * (0.6 + k * 0.6);
       ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(fx - 50, fy - 110); ctx.strokeStyle = 'rgba(255,200,80,0.5)'; ctx.lineWidth = rr * 1.2; ctx.stroke();
       ctx.beginPath(); ctx.arc(fx, fy, rr, 0, TAU); ctx.fillStyle = '#6d4c41'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = OUT; ctx.stroke();
       ctx.restore();
