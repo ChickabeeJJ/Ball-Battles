@@ -62,9 +62,9 @@
   };
 
   BB.TEAMS = [
-    { name: 'Green', fill: '#35d047', dark: '#1d8a2b', text: '#35d047' },
-    { name: 'Red', fill: '#f0545a', dark: '#a8262c', text: '#f0545a' },
     { name: 'Blue', fill: '#3d8bf2', dark: '#1d4fa0', text: '#3d8bf2' },
+    { name: 'Red', fill: '#f0545a', dark: '#a8262c', text: '#f0545a' },
+    { name: 'Green', fill: '#35d047', dark: '#1d8a2b', text: '#35d047' },
     { name: 'Gold', fill: '#f5b82e', dark: '#a87310', text: '#f5b82e' },
   ];
 })();

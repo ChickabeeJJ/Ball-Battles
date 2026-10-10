@@ -394,7 +394,7 @@
         if (b.jail) { b.jail.t += dt; if (b.jail.t >= b.jail.dur) b.jail = null; }
         if (b.sq > 0) b.sq = Math.max(0, b.sq - dt * 5);
         w.prevAngle = w.angle;
-        w.angle += w.dir * w.spin * D2R * dt * (b.stunT > 0 ? 0 : b.slowT > 0 ? 0.45 : 1);
+        w.angle += w.dir * w.spin * (b.def.spinMul || 1) * D2R * dt * (b.stunT > 0 ? 0 : b.slowT > 0 ? 0.45 : 1);
         if (b.def.flail) {
           // the head trails behind the handle like a weight on a chain
           let lag = w.angle - w.dir * 0.55 - (w.head || w.angle);

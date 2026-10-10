@@ -37,7 +37,11 @@
   // Background music: two tracks that alternate. Streamed (not preloaded) so boot stays fast,
   // started on the first user gesture, silenced by the same SDK mute / ad / hidden-tab rules.
   const M = (BB.music = { volume: 0.5, el: null, i: 0, started: false, duck: 1 });
-  const TRACKS = ['music/arcade-groove.mp3', 'music/arcade-groove-2.mp3'];
+  // Menu / battle rotation. A track that fails to load (e.g. not shipped yet) is dropped from it.
+  const TRACKS = ['music/arcade-groove.mp3', 'music/arcade-rush.mp3', 'music/arcade-groove-2.mp3'];
+  // Kami's own theme plays (looping) whenever a Kami is in the battle
+  M.KAMI_THEME = 'music/luminous-resolve.mp3';
+  M.theme = null;
   M.apply = function () {
     if (!M.el) return;
     const v = A.blocked ? 0 : M.volume * 0.5 * M.duck;
@@ -57,11 +61,24 @@
     if (M.started || typeof Audio === 'undefined') return;
     M.started = true;
     M.el = new Audio(); M.el.preload = 'auto';
-    M.el.addEventListener('ended', () => { M.i = (M.i + 1) % TRACKS.length; M.el.src = TRACKS[M.i]; M.apply(); });
+    M.el.addEventListener('ended', () => { if (M.theme) return; M.i = (M.i + 1) % TRACKS.length; M.el.src = TRACKS[M.i]; M.apply(); });
+    M.el.addEventListener('error', () => {
+      if (M.theme) { M.theme = null; M.el.loop = false; M.el.src = TRACKS[M.i]; M.apply(); return; } // theme missing: normal music
+      if (TRACKS.length > 1) { TRACKS.splice(M.i, 1); M.i %= TRACKS.length; M.el.src = TRACKS[M.i]; M.apply(); }
+    });
     M.el.src = TRACKS[M.i];
     M.apply();
   };
   M.setVolume = function (v) { M.volume = v; M.apply(); };
+  // switch to a looping theme (battle-specific music); endTheme() returns to the rotation
+  M.playTheme = function (src) {
+    if (!M.el || M.theme === src) return;
+    M.theme = src; M.el.loop = true; M.el.src = src; M.apply();
+  };
+  M.endTheme = function () {
+    if (!M.el || !M.theme) return;
+    M.theme = null; M.el.loop = false; M.el.src = TRACKS[M.i]; M.apply();
+  };
   // Cutscenes: fade the music to `to` (0 pauses it, 1 is normal) over `ms`.
   M.fade = function (to, ms) {
     cancelAnimationFrame(M.fadeRaf);

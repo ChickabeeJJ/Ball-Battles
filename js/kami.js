@@ -187,7 +187,8 @@
   const kami = {
     id: 'kami', name: 'Kami', cat: 'special', rarity: 'iridescent', color: '#f6e7b0', price: 25000,
     desc: 'A god in ball form. Locked at 1 HP, but Divine Grace teleports it away from every attack while charged; the bar refills slower as it drains and only trickles back at 20% or below. Casts Seraph Beam, Golden Gates and Heaven\'s Arsenal.',
-    base: { damage: 2, spin: 160, len: 52, width: 10, gap: 4 },
+    base: { damage: 2, spin: 200, len: 52, width: 10, gap: 4 },
+    spinMul: 3, // the spin number reads like any other ball's, but Kami's brush spear turns 3x as fast
     melee: true, blocks: true, kami: true, fixedHp: 1, knock: 240,
     init(w, b) {
       w.grace = GRACE.max; w.iframe = 0; w.gcd = 0; w.cast = null;

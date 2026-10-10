@@ -290,7 +290,7 @@
       const side = (cls, html) => `<span class="mu-side ${cls}">${html}</span>`;
       if (mode.id === '1v1' || mains.length === 2) m.innerHTML = side('l', name(mains[0])) + '<span class="vs">VS</span>' + side('r', name(mains[1]));
       else if (mode.id === 'ffa') m.innerHTML = '<span class="nm" style="color:#fff">Free For All</span>';
-      else m.innerHTML = side('l', `<span class="nm" style="color:${BB.TEAMS[0].fill}">Green Team</span>`) + '<span class="vs">VS</span>' + side('r', `<span class="nm" style="color:${BB.TEAMS[1].fill}">Red Team</span>`);
+      else m.innerHTML = side('l', `<span class="nm" style="color:${BB.TEAMS[0].fill}">${BB.TEAMS[0].name} Team</span>`) + '<span class="vs">VS</span>' + side('r', `<span class="nm" style="color:${BB.TEAMS[1].fill}">${BB.TEAMS[1].name} Team</span>`);
       App.fitMatchup();
     },
 
@@ -343,6 +343,7 @@
 
     toMenu() {
       App.state = 'menu';
+      if (BB.music) BB.music.endTheme();
       App.sim = null;
       App.paused = false;
       BB.sdk.gameplayStop();
@@ -378,7 +379,7 @@
       if (p.length < 9 || !BB.ITEM[p[0]] || BB.ITEM[p[0]].cat === 'hidden' || !BB.MAP[p[6]]) return null;
       const n = (v, a, b, d) => { v = Number(v); return isFinite(v) ? BB.clamp(v, a, b) : d; };
       return {
-        slot: { id: p[0], hp: n(p[1], 1, 9999, 100), scale: n(p[2], 0.5, 2.5, 1), ov: { damage: n(p[3], 0, 999, 0), spin: n(p[4], 0, p[0] === 'kami' ? 3000 : 2000, 0), speed: n(p[5], 0, 9999, 0) } },
+        slot: { id: p[0], hp: n(p[1], 1, 9999, 100), scale: n(p[2], 0.5, 2.5, 1), ov: { damage: n(p[3], 0, 999, 0), spin: n(p[4], 0, 2000, 0), speed: n(p[5], 0, 9999, 0) } },
         map: p[6], seed: n(p[7], 0, 2147483647, 1) | 0, name: p[8] || 'Friend',
       };
     },
@@ -416,6 +417,8 @@
       App.renderMatchup(App.sim);
       App.renderStats(App.sim, true);
       App.refreshSpeed();
+      // Kami brings its own theme into any battle it fights in
+      if (BB.music) { if (App.sim.balls.some((b) => b.def.kami)) BB.music.playTheme(BB.music.KAMI_THEME); else BB.music.endTheme(); }
       BB.audio.play('start');
       BB.ui.banner('FIGHT!', 700);
       BB.sdk.gameplayStart();
@@ -659,7 +662,7 @@
         s.control = !s.control;
         BB.save.write();
         App.refreshMenu();
-        BB.ui.toast(s.control ? 'You steer the Green ball! Wins pay x1.5' : 'Spectator mode');
+        BB.ui.toast(s.control ? 'You steer the Blue ball! Wins pay x1.5' : 'Spectator mode');
       });
       click('optRandom', () => {
         const pool = BB.ITEMS.filter((i) => i.cat !== 'hidden' && i.id !== 'dummy' && App.isOwned(i.id));

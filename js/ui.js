@@ -44,6 +44,7 @@
     },
 
     close() {
+      UI.closePreview();
       if (!UI.isOpen()) return;
       $('modal').classList.add('hidden');
       $('sheet').innerHTML = '';
@@ -86,8 +87,8 @@
         body.appendChild(UI.numField('Size', 'Ball scale', s.scale, 0.5, 2.5, 0.25, (v) => { s.scale = v; }, true));
         body.appendChild(el('div', 'section-t', 'Overrides (0 = default)'));
         body.appendChild(UI.numField('Damage', 'Starting damage', s.ov.damage, 0, 999, 1, (v) => { s.ov.damage = v; }));
-        // spin is capped at 2000 (Kami: 3000); speed at 9999
-        const spinMax = s.id === 'kami' ? 3000 : 2000;
+        // spin is capped at 2000 for every ball (Kami turns 3x faster at the same number); speed at 9999
+        const spinMax = 2000;
         if (s.ov.spin > spinMax) s.ov.spin = spinMax;
         body.appendChild(UI.numField('Spin', 'Weapon spin °/s (max ' + spinMax + ')', s.ov.spin, 0, spinMax, 30, (v) => { s.ov.spin = v; }));
         body.appendChild(UI.numField('Speed', 'Ball speed (max 9999)', s.ov.speed, 0, 9999, 50, (v) => { s.ov.speed = v; }));
@@ -125,6 +126,42 @@
       return f;
     },
 
+    // ------------------------------------------------------------- ball preview
+    // A small looping "video" of the ball fighting a training dummy, so players can see what a
+    // weapon does before picking or buying it. Opens over the current sheet; tap outside / X closes.
+    preview(id) {
+      UI.closePreview();
+      const it = BB.ITEM[id];
+      const wrap = el('div', 'pv-wrap');
+      wrap.innerHTML = `<div class="pv-box"><div class="pv-h"><img src="${BB.icon(id)}" alt=""><b>${esc(it.name)}</b><button class="x-btn pv-x" aria-label="Close">×</button></div>
+        <canvas class="pv-c"></canvas><div class="pv-d">${esc(it.desc)}</div></div>`;
+      document.body.appendChild(wrap);
+      const cv = wrap.querySelector('.pv-c'), R = new BB.Renderer(cv);
+      R.dark = !!BB.save.data.settings.dark;
+      const px = Math.min(360, window.innerWidth - 56, window.innerHeight - 220);
+      R.resize(Math.max(200, px));
+      let sim = null, t0 = 0, last = performance.now(), acc = 0, seed = 1;
+      const fresh = () => {
+        sim = new BB.Sim({ seed: seed++, map: 'classic', teams: [[{ id, hp: 100, slot: 0 }], [{ id: 'dummy', hp: 400, slot: 1 }]],
+          settings: { dmgNumbers: true, callouts: true, hitlag: false, parrylag: false, impact: false, finisher: false, overtime: false } });
+        t0 = 0;
+      };
+      fresh();
+      const loop = (now) => {
+        if (!wrap.isConnected) return;
+        acc += Math.min(0.1, (now - last) / 1000); last = now;
+        while (acc >= 1 / 120) { sim.step(1 / 120); sim.events.length = 0; acc -= 1 / 120; t0 += 1 / 120; }
+        if (sim.over || t0 > 9) fresh(); // loop the clip
+        R.draw(sim, {});
+        UI.pvRaf = requestAnimationFrame(loop);
+      };
+      UI.pvRaf = requestAnimationFrame(loop);
+      const close = () => UI.closePreview();
+      wrap.querySelector('.pv-x').onclick = close;
+      wrap.onclick = (e) => { if (e.target === wrap) close(); };
+    },
+    closePreview() { cancelAnimationFrame(UI.pvRaf); document.querySelectorAll('.pv-wrap').forEach((w) => w.remove()); },
+
     // ------------------------------------------------------------- item picker / shop
     pickItem(slotIdx, tab) {
       const app = BB.app, save = BB.save.data;
@@ -156,7 +193,9 @@
           const it = BB.ITEM[sel];
           const r = BB.RARITY[it.rarity];
           detail.innerHTML = `<img src="${BB.icon(sel)}" alt=""><div style="flex:1;min-width:0"><div class="d-n">${esc(it.name)}</div>
-            <div class="d-r" style="color:${r.color}">${r.name}</div><div class="d-d">${esc(it.desc)}</div></div>`;
+            <div class="d-r" style="color:${r.color}">${r.name}</div><div class="d-d">${esc(it.desc)}</div></div>
+            <button class="d-prev" aria-label="Preview ${esc(it.name)}">${BB.ICON.play}<span>Preview</span></button>`;
+          detail.querySelector('.d-prev').onclick = () => { BB.audio.play('click'); UI.preview(sel); };
           if (it.kami) detail.insertAdjacentHTML('beforeend', '<div class="k-abil">' + [['Divine Grace', 'Teleports away from any attack while charged. Refills slower as it drains and only trickles back at 20% or below. HP locked at 1.'], ['Seraph Beam', 'Angel wings unfurl, then a beam of light pierces the arena. 20 dmg · ' + BB.KAMI.AB.beam.cd + 's'], ['Golden Gates', 'Imprisons a foe in a golden cage, then slams it shut. 18 dmg · ' + BB.KAMI.AB.gate.cd + 's'], ['Heaven\'s Arsenal', 'Portals open and rain ' + BB.KAMI.AB.rain.swords + ' holy swords. 3 dmg each · ' + BB.KAMI.AB.rain.cd + 's'], ['Tenshi (Mastery Lv20 skin)', 'Refuses its first death and ascends: crimson arts that hit harder, Angelic Touch (brush-spear hits on foes restore Grace), faster Grace recharge above 60% (very fast above 90%) and Heavenly Servants. Not used in PvP.']].map(([n, d]) => `<div><b>${n}</b><span>${d}</span></div>`).join('') + '</div>');
           if (app.isOwned(sel)) { detail.insertAdjacentHTML('beforeend', '<div class="m-inline">' + BB.meta.masteryBlock(sel) + '</div>'); BB.meta.bindSkins(detail, sel, () => app.refreshMenu()); }
           foot.innerHTML = '';
