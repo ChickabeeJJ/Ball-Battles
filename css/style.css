@@ -1285,3 +1285,4 @@ html.cport .stat-row:not(.team) .st { white-space: normal; line-height: 1.15; }
 .pt-bar i { display: block; height: 100%; background: #ffd23f; }
 .rw-foot { flex-direction: column; align-items: stretch; gap: 6px; }
 .rw-time { text-align: center; font-size: 12px; color: #9aa0a6; } .rw-time b { color: #fff; }
+.pt-hot:not(.done) { box-shadow: 0 0 10px 1px rgba(255,210,63,.45), 0 3px 0 #111; }

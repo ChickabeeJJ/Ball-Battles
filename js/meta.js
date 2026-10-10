@@ -255,7 +255,7 @@
 
     // ------------------------------------------------------------- playtime rewards
     // Time spent in the game today (tab visible) unlocks coin milestones, up to 30 minutes.
-    PLAYTIME: [[1, 50], [3, 75], [5, 100], [10, 150], [15, 250], [20, 400], [30, 3000]],
+    PLAYTIME: [[1, 50], [3, 75], [5, 100], [10, 500], [15, 250], [20, 350], [30, 3000]],
     playData() {
       const m = M.data();
       if (!m.play || m.play.day !== today()) m.play = { day: today(), secs: 0, got: [] };
@@ -347,7 +347,7 @@
       BB.ui.open((sheet) => {
         const body = BB.ui.head(sheet, 'Rewards');
         M.rewardTabs(body, 'play');
-        body.appendChild(Object.assign(document.createElement('div'), { className: 'f-s', textContent: 'Play today to unlock coins. The 30 minute reward is huge! Resets every day.' }));
+        body.appendChild(Object.assign(document.createElement('div'), { className: 'f-s', textContent: 'Play today to unlock coins. Resets every day.' }));
         const list = document.createElement('div'); list.className = 'daily pt-track'; body.appendChild(list);
         const foot = document.createElement('div'); foot.className = 'sh-foot';
         const btn = document.createElement('button'); btn.className = 'btn';
@@ -368,7 +368,7 @@
           M.PLAYTIME.forEach(([min, c], i) => {
             const got = p.got.includes(i), now = ready.includes(i), big = i === M.PLAYTIME.length - 1;
             const d = document.createElement('div');
-            d.className = 'day' + (got ? ' done' : '') + (now ? ' now' : '') + (big ? ' big' : '');
+            d.className = 'day' + (got ? ' done' : '') + (now ? ' now' : '') + (big ? ' big' : '') + (min === 10 ? ' pt-hot' : '');
             const pct = Math.min(100, (p.secs / (min * 60)) * 100);
             d.innerHTML = `<div class="day-n">${min} min</div><div class="day-ic">${got ? BB.ICON.star : '<span class="coin-ic"></span>'}</div><div class="day-r">${c}</div>${!got && !now ? `<div class="pt-bar"><i style="width:${pct}%"></i></div>` : ''}`;
             if (now) { d.style.cursor = 'pointer'; d.onclick = claim; }
