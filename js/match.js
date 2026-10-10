@@ -73,10 +73,13 @@
     },
     validSquad(d) { return d && Array.isArray(d.ids) && BB.meta.validIds(d.ids); },
 
-    start() {
-      const M = BB.meta;
+    // One tap: reuse the last squad (if you still own it) and search straight away.
+    start(pick) {
+      const M = BB.meta, pv = M.pvpData();
       if (M.ownedCount() < 3) { BB.ui.toast('Unlock at least 3 balls to play PvP'); return; }
-      M.pick3('Matchmaking Squad', 'Pick 3 different balls in fight order. You will be matched with another player online right now.', (ids) => { MM.ids = ids; MM.search(); });
+      const last = pv.squad;
+      if (!pick && Array.isArray(last) && M.validIds(last) && last.every((id) => BB.app.isOwned(id))) { MM.ids = last.slice(); MM.search(); return; }
+      M.pick3('Your Squad', 'Pick 3 different balls in fight order. It is saved for your next match.', (ids) => { pv.squad = ids.slice(); BB.save.write(); MM.ids = ids; MM.search(); });
     },
 
     stop() {
@@ -93,9 +96,12 @@
           <div class="mm-radar"><i></i><i></i><i></i><div class="mm-squad">${MM.ids.map((id) => `<img src="${BB.icon(id)}" alt="">`).join('')}</div></div>
           <div class="mm-status">Searching for a player… <b class="mm-time">0:00</b></div>
           <div class="f-s" style="text-align:center">Both players need to be online. You can keep this open: as soon as someone searches, you're matched.</div>`;
-        const x = document.createElement('button'); x.className = 'btn red vs-go'; x.textContent = 'Cancel';
+        const row = document.createElement('div'); row.className = 'mm-btns';
+        const ch = document.createElement('button'); ch.className = 'btn blue'; ch.textContent = 'Change squad';
+        ch.onclick = () => { BB.audio.play('click'); MM.stop(); BB.ui.onClose = null; BB.ui.close(); MM.start(true); };
+        const x = document.createElement('button'); x.className = 'btn red'; x.textContent = 'Cancel';
         x.onclick = () => { BB.audio.play('click'); MM.stop(); BB.ui.onClose = null; BB.ui.close(); BB.meta.openPvp(); };
-        sheet.appendChild(x);
+        row.append(ch, x); sheet.appendChild(row);
         MM.t0 = performance.now();
         MM.uiTimer = setInterval(() => { const s = Math.floor((performance.now() - MM.t0) / 1000), el = sheet.querySelector('.mm-time'); if (el) el.textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }, 500);
       }, { width: '480px', onClose: () => MM.stop() });
@@ -162,8 +168,7 @@
         const rng = BB.RNG((Math.random() * 1e9) | 0);
         const maps = [0, 1, 2].map(() => BB.MAPS[Math.floor(rng() * BB.MAPS.length)].id), seed = (rng() * 2147483647) | 0;
         conn.send(Object.assign({ t: 'welcome', v: PROTOCOL, maps, seed }, await MM.me()));
-        setTimeout(() => { try { conn.close(); } catch (e) { /* */ } }, 1500);
-        MM.begin(hello, maps, seed, true);
+        MM.begin(hello, maps, seed, true, conn); // the link stays open: aims are exchanged every round
       });
     },
 
@@ -180,20 +185,23 @@
       if (!reply || reply.t !== 'welcome' || reply.v !== PROTOCOL || !MM.validSquad(reply) || !BB.meta.validMaps(reply.maps || [])) { try { conn.close(); } catch (e) { /* */ } return false; }
       if (!MM.live(tok)) return false;
       MM.matched = true;
-      setTimeout(() => { try { conn.close(); } catch (e) { /* */ } }, 1500);
-      MM.begin(reply, reply.maps, reply.seed | 0, false);
+      MM.begin(reply, reply.maps, reply.seed | 0, false, conn);
       return true;
     },
 
     // matched: both sides now hold the same squads, maps and seed
-    begin(opp, maps, seed, iAmHost) {
+    begin(opp, maps, seed, iAmHost, conn) {
       const M = BB.meta;
       const name = M.cleanName(opp.name), rating = Math.max(0, Math.min(4000, Math.round(Number(opp.rating) || 1000)));
       const ids = MM.ids;
+      // keep the peer that owns the live link; everything else is torn down
+      const keep = iAmHost ? MM.host : MM.client;
+      if (iAmHost) MM.host = null; else MM.client = null;
       MM.stop();
       BB.ui.onClose = null; BB.ui.close();
       BB.audio.play('unlock'); BB.sdk.happytime();
       M.series = { mine: ids, theirs: opp.ids, maps, seed, foeRating: rating, foeName: name, round: 0, score: [0, 0], results: [], live: true, flip: !iAmHost };
+      if (conn) BB.shoot.link(M.series, conn, keep);
       BB.sdk.updateRoom('m' + seed, false); // in a live 1v1 room (full)
       M.lineup();
     },

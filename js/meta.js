@@ -670,10 +670,12 @@
             <div class="pvp-rankbar"><i style="width:${pct}%"></i></div>
             <div class="pvp-rec">${next ? (next[0] - pv.rating) + ' to ' + next[1] : 'Top rank'} · ${pv.w} W · ${pv.d} D · ${pv.l} L</div></div>
           <div class="pvp-modes">
-            <div class="pvp-mode code"><div class="pm-h">${BB.ICON.scroll}<b>Play a Friend</b></div><span>Make a challenge and share its code or invite link. They answer with the same code.</span><div class="pm-btns"></div></div>
-            <div class="pvp-mode mm"><div class="pm-h">${BB.ICON.swords}<b>Matchmaking</b></div><span>Get matched with another player who is online right now. Same fights on both screens.</span><button class="btn green pm-find">Find a match</button></div>
-          </div>
-          <div class="pvp-steps"><div><b>1</b><span>Pick 3 different balls in fight order</span></div><div><b>2</b><span>Share the code with a friend</span></div><div><b>3</b><span>All 3 rounds play. Most wins takes it</span></div></div>`;
+            <div class="pvp-mode mm"><div class="pm-h">${BB.ICON.swords}<b>Quick Match</b></div>
+              <span>Play someone online right now. Aim your shot, then watch the same fight together.</span>
+              ${Array.isArray(pv.squad) && pv.squad.length === 3 ? `<div class="pm-squad">${pv.squad.map((id) => `<img src="${BB.icon(id)}" alt="">`).join('')}<button class="pm-change">Change</button></div>` : ''}
+              <button class="btn green pm-find">${BB.ICON.play} Find a match</button></div>
+            <div class="pvp-mode code"><div class="pm-h">${BB.ICON.scroll}<b>Play a Friend</b></div><span>Send a code. All 3 rounds play, most wins takes it.</span><div class="pm-btns"></div></div>
+          </div>`;
         const go = document.createElement('button'); go.className = 'btn primary'; go.innerHTML = BB.ICON.swords + ' Create';
         go.onclick = () => {
           BB.audio.play('click');
@@ -688,6 +690,8 @@
         body.querySelector('.pm-btns').append(go, enter);
         const fm = body.querySelector('.pm-find');
         if (fm) fm.onclick = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); BB.match.start(); };
+        const pc = body.querySelector('.pm-change');
+        if (pc) pc.onclick = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); BB.match.start(true); };
         const rm = body.querySelector('.pm-room');
         if (rm) rm.onclick = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); if (BB.party.active()) BB.party.lobby(); else BB.party.create(); };
       }, { width: '460px' });
@@ -754,10 +758,12 @@
             <div class="lu-b me"><img src="${BB.icon(sr.mine[k])}" alt=""><b style="color:${BB.itemColor(sr.mine[k])}">${esc(BB.ITEM[sr.mine[k]].name)}</b></div>
             <div class="lu-mid"><em>R${k + 1}</em><small>${esc(BB.MAP[sr.maps[k]].name)}</small></div>
             <div class="lu-b foe"><b style="color:${BB.itemColor(sr.theirs[k])}">${esc(BB.ITEM[sr.theirs[k]].name)}</b><img src="${BB.icon(sr.theirs[k])}" alt=""></div></div>`).join('')}</div>`;
+        const next = () => { clearTimeout(M._auto); if (M.series !== sr) return; BB.ui.onClose = null; BB.ui.close(); M.vsSplash(); };
+        if (sr.live) { M._auto = setTimeout(next, 2600); sheet.insertAdjacentHTML('beforeend', '<div class="vs-auto"><i></i></div>'); return; } // live: no clicks
         const go = document.createElement('button'); go.className = 'btn primary vs-go'; go.innerHTML = BB.ICON.play + ' Start round 1';
-        go.onclick = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); M.vsSplash(); };
+        go.onclick = () => { BB.audio.play('click'); next(); };
         sheet.appendChild(go);
-      }, { width: '560px', onClose: () => { M.series = null; } });
+      }, { width: '560px', onClose: () => { if (!sr.live) M.series = null; } });
     },
 
     pips(sr, side) {
@@ -776,10 +782,12 @@
           <div class="vs-x">VS</div>
           <div class="vs-side foe"><img src="${BB.icon(b, 160)}" alt=""><b style="color:${BB.itemColor(b)}">${esc(BB.ITEM[b].name)}</b><i>${esc(sr.foeName)}</i></div></div>
           <div class="vs-map">${esc(BB.MAP[sr.maps[k]].name)}</div>`;
+        const fight = () => { clearTimeout(M._auto); if (M.series !== sr) return; BB.ui.onClose = null; BB.ui.close(); M.pvpFight(); };
+        if (sr.live) { M._auto = setTimeout(fight, k > 0 ? 2400 : 1700); sheet.insertAdjacentHTML('beforeend', '<div class="vs-auto"><i></i></div>'); return; } // live: no clicks
         const go = document.createElement('button'); go.className = 'btn primary vs-go'; go.innerHTML = BB.ICON.play + ' Fight!';
-        go.onclick = () => { BB.audio.play('start'); BB.ui.onClose = null; BB.ui.close(); M.pvpFight(); };
+        go.onclick = () => { BB.audio.play('start'); fight(); };
         sheet.appendChild(go);
-      }, { width: '560px', onClose: () => { M.series = null; BB.app.toMenu(); } });
+      }, { width: '560px', onClose: () => { if (sr.live) return; M.series = null; BB.app.toMenu(); } });
     },
 
     pvpFight() {
@@ -792,6 +800,7 @@
         onOver: (w) => M.pvpRound(w),
       };
       app.startBattle();
+      if (sr.live && !sr.spectate) BB.shoot.begin(sr); // both players aim, then the fight launches
     },
 
     pvpRound(w) {
@@ -805,6 +814,7 @@
       // every round is played, even when the series is already decided
       if (sr.round < 3) { BB.audio.play(w === 0 ? 'win' : 'lose'); M.vsSplash(); return; }
       if (sr.spectate) { M.series = null; M.pvpResultScreen(sr.view); return; }
+      if (sr.live && !sr.party) BB.shoot.unlink(); // matchmaking link no longer needed
       const pv = M.pvpData();
       const won = sr.score[0] > sr.score[1], draw = sr.score[0] === sr.score[1];
       const delta = sr.party ? 0 : M.applyRating(pv, sr.foeRating, won ? 1 : draw ? 0.5 : 0); // friend rooms are unranked

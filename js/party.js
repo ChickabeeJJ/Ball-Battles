@@ -100,6 +100,7 @@
       else if (d.t === 'unready') { P.foeReady = null; P.refresh(); }
       else if (d.t === 'start' && !P.host && BB.meta.validIds(d.ids || []) && BB.meta.validMaps(d.maps || []) && P.myReady) P.begin(d.ids, d.maps, d.seed | 0);
       else if (d.t === 'bye') P.foeLeft();
+      else if (d.t === 'aim') BB.shoot.onPeer(d);
     },
     ready(ids) { P.myReady = ids; P.send({ t: 'ready', ids }); P.refresh(); P.maybeStart(); },
     maybeStart() {
@@ -116,6 +117,7 @@
       BB.ui.onClose = null; BB.ui.close();
       BB.audio.play('unlock');
       M.series = { mine: P.myReady, theirs, maps, seed, foeRating: M.pvpData().rating, foeName: P.foe.name, round: 0, score: [0, 0], results: [], live: true, party: true, flip: !P.host };
+      M.series.send = (d) => P.send(d); BB.shoot.reset();
       P.myReady = P.foeReady = null;
       M.lineup();
     },
@@ -129,6 +131,7 @@
       P.lobby();
     },
     foeLeft() {
+      if (P.inSeries) BB.shoot.peerGone(); // their remaining rounds launch in a random direction
       const n = P.foe ? P.foe.name : 'Your friend';
       try { P.conn && P.conn.close(); } catch (e) { /* */ }
       P.conn = null; P.foe = null; P.foeReady = null;

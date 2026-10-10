@@ -1151,3 +1151,24 @@ html.cport .stat-row:not(.team) .st { white-space: normal; line-height: 1.15; }
 .pv-h img { width: 34px; height: 34px; } .pv-h b { flex: 1; font-weight: 400; }
 .pv-c { display: block; border: 3px solid #111; border-radius: 8px; align-self: center; }
 .pv-d { color: #c9c2d6; font-family: system-ui, sans-serif; font-weight: 600; font-size: 13px; max-width: 360px; }
+
+/* live PvP aim countdown */
+#arenaWrap { position: relative; }
+.shot-pill { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 6; display: flex; align-items: center; gap: 10px; padding: 7px 16px 7px 18px; border: 3px solid #111; border-radius: 999px; background: linear-gradient(90deg, #ffd23f calc(var(--p, 1) * 100%), #2a2a31 0); box-shadow: 0 4px 0 #111; color: #111; font-family: 'Lilita One', sans-serif; font-size: 18px; white-space: nowrap; pointer-events: none; animation: shotIn .25s cubic-bezier(.2,1.6,.4,1); }
+.shot-pill b { display: grid; place-items: center; min-width: 32px; height: 32px; border-radius: 50%; background: #111; color: #ffd23f; font-size: 20px; font-weight: 400; }
+.shot-pill b.hot { color: #ff5a5f; animation: shotHot .5s ease-in-out infinite alternate; }
+.shot-pill i { font-style: normal; font-family: system-ui, sans-serif; font-weight: 700; font-size: 13px; color: #111; }
+@keyframes shotIn { from { transform: translateX(-50%) scale(.6); opacity: 0; } }
+@keyframes shotHot { to { transform: scale(1.15); } }
+/* live series screens advance on their own: a thin progress bar instead of a button */
+.vs-auto { height: 6px; margin: 14px 8px 2px; background: #1b1b20; border-radius: 3px; overflow: hidden; }
+.vs-auto i { display: block; height: 100%; background: #ffd23f; animation: vsAuto 2.2s linear forwards; transform-origin: left; }
+@keyframes vsAuto { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.mm-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+/* PvP menu: Quick Match is the big one, Play a Friend sits underneath */
+.pvp-modes { grid-template-columns: 1fr; }
+.pvp-mode.mm .pm-find { font-size: 20px; padding: 12px; }
+.pm-squad { display: flex; align-items: center; gap: 6px; padding: 4px 6px; background: rgba(0,0,0,.25); border-radius: 8px; }
+.pm-squad img { width: 34px; height: 34px; }
+.pm-change { margin-left: auto; padding: 4px 10px; border: 2px solid #111; border-radius: 6px; background: #3c3c42; color: #fff; font-family: inherit; font-size: 12px; cursor: pointer; }
+.pvp-mode > span { font-size: 12px; }

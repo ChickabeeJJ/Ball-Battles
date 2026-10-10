@@ -583,7 +583,8 @@
 
     tick(dt) {
       if (App.state === 'battle' && App.sim) {
-        const running = !App.paused && !BB.sdk.adPlaying && !document.hidden && !App.cine;
+        if (BB.shoot.active) BB.shoot.tick(dt); // live PvP: frozen while both players aim
+        const running = !App.paused && !BB.sdk.adPlaying && !document.hidden && !App.cine && !BB.shoot.active;
         if (App.impactCd > 0) App.impactCd -= dt;
         if (running && App.impact) {
           App.impact.t += dt;
@@ -615,7 +616,8 @@
       if (App.shake > 0) App.shake = Math.max(0, App.shake - 0.8);
       let imp = null;
       if (App.impact && App.state === 'battle') { imp = App.impact; imp.p = Math.min(0.999, imp.t / imp.dur); }
-      if (s && App.renderer) App.renderer.draw(s, { shake: App.state === 'battle' && !App.paused ? App.shake : 0, impact: imp });
+      const overlay = BB.shoot.active && App.state === 'battle' ? (ctx) => BB.shoot.overlay(ctx) : null;
+      if (s && App.renderer) App.renderer.draw(s, { shake: App.state === 'battle' && !App.paused ? App.shake : 0, impact: imp, overlay });
     },
 
     readInput() {
@@ -687,7 +689,8 @@
         if (blockKeys.has(e.code) && !typing) e.preventDefault();
         if (typing) return;
         App.keys[e.code] = true;
-        if ((e.code === 'Escape' || e.code === 'KeyP') && App.state === 'battle' && !App.resultsShown) {
+        if (BB.shoot.active && /^(Arrow(Up|Down|Left|Right)|Key[WASD])$/.test(e.code)) BB.shoot.key();
+        if ((e.code === 'Escape' || e.code === 'KeyP') && App.state === 'battle' && !App.resultsShown && !App.isPvpBattle()) {
           if (App.paused) App.resume(); else App.pause();
         }
         if ((e.code === 'Enter' || e.code === 'Space') && App.state === 'menu' && !BB.ui.isOpen()) { BB.audio.unlock(); App.startBattle(); }
@@ -729,12 +732,14 @@
         const S = App.sim ? App.sim.size : 600;
         return { x: ((e.clientX - r.left) / r.width - 0.5) * S, y: ((e.clientY - r.top) / r.height - 0.5) * S };
       };
+      let spid = null;
       cv.addEventListener('pointerdown', (e) => {
+        if (App.state === 'battle' && BB.shoot.active) { if (BB.shoot.down(toWorld(e))) { spid = e.pointerId; cv.setPointerCapture(spid); e.preventDefault(); } return; }
         if (App.state !== 'battle' || !BB.save.data.setup.control) return;
         apid = e.pointerId; cv.setPointerCapture(apid); App.aim = toWorld(e); e.preventDefault();
       });
-      cv.addEventListener('pointermove', (e) => { if (e.pointerId === apid) App.aim = toWorld(e); });
-      const aend = (e) => { if (e.pointerId === apid) { apid = null; App.aim = null; } };
+      cv.addEventListener('pointermove', (e) => { if (e.pointerId === spid) BB.shoot.move(toWorld(e)); if (e.pointerId === apid) App.aim = toWorld(e); });
+      const aend = (e) => { if (e.pointerId === spid) { spid = null; BB.shoot.up(); } if (e.pointerId === apid) { apid = null; App.aim = null; } };
       cv.addEventListener('pointerup', aend);
       cv.addEventListener('pointercancel', aend);
     },
