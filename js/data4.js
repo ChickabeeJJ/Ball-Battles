@@ -457,14 +457,24 @@
       for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU; ctx.beginPath(); ctx.moveTo(Math.cos(a) * W * 0.6, Math.sin(a) * W * 0.6); ctx.lineTo(Math.cos(a + 0.35) * W * 0.85, Math.sin(a + 0.35) * W * 0.85); ctx.lineTo(Math.cos(a + 0.5) * W * 0.6, Math.sin(a + 0.5) * W * 0.6); fs(ctx, '#ffeaa7', lw * 0.6); }
       ctx.restore();
     } else if (id === 'scissors') {
-      const op = 0.12 + 0.12 * (0.5 + 0.5 * Math.sin(t * 9));
-      for (const sd of [-1, 1]) {
-        ctx.save(); ctx.translate(s + L * 0.35, 0); ctx.rotate(sd * op);
-        ctx.beginPath(); ctx.moveTo(0, -W * 0.18 * sd); ctx.lineTo(L * 0.65, 0); ctx.lineTo(0, W * 0.25 * sd); ctx.closePath(); fs(ctx, '#dfe6e9', lw);
-        ctx.beginPath(); ctx.ellipse(-L * 0.2, sd * W * 0.35, L * 0.14, W * 0.3, 0, 0, TAU); ctx.lineWidth = lw * 1.6; ctx.strokeStyle = OUT; ctx.stroke(); ctx.lineWidth = lw; ctx.strokeStyle = '#e17055'; ctx.stroke();
+      // two crossed halves on a pivot screw: each blade is joined to the opposite finger loop,
+      // so the pair opens into an X and snips shut
+      const op = 0.06 + 0.2 * Math.pow(0.5 + 0.5 * Math.sin(t * 9), 2), px = s + L * 0.42, Lb = L * 0.58, Lh = L * 0.3, B = Math.max(W * 1.4, L * 0.32);
+      for (const sd of [1, -1]) {
+        ctx.save(); ctx.translate(px, 0); ctx.rotate(sd * op);
+        // finger loop + shank (behind the blade)
+        const lx = -Lh, ly = sd * B * 0.62, lr = B * 0.36;
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(-Lh * 0.35, sd * B * 0.08, lx + lr * 0.7, ly - sd * lr * 0.55);
+        ctx.strokeStyle = OUT; ctx.lineWidth = lw * 3; ctx.stroke(); ctx.strokeStyle = '#e17055'; ctx.lineWidth = lw * 1.6; ctx.stroke();
+        ctx.beginPath(); ctx.arc(lx, ly, lr, 0, TAU);
+        ctx.strokeStyle = OUT; ctx.lineWidth = lw * 3; ctx.stroke(); ctx.strokeStyle = '#e17055'; ctx.lineWidth = lw * 1.6; ctx.stroke();
+        // blade: straight cutting edge on the centre line, curved back, sharp tip
+        ctx.beginPath(); ctx.moveTo(-B * 0.12, sd * B * 0.03); ctx.lineTo(Lb, 0);
+        ctx.quadraticCurveTo(Lb * 0.4, -sd * B * 0.6, -B * 0.12, -sd * B * 0.36); ctx.closePath(); fs(ctx, '#dfe6e9', lw);
+        ctx.beginPath(); ctx.moveTo(Lb * 0.08, -sd * B * 0.15); ctx.lineTo(Lb * 0.68, -sd * B * 0.06); ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = lw * 0.6; ctx.stroke();
         ctx.restore();
       }
-      ctx.beginPath(); ctx.arc(s + L * 0.35, 0, W * 0.12, 0, TAU); ctx.fillStyle = OUT; ctx.fill();
+      ctx.beginPath(); ctx.arc(px, 0, B * 0.11, 0, TAU); fs(ctx, '#b2bec3', lw * 0.8);
     } else if (id === 'pillow') {
       const sq = 1 + Math.sin(t * 6) * 0.05;
       ctx.beginPath(); ctx.rect(s, -W * 0.1, L * 0.2, W * 0.2); fs(ctx, '#b2bec3', lw);
