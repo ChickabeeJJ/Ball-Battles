@@ -605,6 +605,7 @@
       const def = a.def;
       if (!def.contact || c.cd['c' + a.id] > 0) return;
       const dmg = def.contactDamage ? def.contactDamage(a.w) : a.w.damage;
+      if (def.onSlam) { c.cd['c' + a.id] = 0.5; def.onSlam(this, a, a.w, c); } // slam gimmicks (Meteor calls one down)
       if (dmg <= 0) return;
       c.cd['c' + a.id] = 0.5;
       const dealt = this.damage(c, dmg, a, { x, y, lag: true });

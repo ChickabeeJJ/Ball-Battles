@@ -200,8 +200,13 @@
   });
   add({
     id: 'meteor', name: 'Meteor', cat: 'special', rarity: 'legendary', color: '#e1b12c',
-    desc: 'Every 3.5s it marks where the nearest enemy is heading, then a meteor crashes there. Every hit makes meteors hit harder.',
+    desc: 'Every 3.5s it marks where the nearest enemy is heading, then a meteor crashes there. Slams deal no damage but call down a meteor on the target. Every hit makes meteors hit harder.',
     base: { damage: 1.5 }, contact: true,
+    contactDamage: () => 0,
+    onSlam(sim, b, w, c) {
+      const lim = sim.W / 2 - 20;
+      w.marks.push({ x: BB.clamp(c.x + c.vx * 0.35, -lim, lim), y: BB.clamp(c.y + c.vy * 0.35, -lim, lim), t: 0.6, max: 0.6, R: 115 * b.scale });
+    },
     init(w) { w.timer = 2; w.marks = []; w.meteor = 4; },
     update(sim, b, w, dt) {
       w.timer -= dt;
@@ -219,7 +224,7 @@
       }
       if (w.marks.length && w.marks[0].done) w.marks = w.marks.filter((m) => !m.done);
     },
-    onHit(sim, b, w) { w.meteor += 1; w.damage += 0.25; },
+    onHit(sim, b, w) { w.meteor += 1; },
     stats: (w) => ['Meteor: ' + fmt(w.meteor), 'Next: ' + Math.max(0, Math.ceil(w.timer)) + 's'],
   });
   add({
