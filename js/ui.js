@@ -183,6 +183,24 @@
     },
     closePreview() { cancelAnimationFrame(UI.pvRaf); document.querySelectorAll('.pv-wrap').forEach((w) => w.remove()); },
 
+    // ------------------------------------------------------------- themed choice menu
+    // A small game-styled menu card over a dim backdrop (used for filters and titles).
+    // items: [{ id, html, sub?, on?, disabled? }]
+    choice(title, items, onPick) {
+      document.querySelectorAll('.ch-wrap').forEach((x) => x.remove());
+      const wrap = el('div', 'ch-wrap', `<div class="ch-card"><div class="ch-h"><b>${esc(title)}</b><button class="x-btn ch-x" aria-label="Close">×</button></div><div class="ch-list"></div></div>`);
+      const list = wrap.querySelector('.ch-list');
+      for (const it of items) {
+        const b = el('button', 'ch-it' + (it.on ? ' on' : '') + (it.disabled ? ' off' : ''), `<span class="ch-main">${it.html}${it.sub ? `<small>${it.sub}</small>` : ''}</span>${it.on ? `<i class="ch-ok">${BB.ICON.check}</i>` : it.disabled ? `<i class="ch-lock">${BB.ICON.lock}</i>` : ''}`);
+        if (!it.disabled) b.onclick = () => { BB.audio.play('click'); close(); onPick(it.id); };
+        list.appendChild(b);
+      }
+      const close = () => { wrap.classList.add('out'); setTimeout(() => wrap.remove(), 150); };
+      wrap.querySelector('.ch-x').onclick = () => { BB.audio.play('click'); close(); };
+      wrap.addEventListener('pointerdown', (e) => { if (e.target === wrap) close(); });
+      document.body.appendChild(wrap);
+    },
+
     // ------------------------------------------------------------- item picker / shop
     // Specials tab: only the balls you can't buy with coins (King, Kami, event balls). Every other
     // ball, coin-bought ones included, lives in the Weapons tab.
@@ -212,8 +230,15 @@
         const rars = ['common', 'rare', 'epic', 'legendary', 'iridescent'].filter((r) => BB.ITEMS.some((i) => inTab(i) && i.rarity === r));
         const fr = el('div', 'pk-filter');
         const sw = el('div', 'pk-search', `<span class="pk-s-ic">${BB.ICON.search || '&#x1F50D;'}</span><input type="search" placeholder="Search" aria-label="Search balls" autocomplete="off"><button class="pk-s-x" aria-label="Clear">&times;</button>`);
-        const rs = el('select', 'pk-rar', '<option value="">All</option>' + rars.map((r) => `<option value="${r}">${BB.RARITY[r].name}</option>`).join(''));
+        // rarity filter: a themed menu instead of the browser's own dropdown
+        const rs = el('button', 'pk-rar', '<span>All</span><i>&#9662;</i>'); rs.value = '';
         rs.setAttribute('aria-label', 'Filter by rarity');
+        rs.onclick = () => {
+          BB.audio.play('click');
+          UI.choice('Filter by rarity', [{ id: '', html: '<span class="ch-dot" style="--rc:#9aa0a6"></span>All rarities', on: !rs.value },
+            ...rars.map((r) => ({ id: r, html: `<span class="ch-dot" style="--rc:${BB.RARITY[r].color}"></span><span style="color:${BB.RARITY[r].color}">${BB.RARITY[r].name}</span>`, sub: BB.ITEMS.filter((i) => inTab(i) && i.rarity === r).length + ' balls', on: rs.value === r }))],
+          (id) => { rs.value = id; rs.querySelector('span').textContent = id ? BB.RARITY[id].name : 'All'; filter(); });
+        };
         fr.append(sw, rs);
         body.appendChild(fr);
         const grid = el('div', 'grid');
@@ -229,7 +254,6 @@
           none.classList.toggle('hidden', n > 0); sw.classList.toggle('has', !!q);
         };
         qIn.addEventListener('input', filter);
-        rs.addEventListener('change', () => { BB.audio.play('click'); filter(); });
         qIn.addEventListener('keydown', (e) => e.stopPropagation()); // typing never triggers game hotkeys
         sw.querySelector('.pk-s-x').onclick = () => { qIn.value = ''; filter(); qIn.focus(); };
 
@@ -403,9 +427,6 @@
         const tut = el('button', 'btn', 'Show Tutorial');
         tut.onclick = () => { BB.audio.play('click'); UI.onClose = null; UI.close(); app.onSettingsClosed(); if (app.state === 'menu') UI.tutorial(); else UI.toast('Finish the battle to see the tutorial'); };
         body.appendChild(tut);
-        const credits = el('div', 'f-s', 'Battles won: ' + BB.save.data.stats.wins + ' / ' + BB.save.data.stats.battles);
-        credits.style.textAlign = 'center';
-        body.appendChild(credits);
       }, { onClose: () => app.onSettingsClosed() });
     },
 

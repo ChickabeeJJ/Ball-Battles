@@ -110,9 +110,14 @@
   }
 
   function weaponTrail(ctx, b, w, col) {
-    if (!b.def.melee || b.def.perp || !w.len || b.stunT > 0) return;
-    const span = Math.min(w.spin * D2R * 0.08, 1.3);
-    if (span < 0.15) return;
+    if (!b.def.melee || b.def.perp || !w.len || b.stunT > 0 || w.prevAngle == null) return;
+    // the trail follows how fast the weapon is really turning this instant (slows, stuns, spin-ups, hits)
+    let d = Math.abs(w.angle - w.prevAngle); if (d > Math.PI) d = TAU - d;
+    const rate = d * 120; // rad/s (fixed 1/120s sim step)
+    w.trailRate = w.trailRate == null ? rate : w.trailRate + (rate - w.trailRate) * 0.25;
+    const span = Math.min(w.trailRate * 0.085, 1.8);
+    if (span < 0.12) return;
+    const alpha = Math.min(0.42, 0.12 + w.trailRate * 0.022);
     const r0 = b.r + w.gap + w.len * 0.3, r1 = b.r + w.gap + w.len + (b.def.flail ? w.width * 0.3 : 0);
     const a1 = b.def.flail ? w.head : w.angle, a0 = a1 - w.dir * span;
     ctx.beginPath();
@@ -120,7 +125,7 @@
     ctx.arc(b.x, b.y, r0, a1, a0, w.dir > 0);
     ctx.closePath();
     const g = ctx.createRadialGradient(b.x, b.y, r0, b.x, b.y, r1);
-    g.addColorStop(0, rgba(col, 0)); g.addColorStop(1, rgba(col, 0.28));
+    g.addColorStop(0, rgba(col, 0)); g.addColorStop(1, rgba(col, alpha));
     ctx.fillStyle = g; ctx.fill();
   }
 
@@ -307,7 +312,9 @@
         spikedBall(ctx, hx, hy, w.width / 2, lw);
       } else {
         ctx.rotate(w.angle);
+        BB._wdir = w.dir; // lets bendy weapons (the whip) trail behind the spin
         BB.drawWeapon(ctx, id, r + w.gap, w.len, w.width, lw, sim.t, tm.fill);
+        BB._wdir = 1;
         // a glint runs up the weapon every couple of seconds (staggered per ball)
         const gp = ((sim.t * 0.55 + b.id * 0.37) % 1.6);
         if (gp < 1 && b.def.melee) {

@@ -383,42 +383,23 @@
       const t = S.titleSel();
       return `<button class="pf-tsel" aria-label="Choose your title">${t ? `<span class="bp-title ${TITLES[t].cls}">${BB.ICON.star}${TITLES[t].name}</span>` : '<span class="bp-title none">No title</span>'}<i>&#9662;</i></button>`;
     },
-    // Profile "Titles" section: every title, Equip on the ones you own, how to earn the rest
+    // Titles menu: every title in one pop-up (owned ones to equip, locked ones with how to earn them),
+    // so the profile never grows as more titles are added
     TITLE_HOW: { s1v: 'Season 1 Pass · Free tier 50', s1e: 'Season 1 Pass · Elite tier 40' },
-    titlesSec() {
-      const own = S.ownedTitles(), cur = S.titleSel();
-      const row = (id) => {
-        const has = own.includes(id), on = cur === id;
-        return `<div class="pf-trow${has ? '' : ' locked'}"><span class="bp-title ${TITLES[id].cls}">${BB.ICON.star}${TITLES[id].name}</span>
-          ${has ? `<button class="pf-teq${on ? ' on' : ''}" data-t="${id}">${on ? 'Equipped' : 'Equip'}</button>` : `<em>${BB.ICON.lock}${S.TITLE_HOW[id] || 'Locked'}</em>`}</div>`;
-      };
-      return `<div class="pf-sec pf-titles"><div class="pf-h">Titles</div>${Object.keys(TITLES).map(row).join('')}
-        ${own.length ? `<div class="pf-trow"><span class="bp-title none">No title</span><button class="pf-teq${cur ? '' : ' on'}" data-t="none">${cur ? 'Equip' : 'Equipped'}</button></div>` : ''}</div>`;
+    openTitles(root) {
+      const own = S.ownedTitles(), cur = S.titleSel() || 'none';
+      const items = Object.keys(TITLES).map((id) => ({ id, html: `<span class="bp-title ${TITLES[id].cls}">${BB.ICON.star}${TITLES[id].name}</span>`, sub: own.includes(id) ? (cur === id ? 'Equipped' : 'Tap to equip') : S.TITLE_HOW[id] || 'Locked', on: cur === id, disabled: !own.includes(id) }));
+      items.push({ id: 'none', html: '<span class="bp-title none">No title</span>', sub: cur === 'none' ? 'Equipped' : 'Hide your title', on: cur === 'none' });
+      BB.ui.choice('Titles', items, (id) => S.equipTitle(root, id));
     },
     equipTitle(root, id) {
-      BB.meta.data().titleSel = id; BB.save.write(); BB.audio.play('click');
+      BB.meta.data().titleSel = id; BB.save.write();
       const head = root.querySelector('.pf-tsel'); if (head) head.replaceWith(el('div', null, S.titleHtml()).firstChild);
-      const sec = root.querySelector('.pf-titles'); if (sec) sec.replaceWith(el('div', null, S.titlesSec()).firstChild);
       S.bindTitle(root);
     },
     bindTitle(root) {
-      root.querySelectorAll('.pf-teq').forEach((b) => b.onclick = () => { if (!b.classList.contains('on')) S.equipTitle(root, b.dataset.t); });
-      const btn = root.querySelector('.pf-tsel'); if (!btn) return;
-      btn.onclick = (ev) => {
-        ev.stopPropagation(); BB.audio.play('click');
-        document.querySelectorAll('.pf-tpick').forEach((x) => x.remove());
-        const cur = S.titleSel(), pick = el('div', 'pf-tpick');
-        pick.innerHTML = '<div class="pf-tp-h">Choose a title</div>' + [...S.ownedTitles().map((id) => [id, `<span class="bp-title ${TITLES[id].cls}">${BB.ICON.star}${TITLES[id].name}</span>`]), ['none', '<span class="bp-title none">No title</span>']]
-          .map(([id, h]) => `<button data-t="${id}" class="${(cur || 'none') === id ? 'on' : ''}">${h}${(cur || 'none') === id ? BB.ICON.check : ''}</button>`).join('');
-        document.body.appendChild(pick);
-        const r = btn.getBoundingClientRect(); pick.style.left = Math.max(8, Math.min(innerWidth - pick.offsetWidth - 8, r.left)) + 'px'; pick.style.top = (r.bottom + 6) + 'px';
-        const close = (e) => { if (!pick.contains(e.target)) { pick.remove(); document.removeEventListener('pointerdown', close, true); } };
-        setTimeout(() => document.addEventListener('pointerdown', close, true), 0);
-        pick.querySelectorAll('button').forEach((b) => b.onclick = () => {
-          pick.remove(); document.removeEventListener('pointerdown', close, true);
-          S.equipTitle(root, b.dataset.t);
-        });
-      };
+      const btn = root.querySelector('.pf-tsel'); if (btn) btn.onclick = (ev) => { ev.stopPropagation(); BB.audio.play('click'); S.openTitles(root); };
+      const tb = root.querySelector('.pf-tbtn'); if (tb) tb.onclick = () => { BB.audio.play('click'); S.openTitles(root); };
     },
 
     // ---------------------------------------------------------------- reward visuals
@@ -564,6 +545,21 @@
         all.onclick = () => { S.claim(S.claimable(p)); if (S.bonusAvail(p) > 0) S.claimBonus(); BB.ui.onClose = null; BB.ui.close(); S.openPass(); };
         foot.appendChild(all);
         sheet.appendChild(foot);
+        // PC: the mouse wheel scrolls the track sideways, and the track can be dragged (mouse or touch)
+        track.addEventListener('wheel', (e) => {
+          const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+          if (!d) return; e.preventDefault(); track.scrollLeft += d;
+        }, { passive: false });
+        let drag = null;
+        track.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') return; drag = { x: e.clientX, s: track.scrollLeft, moved: false }; });
+        window.addEventListener('pointermove', (e) => {
+          if (!drag) return;
+          const dx = e.clientX - drag.x;
+          if (!drag.moved && Math.abs(dx) > 6) { drag.moved = true; track.classList.add('dragging'); }
+          if (drag.moved) track.scrollLeft = drag.s - dx;
+        });
+        window.addEventListener('pointerup', () => { if (!drag) return; const moved = drag.moved; drag = null; track.classList.remove('dragging'); if (moved) { track._noClick = true; setTimeout(() => (track._noClick = false), 0); } });
+        track.addEventListener('click', (e) => { if (track._noClick) { e.stopPropagation(); e.preventDefault(); } }, true);
         // centre the track on the next tier to earn
         requestAnimationFrame(() => {
           const c = track.querySelector('.bp-col.cur') || track.querySelector('.bp-col.reached:last-of-type') || track.querySelector('.bp-col');

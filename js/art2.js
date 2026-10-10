@@ -51,12 +51,27 @@
     for (const [x, y] of [[0.7, -0.2], [0.85, 0.2], [0.55, 0.1]]) { ctx.beginPath(); ctx.arc(s + L * x, W * y, W * 0.07, 0, TAU); ctx.fill(); }
   };
   D.whip = function (ctx, s, L, W, lw, t) {
-    grip(ctx, s, s + Math.min(L * 0.18, 18), W * 1.6, '#4a235a', lw);
-    ctx.beginPath(); ctx.moveTo(s + Math.min(L * 0.18, 18), 0);
-    const n = 10;
-    for (let i = 1; i <= n; i++) { const k = i / n; ctx.lineTo(s + 18 + (L - 18) * k, Math.sin(k * 6 + t * 12) * W * 1.2 * k); }
-    ctx.strokeStyle = OUT; ctx.lineWidth = W * 0.9 + lw * 1.5; ctx.lineCap = 'round'; ctx.stroke();
-    ctx.strokeStyle = '#8e5a3c'; ctx.lineWidth = W * 0.9; ctx.stroke(); ctx.lineCap = 'butt';
+    // a supple lash: it trails behind the spin (more toward the tip), a wave rolls down it,
+    // it tapers to a thin cracker at the end
+    const dir = BB._wdir || 1, g1 = s + Math.min(L * 0.18, 18), len = L - (g1 - s);
+    grip(ctx, s, g1, W * 1.6, '#4a235a', lw);
+    const n = 18, pts = [];
+    for (let i = 0; i <= n; i++) {
+      const k = i / n, x = g1 + len * k * (1 - 0.08 * k * k);
+      const y = -dir * len * 0.26 * k * k + Math.sin(k * 7.5 - t * 15) * W * 1.7 * k * (0.6 + 0.4 * Math.sin(t * 3));
+      pts.push([x, y]);
+    }
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    for (const pass of [0, 1]) for (let i = 1; i <= n; i++) {
+      const k = i / n, wd = W * 1.15 * (1 - 0.7 * k);
+      ctx.beginPath(); ctx.moveTo(pts[i - 1][0], pts[i - 1][1]); ctx.lineTo(pts[i][0], pts[i][1]);
+      ctx.strokeStyle = pass ? (i % 4 < 2 ? '#8e5a3c' : '#7a4a30') : OUT; ctx.lineWidth = pass ? wd : wd + lw * 1.4; ctx.stroke();
+    }
+    // the cracker
+    const [tx, ty] = pts[n], [px, py] = pts[n - 1], a = Math.atan2(ty - py, tx - px);
+    ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx + Math.cos(a + 0.5) * W * 1.6, ty + Math.sin(a + 0.5) * W * 1.6); ctx.moveTo(tx, ty); ctx.lineTo(tx + Math.cos(a - 0.4) * W * 1.9, ty + Math.sin(a - 0.4) * W * 1.9);
+    ctx.strokeStyle = '#e8d3b0'; ctx.lineWidth = Math.max(1, W * 0.35); ctx.stroke();
+    ctx.lineCap = 'butt'; ctx.lineJoin = 'miter';
   };
   D.chainsaw = function (ctx, s, L, W, lw, t) {
     path(ctx, [s, -W * 0.55, s + L * 0.32, -W * 0.55, s + L * 0.32, W * 0.55, s, W * 0.55]); fillStroke(ctx, '#e74c3c', lw);
