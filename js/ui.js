@@ -206,13 +206,13 @@
           const it = BB.ITEM[sel];
           const r = BB.RARITY[it.rarity];
           detail.innerHTML = `<img src="${BB.icon(sel)}" alt=""><div style="flex:1;min-width:0"><div class="d-n">${esc(it.name)}</div>
-            <div class="d-r" style="color:${r.color}">${r.name}</div><div class="d-d">${esc(it.desc)}</div></div>
-            <button class="d-prev" aria-label="Preview ${esc(it.name)}">${BB.ICON.play}<span>Preview</span></button>`;
+            <div class="d-r" style="color:${r.color}">${r.name}</div><div class="d-d">${esc(it.desc)}</div>
+            <div class="d-acts"><button class="d-prev" aria-label="Preview ${esc(it.name)}">${BB.ICON.play}<span>Preview</span></button></div></div>`;
           detail.querySelector('.d-prev').onclick = () => { BB.audio.play('click'); UI.preview(sel); };
           if (it.kami) { // second preview for the revived form
             const tb = el('button', 'd-prev d-prev2', BB.ICON.play + '<span>Tenshi</span>');
             tb.onclick = () => { BB.audio.play('click'); UI.preview(sel, { tenshi: true }); };
-            detail.appendChild(tb);
+            detail.querySelector('.d-acts').appendChild(tb);
           }
           if (it.kami) detail.insertAdjacentHTML('beforeend', '<div class="k-abil">' + [['Divine Grace', 'Teleports away from any attack while charged. Refills slower as it drains and only trickles back at 20% or below. HP locked at 1.'], ['Seraph Beam', 'Angel wings unfurl, then a beam of light pierces the arena. 20 dmg · ' + BB.KAMI.AB.beam.cd + 's'], ['Golden Gates', 'Imprisons a foe in a golden cage, then slams it shut. 18 dmg · ' + BB.KAMI.AB.gate.cd + 's'], ['Heaven\'s Arsenal', 'Portals open and rain ' + BB.KAMI.AB.rain.swords + ' holy swords. 3 dmg each · ' + BB.KAMI.AB.rain.cd + 's'], ['Tenshi (Mastery Lv20 skin)', 'Refuses its first death and ascends: crimson arts that hit harder, Angelic Touch (brush-spear hits on foes restore Grace), faster Grace recharge above 60% (very fast above 90%) and Heavenly Servants. Not used in PvP.']].map(([n, d]) => `<div><b>${n}</b><span>${d}</span></div>`).join('') + '</div>');
           if (app.isOwned(sel)) { detail.insertAdjacentHTML('beforeend', '<div class="m-inline">' + BB.meta.masteryBlock(sel) + '</div>'); BB.meta.bindSkins(detail, sel, () => app.refreshMenu()); }
