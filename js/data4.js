@@ -544,8 +544,8 @@
       ctx.strokeStyle = 'rgba(255,255,255,' + k + ')'; ctx.lineWidth = 3; ctx.stroke(); ctx.restore();
     }
     if (id === 'zombie' && b.risen) {
-      ctx.save(); ctx.globalAlpha = 0.45 + 0.2 * Math.sin(t * 5);
-      const g = ctx.createRadialGradient(b.x, b.y, b.r * 0.8, b.x, b.y, b.r * 2); g.addColorStop(0, 'rgba(186,220,88,0.7)'); g.addColorStop(1, 'rgba(186,220,88,0)');
+      ctx.save(); ctx.globalAlpha = 0.25 + 0.1 * Math.sin(t * 5);
+      const g = ctx.createRadialGradient(b.x, b.y, b.r * 0.8, b.x, b.y, b.r * 1.6); g.addColorStop(0, 'rgba(186,220,88,0.7)'); g.addColorStop(1, 'rgba(186,220,88,0)');
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 2, 0, TAU); ctx.fill(); ctx.restore();
     }
     if (id === 'golem' && w.armor > 0.01) {
@@ -599,7 +599,7 @@
       for (const [a, l] of [[0.5, 0.5], [2.2, 0.4], [3.9, 0.55], [5.3, 0.35]]) { ctx.beginPath(); ctx.moveTo(b.x + Math.cos(a) * r, b.y + Math.sin(a) * r); ctx.lineTo(b.x + Math.cos(a + 0.2) * r * (1 - l * 0.5), b.y + Math.sin(a + 0.2) * r * (1 - l * 0.5)); ctx.lineTo(b.x + Math.cos(a - 0.1) * r * (1 - l), b.y + Math.sin(a - 0.1) * r * (1 - l)); ctx.strokeStyle = 'rgba(30,30,30,0.55)'; ctx.lineWidth = 2; ctx.stroke(); }
     } else if (id === 'comet') {
       ctx.globalCompositeOperation = 'lighter'; const g = ctx.createRadialGradient(b.x, b.y, r * 0.8, b.x, b.y, r * 1.6);
-      g.addColorStop(0, 'rgba(116,185,255,' + (0.2 + (b.speedMul - 1) * 0.3) + ')'); g.addColorStop(1, 'rgba(116,185,255,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, r * 1.6, 0, TAU); ctx.fill();
+      g.addColorStop(0, 'rgba(116,185,255,' + (0.1 + (b.speedMul - 1) * 0.15) + ')'); g.addColorStop(1, 'rgba(116,185,255,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, r * 1.6, 0, TAU); ctx.fill();
     } else if (id === 'meteor' || id === 'disco') { /* drawn above */ }
     ctx.restore();
     if (id === 'prism') {

@@ -198,10 +198,21 @@
     }
     if (id === 'rage') {
       const k = 1 - b.hp / b.maxHp, pulse = 0.5 + 0.5 * Math.sin(t * (4 + k * 10));
-      const g = ctx.createRadialGradient(b.x, b.y, r * 0.8, b.x, b.y, r * (1.4 + k * 1.2));
-      g.addColorStop(0, 'rgba(255,40,60,' + (0.2 + k * 0.5) * (0.6 + pulse * 0.4) + ')'); g.addColorStop(1, 'rgba(255,40,60,0)');
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, r * (1.4 + k * 1.2), 0, TAU); ctx.fill();
-      if (sim.frng() < 0.1 + k * 0.5) sim.fx.push({ k: 'p', x: b.x + (sim.frng() - 0.5) * r * 1.2, y: b.y - r * 0.8, vx: (sim.frng() - 0.5) * 30, vy: -90, life: 0.6, max: 0.6, c: 'rgba(230,230,230,0.8)', s: 5 });
+      const g = ctx.createRadialGradient(b.x, b.y, r * 0.9, b.x, b.y, r * (1.25 + k * 0.5));
+      g.addColorStop(0, 'rgba(255,40,60,' + (0.08 + k * 0.22) * (0.6 + pulse * 0.4) + ')'); g.addColorStop(1, 'rgba(255,40,60,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, r * (1.25 + k * 0.5), 0, TAU); ctx.fill();
+      // eruption: every so often (more often the angrier it gets) lava spurts out of the top
+      const every = 2.6 - k * 1.6, n = Math.floor(t / every);
+      if (b.alive && n !== b._erN) {
+        b._erN = n;
+        if (n > 0) {
+          for (let i = 0; i < 9; i++) {
+            const a = -Math.PI / 2 + (sim.frng() - 0.5) * 1.1, s = 110 + sim.frng() * 120;
+            sim.fx.push({ k: 'p', x: b.x + Math.cos(a) * r * 0.7, y: b.y + Math.sin(a) * r * 0.7, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: 0.6, max: 0.6, c: ['#ff3b30', '#ff9f1a', '#ffd23f'][i % 3], s: 5.5 + sim.frng() * 3 });
+          }
+          sim.fx.push({ k: 'r', x: b.x, y: b.y - r * 0.8, r0: r * 0.3, r1: r * 0.75, c: '#ff6b3d', life: 0.2, max: 0.2 });
+        }
+      }
     }
     if (id === 'duplicator') {
       const wob = Math.sin(t * 5) * 0.08;
@@ -239,10 +250,10 @@
     // rarity glow: epic and legendary balls get a soft pulsing halo (no particles)
     const fx = b.main && b.alive && RARE_FX[b.def.rarity];
     if (fx) {
-      const k = 0.5 + 0.5 * Math.sin(t * 3 + b.x * 0.01), R2 = r * (1.45 + 0.12 * k);
+      const k = 0.5 + 0.5 * Math.sin(t * 3 + b.x * 0.01), R2 = r * (1.28 + 0.08 * k);
       const g = ctx.createRadialGradient(b.x, b.y, r, b.x, b.y, R2);
       g.addColorStop(0, fx[0]); g.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.save(); ctx.globalAlpha = 0.35 + 0.3 * k;
+      ctx.save(); ctx.globalAlpha = 0.16 + 0.14 * k;
       ctx.beginPath(); ctx.arc(b.x, b.y, R2, 0, TAU); ctx.arc(b.x, b.y, r, 0, TAU, true); ctx.fillStyle = g; ctx.fill(); ctx.restore();
     }
   };

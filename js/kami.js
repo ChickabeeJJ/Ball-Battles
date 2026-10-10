@@ -472,9 +472,9 @@
       ctx.restore();
     }
     // aura (ascended: wider, breathing red glow with rising embers)
-    const pulse = 0.5 + 0.5 * Math.sin(t * 3), AR = r * (asc ? 2.7 + pulse * 0.5 : 2 + pulse * 0.3);
+    const pulse = 0.5 + 0.5 * Math.sin(t * 3), AR = r * (asc ? 2.1 + pulse * 0.3 : 1.6 + pulse * 0.2);
     const au = ctx.createRadialGradient(b.x, b.y, r * 0.8, b.x, b.y, AR);
-    au.addColorStop(0, 'rgba(' + th.glow + ',' + (asc ? 0.65 : 0.55) + ')'); au.addColorStop(1, 'rgba(' + th.glow + ',0)');
+    au.addColorStop(0, 'rgba(' + th.glow + ',' + (asc ? 0.4 : 0.3) + ')'); au.addColorStop(1, 'rgba(' + th.glow + ',0)');
     ctx.fillStyle = au; ctx.beginPath(); ctx.arc(b.x, b.y, AR, 0, TAU); ctx.fill();
     if (asc) for (let i = 0; i < 10; i++) {
       const ph = (t * 0.7 + i * 0.1) % 1, a = i * 2.4;
