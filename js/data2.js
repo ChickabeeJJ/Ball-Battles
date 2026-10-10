@@ -113,7 +113,7 @@
     desc: 'Blows homing bubbles that slow whatever they pop on. Every 2 hits adds a bubble.',
     base: { damage: 1, spin: 160, len: 40, width: 16 }, blocks: true,
     init(w) { w.timer = 0.8; w.n = 2; },
-    update(sim, b, w, dt) { w.timer -= dt; if (w.timer <= 0) { w.timer = 1.6; shoot(sim, b, w, Math.floor(w.n), 30, 280, { kind: 'bubble', r: 9 * w.scale, dmg: w.damage, life: 4, homing: 2.5, slow: 1.2 }); sim.emit({ type: 'shoot', x: b.x, y: b.y, small: true }); } },
+    update(sim, b, w, dt) { w.timer -= dt; if (w.timer <= 0) { w.timer = 1.6; shoot(sim, b, w, Math.floor(w.n), 30, 280, { kind: 'bubble', r: 9 * w.scale, dmg: w.damage, life: 4, homing: 2.5, slow: 1.2, knock: 35 }); sim.emit({ type: 'shoot', x: b.x, y: b.y, small: true }); } },
     onHit(sim, b, w) { w.n = Math.min(w.n + 0.5, 8); }, stats: (w) => ['Bubbles: ' + Math.floor(w.n)] });
   add({ id: 'firestaff', name: 'Fire Staff', cat: 'weapon', rarity: 'epic', color: '#d35400',
     desc: 'Launches fireballs that set enemies ablaze. Flames burn hotter every hit.',

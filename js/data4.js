@@ -80,7 +80,7 @@
   add({
     id: 'plasma', name: 'Plasma Blade', cat: 'weapon', rarity: 'legendary', color: '#00e5ff',
     desc: 'A humming energy blade that sets enemies on fire. The blade grows longer and +0.5 damage every hit.',
-    base: { damage: 2, spin: 200, len: 52, width: 9 }, melee: true, blocks: true,
+    base: { damage: 2, spin: 200, len: 60, width: 9 }, melee: true, blocks: true,
     init(w) { w.len0 = w.len; },
     onHit(sim, b, w, t) {
       w.damage += 0.5; w.len = Math.min(w.len0 * 1.8, w.len + 3 * w.scale);

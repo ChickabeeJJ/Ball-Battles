@@ -140,11 +140,11 @@
       R.dark = !!BB.save.data.settings.dark;
       const px = Math.min(360, window.innerWidth - 56, window.innerHeight - 220);
       R.resize(Math.max(200, px));
-      let sim = null, t0 = 0, last = performance.now(), acc = 0, seed = 1, imp = null;
+      let sim = null, t0 = 0, last = performance.now(), acc = 0, seed = 1, imp = null, kfin = null;
       const fresh = () => {
         sim = new BB.Sim({ seed: seed++, map: 'classic', teams: [[{ id, hp: 100, slot: 0 }], [{ id: 'dummy', hp: 100, slot: 1 }]],
           settings: { dmgNumbers: true, callouts: true, hitlag: false, parrylag: false, impact: false, finisher: false, overtime: false } });
-        t0 = 0;
+        t0 = 0; kfin = null;
         if (tenshi) { // showcase Kami's revived (Tenshi) form
           const k = sim.balls[0];
           k.tenshi = true; k.ascended = true; k.w.regenMul = 1.3; k.w.touch = {}; k.w.servCd = 1.5; k.w.cool = { beam: 1.2, gate: 4.5, rain: 2.6 };
@@ -160,10 +160,18 @@
         }
         while (!imp && acc >= 1 / 120) {
           sim.step(1 / 120); acc -= 1 / 120; t0 += 1 / 120;
+          for (const e of sim.events) if (e.type === 'death' && e.main && e.kami) kfin = { asc: !!e.asc, done: false };
+          // Kami's knockout plays its finisher (crimson full-screen one for Tenshi) before the clip restarts
+          if (sim.over && kfin && !kfin.done && BB.save.data.settings.finisher !== false) {
+            kfin.done = true; sim.events.length = 0;
+            imp = { t: 0, dur: kfin.asc ? 3.0 : 2.8, kamiFin: true, asc: kfin.asc, x: 0, y: 0, seed: (Math.random() * 1e6) | 0, foe: BB.itemColor('dummy') };
+            BB.audio.play('kamiFinisher');
+            break;
+          }
           for (const e of sim.events) if (e.type === 'kami' && !['dodge', 'beamfire', 'gateslam', 'awaken'].includes(e.k)) imp = { t: 0, dur: 0.9, kamiCut: true, forceText: true, k: e.k, asc: !!e.asc, x: e.x, y: e.y, seed: (Math.random() * 1e6) | 0 };
           sim.events.length = 0;
         }
-        if (sim.over || t0 > 45) fresh(); // loop when the dummy is knocked out, or after 45s
+        if ((sim.over && !imp) || t0 > 45) fresh(); // loop when the dummy is knocked out, or after 45s
         if (imp) imp.p = Math.min(0.999, imp.t / imp.dur);
         R.draw(sim, { impact: imp });
         UI.pvRaf = requestAnimationFrame(loop);
