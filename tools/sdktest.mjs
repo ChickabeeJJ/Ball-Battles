@@ -109,7 +109,11 @@ check('arrow keys do not scroll the page', prevented);
 // PvP: the PvP Arena replaces the Gauntlet on CrazyGames; a squad link round-trips into a series
 check('PvP button visible on CrazyGames', await page.isVisible('#btnPvp'));
 await page.click('#btnPvp');
-await page.click('.pm-btns .btn.primary');
+// first visit opens the PvP tutorial; it can be skipped
+await page.waitForSelector('.pt-wrap');
+check('PvP tutorial on first visit', await page.isVisible('.pt-skip'));
+await page.click('.pt-skip');
+await page.click('.pvx-fb .btn.primary');
 for (let i = 0; i < 3; i++) await page.click(`.grid .tile >> nth=${i}`);
 await page.click('text=Confirm squad');
 await page.waitForTimeout(200);
