@@ -26,9 +26,9 @@
       t0: performance.now(), stage: 0, sub: 0, stageT: performance.now(), shown: 0, raf: 0, lastDone: -1,
       tick() {
         const L = App.loader, now = performance.now(), N = L.STAGES.length;
-        const tk = Math.min(1, (now - L.t0) / 2700); // the slowed intro fight lasts ~2.4s
+        const tk = Math.min(1, (now - L.t0) / 2160); // the intro fight (at 0.75x) lasts ~1.9s
         const timeCap = App.capture ? 1 : 1 - Math.pow(1 - tk, 2);
-        const creep = L.stage >= N ? 0 : Math.max(L.sub, 0.88 * (1 - Math.exp(-(now - L.stageT) / 600)));
+        const creep = L.stage >= N ? 0 : Math.max(L.sub, 0.88 * (1 - Math.exp(-(now - L.stageT) / 480)));
         const realCap = Math.min(1, (L.stage + creep) / N);
         const cap = Math.min(timeCap, realCap);
         if (cap > L.shown) { L.shown += (cap - L.shown) * 0.24; if (cap - L.shown < 0.002) L.shown = cap; }
@@ -67,8 +67,8 @@
 
     async boot() {
       const ld = document.getElementById('loader');
-      // photosensitivity: play the intro fight at 60% speed (fewer, slower flashes)
-      if (ld && ld.getAnimations) { try { for (const a of ld.getAnimations({ subtree: true })) a.playbackRate = 0.6; } catch (e) { /* older browsers */ } }
+      // photosensitivity: play the intro fight at 75% speed (fewer, slower flashes)
+      if (ld && ld.getAnimations) { try { for (const a of ld.getAnimations({ subtree: true })) a.playbackRate = 0.75; } catch (e) { /* older browsers */ } }
       App.loader.set(0);
       await BB.sdk.init();
       App.loader.set(1);
@@ -80,7 +80,7 @@
       App.loader.set(2);
 
       try {
-        await Promise.race([Promise.all([document.fonts.load('20px Anton'), document.fonts.load('20px "Pixelify Sans"')]), new Promise((r) => setTimeout(r, 300))]);
+        await Promise.race([Promise.all([document.fonts.load('20px Anton'), document.fonts.load('20px "Pixelify Sans"')]), new Promise((r) => setTimeout(r, 200))]);
       } catch (e) { /* fall back to system font */ }
       App.loader.set(3);
 
