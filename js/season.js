@@ -434,15 +434,18 @@
       if (!se) return;
       const p = S.pass(), t = S.tier(p.xp), inT = t >= TIERS ? 100 : Math.round(((p.xp - t * PER_TIER) / PER_TIER) * 100);
       const ready = S.claimable(p).length + S.bonusAvail(p) > 0;
-      const pb = $('btnPass'); if (pb) { pb.classList.toggle('ready', ready); pb.classList.toggle('elite', p.elite); pb.querySelector('b').textContent = t; pb.style.setProperty('--p', inT + '%'); }
-      s.classList.toggle('ready', ready); s.classList.toggle('elite', p.elite);
-      s.innerHTML = `<span class="bps-hex"><b>${t}</b></span><span class="bps-txt"><b>Season ${se.n} Pass</b><em>${t >= TIERS ? 'Max tier' : 'Tier ' + t + ' · ' + inT + '%'}</em></span><span class="bps-bar"><i style="width:${t >= TIERS ? 100 : inT}%"></i></span><span class="bps-time">${BB.ICON.clock}${left(+se.end - S.now())}</span>${ready ? '<span class="dot-badge"></span>' : ''}`;
+      // yellow "look here" dot: something to claim, or the pass not opened yet this season
+      const hot = ready || BB.meta.data().passSeen !== se.n;
+      const pb = $('btnPass'); if (pb) { pb.classList.toggle('hot', hot); pb.classList.toggle('elite', p.elite); pb.querySelector('b').textContent = t; pb.style.setProperty('--p', inT + '%'); }
+      s.classList.toggle('ready', ready); s.classList.toggle('hot', hot); s.classList.toggle('elite', p.elite);
+      s.innerHTML = `<span class="bps-hex"><b>${t}</b></span><span class="bps-txt"><b>Season ${se.n} Pass</b><em>${t >= TIERS ? 'Max tier' : 'Tier ' + t + ' · ' + inT + '%'}</em></span><span class="bps-bar"><i style="width:${t >= TIERS ? 100 : inT}%"></i></span><span class="bps-time">${BB.ICON.clock}${left(+se.end - S.now())}</span><span class="bp-hot"></span>`;
     },
 
     // ---------------------------------------------------------------- pass screen
     openPass() {
       if (!S.season()) { BB.ui.toast('No season is running right now. Check back soon!'); S.refreshStrip(); return; }
       const se = S.season(), p = S.pass(), R = se.rewards, t = S.tier(p.xp);
+      if (BB.meta.data().passSeen !== se.n) { BB.meta.data().passSeen = se.n; BB.save.write(); S.refreshStrip(); }
       const inT = t >= TIERS ? PER_TIER : p.xp - t * PER_TIER;
       BB.ui.open((sheet) => {
         sheet.classList.add('bp-sheet');
