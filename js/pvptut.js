@@ -59,7 +59,7 @@
   const STEPS = [
     {
       title: 'Aim your shot',
-      text: 'Before every round you get <b>6 seconds</b> to aim. Drag back like a slingshot and let go to fire. On a keyboard, <b>A / D</b> (or ← →) turn the arrow and <b>W</b>, <b>Space</b> or <b>Enter</b> fires. Try it!',
+      text: 'Before every round you get <b>6 seconds</b> to aim. Drag back like a slingshot and let go to fire. On a keyboard, <b>A / D</b> (or ← →) turn the arrow and <b>Space</b> fires. Try it!',
       demo(stage) {
         const px = size(), a = arena(stage, [[{ id: 'sword', hp: 100, slot: 0 }], [{ id: 'dummy', hp: 60, slot: 1 }]], px, 9);
         const me = a.sim.balls[0], foe = a.sim.balls[1];
@@ -118,7 +118,7 @@
           stop,
           key(e) {
             if (launched) return;
-            if (/^(KeyW|ArrowUp|Space|Enter)$/.test(e.code)) { e.preventDefault(); lock(aim0); return; }
+            if (/^(Space|Enter)$/.test(e.code)) { e.preventDefault(); lock(aim0); return; }
             const m = { KeyA: 'a', ArrowLeft: 'a', KeyD: 'd', ArrowRight: 'd' }[e.code];
             if (!m) return; e.preventDefault(); T.held[m] = true; touched = true;
           },

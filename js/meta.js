@@ -709,6 +709,7 @@
             </div>
           </div>
           <div class="pvx-rec"><div class="w"><b>${pv.w}</b><span>Won</span></div><div class="d"><b>${pv.d}</b><span>Drawn</span></div><div class="l"><b>${pv.l}</b><span>Lost</span></div><div><b>${wr}</b><span>Win rate</span></div></div>
+          ${M.banLeft() ? `<div class="pvx-ban">Matchmaking locked for <b>${Math.ceil(M.banLeft() / 60)} min</b> for leaving matches early.</div>` : (pv.leaves || []).filter((t) => Date.now() - t < 864e5).length ? '<div class="pvx-ban warn">Leaving a match counts as a loss. Leave again and matchmaking gets locked.</div>' : ''}
           <div class="pvx-quick">
             <div class="pvx-qh"><b>Quick Match</b><span class="pvx-live"><i></i>Play online now</span></div>
             <div class="pvx-squad">${[0, 1, 2].map((i) => `<div class="pvx-slot">${squad ? `<img src="${BB.icon(squad[i])}" alt="">` : '<span>?</span>'}<em>R${i + 1}</em></div>`).join('')}
@@ -853,6 +854,7 @@
       if (sr.round < 3) { BB.audio.play(w === 0 ? 'win' : 'lose'); M.vsSplash(); return; }
       if (sr.spectate) { M.series = null; M.pvpResultScreen(sr.view); return; }
       if (sr.live && !sr.party) BB.shoot.unlink(); // matchmaking link no longer needed
+      M.clearLive();
       const pv = M.pvpData();
       const won = sr.score[0] > sr.score[1], draw = sr.score[0] === sr.score[1];
       const delta = sr.party ? 0 : M.applyRating(pv, sr.foeRating, won ? 1 : draw ? 0.5 : 0); // friend rooms are unranked
@@ -864,6 +866,27 @@
       if (won) BB.sdk.happytime();
       M.seriesEnd(sr, { won, draw, delta, coinsWon, canReply: !sr.live, title: sr.live ? 'Live match vs ' + esc(sr.foeName) : null });
     },
+
+    // ------------------------------------------------------------- leaving live matches
+    // A live series is recorded when it starts and cleared when it ends. If the game closes in
+    // between, the next start counts it as a loss (rating + record). Repeat leavers get a
+    // matchmaking cooldown that grows: 2 leaves in a day = 2 min, 3 = 10 min, 5+ = 30 min.
+    markLive(sr) { const pv = M.pvpData(); pv.live = { foe: sr.foeRating, name: sr.foeName, t: Date.now() }; BB.save.write(); },
+    clearLive() { const pv = M.pvpData(); if (pv.live) { delete pv.live; BB.save.write(); } },
+    checkAbandon() {
+      const pv = M.pvpData();
+      if (!pv.live) return;
+      const L = pv.live; delete pv.live;
+      const delta = M.applyRating(pv, L.foe, 0);
+      M.pushHist(pv, L.name, 'left', delta, -1);
+      const now = Date.now();
+      pv.leaves = (pv.leaves || []).filter((t) => now - t < 864e5); pv.leaves.push(now);
+      const n = pv.leaves.length, mins = n >= 5 ? 30 : n >= 3 ? 10 : n >= 2 ? 2 : 0;
+      if (mins) pv.banUntil = now + mins * 60000;
+      BB.save.write();
+      setTimeout(() => BB.ui.toast(mins ? `You left a match: counted as a loss (${delta}). Matchmaking locked for ${mins} min.` : `You left your last match: counted as a loss (${delta}). Leaving again will lock matchmaking.`, 4500), 1200);
+    },
+    banLeft() { const pv = M.pvpData(); return Math.max(0, Math.ceil(((pv.banUntil || 0) - Date.now()) / 1000)); },
 
     applyRating(pv, foe, score) {
       const exp = 1 / (1 + Math.pow(10, (foe - pv.rating) / 400));

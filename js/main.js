@@ -117,6 +117,8 @@
         $('btnCup').parentNode.prepend(g);
       }
       // A friend's challenge link takes priority; otherwise first-time players get the tutorial.
+      BB.meta.checkAbandon();
+      window.addEventListener('beforeunload', (e) => { if (BB.meta.pvpData().live) { e.preventDefault(); e.returnValue = 'Leaving now counts as a loss.'; } });
       const handled = App.pvpAvailable() && App.openInvite((k) => BB.sdk.getInviteParam(k));
       // CrazyGames instant multiplayer: the party leader opens a friend room straight away
       if (!handled && App.pvpAvailable() && BB.sdk.instantMultiplayer()) BB.party.create();
@@ -689,7 +691,7 @@
         if (blockKeys.has(e.code) && !typing) e.preventDefault();
         if (typing) return;
         App.keys[e.code] = true;
-        if (BB.shoot.active && /^(Arrow(Up|Down|Left|Right)|Key[WASD]|Space|Enter)$/.test(e.code)) BB.shoot.key(e.code);
+        if (BB.shoot.active && /^(ArrowLeft|ArrowRight|KeyA|KeyD|Space|Enter)$/.test(e.code)) BB.shoot.key(e.code);
         if ((e.code === 'Escape' || e.code === 'KeyP') && App.state === 'battle' && !App.resultsShown && !App.isPvpBattle()) {
           if (App.paused) App.resume(); else App.pause();
         }

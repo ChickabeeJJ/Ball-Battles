@@ -114,8 +114,8 @@
       st.drag.len = len; if (len > 6) { st.drag.a = Math.atan2(dy, dx); st.aim = st.drag.a; st.touched = true; }
     },
     up() { const st = S.st; if (!st || !st.drag || st.my != null) return; if (st.drag.len > 22) S.lock(st.drag.a); st.drag = null; },
-    // keyboard: A/D (or Left/Right) turn, W / Up / Space / Enter fires
-    key(code) { const st = S.st; if (!st || st.my != null) return; if (/^(KeyW|ArrowUp|Space|Enter)$/.test(code)) S.lock(st.aim); else st.touched = true; },
+    // keyboard: A/D (or Left/Right) turn, Space (or Enter) fires
+    key(code) { const st = S.st; if (!st || st.my != null) return; if (/^(Space|Enter)$/.test(code)) S.lock(st.aim); else st.touched = true; },
 
     // ------------------------------------------------------------- drawing (world space, over the arena)
     overlay(ctx) {

@@ -76,6 +76,8 @@
     // One tap: reuse the last squad (if you still own it) and search straight away.
     start(pick) {
       const M = BB.meta, pv = M.pvpData();
+      const ban = M.banLeft();
+      if (ban) { BB.ui.toast(`You left recent matches. Matchmaking unlocks in ${Math.floor(ban / 60)}:${String(ban % 60).padStart(2, '0')}.`, 3500); M.openPvp(); return; }
       if (M.ownedCount() < 3) { BB.ui.toast('Unlock at least 3 balls to play PvP'); return; }
       const last = pv.squad;
       if (!pick && Array.isArray(last) && M.validIds(last) && last.every((id) => BB.app.isOwned(id))) { MM.ids = last.slice(); MM.search(); return; }
@@ -203,6 +205,7 @@
       BB.ui.onClose = null; BB.ui.close();
       BB.audio.play('unlock'); BB.sdk.happytime();
       M.series = { mine: ids, theirs: opp.ids, maps, seed, foeRating: rating, foeName: name, round: 0, score: [0, 0], results: [], live: true, flip: !iAmHost };
+      M.markLive(M.series); // leaving before the end counts as a loss (see M.checkAbandon)
       if (conn) BB.shoot.link(M.series, conn, keep);
       else Net.destroy(keep); // stand-in opponent: close the slot we were waiting in
       if (conn) BB.sdk.updateRoom('m' + seed, false); // in a live 1v1 room (full)
