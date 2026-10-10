@@ -427,7 +427,8 @@ body.dark { background: radial-gradient(ellipse at 50% 0%, #2a2b33, #17181c 70%)
 .feat { position: relative; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 46px; background: #3c3c42; color: #fff; border: 3px solid #111; border-radius: 4px; box-shadow: 0 3px 0 #111; font-family: var(--display); font-size: 18px; letter-spacing: .03em; }
 .feat:active { transform: translateY(2px); box-shadow: 0 1px 0 #111; }
 .feat-ic { font-size: 18px; }
-#btnCup { background: #b8860b; } #btnGauntlet { background: #8e2d2d; } #btnQuests { background: #2d5d8e; }
+#btnCup { background: linear-gradient(135deg, #ffb703, #e07a00); } #btnGauntlet { background: linear-gradient(135deg, #ff3b3b, #b5122e); } #btnQuests { background: linear-gradient(135deg, #2f8cff, #1650d6); }
+#btnCup, #btnGauntlet, #btnQuests { text-shadow: 0 2px 0 rgba(0,0,0,.45); }
 .dot-badge { display: none; position: absolute; top: -6px; right: -6px; width: 14px; height: 14px; border-radius: 50%; background: #ff3b3b; border: 2.5px solid #111; }
 .ready .dot-badge { display: block; animation: bob 1.2s ease-in-out infinite; }
 @keyframes bob { 50% { transform: translateY(-3px); } }
