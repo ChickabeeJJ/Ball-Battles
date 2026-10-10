@@ -19,7 +19,7 @@
       conn.on('data', (d) => { if (d && d.t === 'aim') S.onPeer(d); });
       conn.on('close', () => S.peerGone());
     },
-    reset() { S.inbox = {}; S.gone = false; },
+    reset() { S.inbox = {}; S.gone = false; S.st = null; S.active = false; S.pill(false); },
     // series over: close a matchmaking link
     unlink() {
       const c = S.conn, p = S.peer;
@@ -113,7 +113,8 @@
       const dx = st.drag.x0 - p.x, dy = st.drag.y0 - p.y, len = Math.hypot(dx, dy);
       st.drag.len = len; if (len > 6) { st.drag.a = Math.atan2(dy, dx); st.aim = st.drag.a; st.touched = true; }
     },
-    up() { const st = S.st; if (!st || !st.drag || st.my != null) return; if (st.drag.len > 22) S.lock(st.drag.a); st.drag = null; },
+    // releasing only sets the direction; the Launch button (or Space / Enter) fires
+    up() { const st = S.st; if (!st || !st.drag || st.my != null) return; if (st.drag.len > 22) { st.aim = st.drag.a; st.touched = true; } st.drag = null; },
     // keyboard: A/D (or Left/Right) turn, Space (or Enter) fires
     key(code) { const st = S.st; if (!st || st.my != null) return; if (/^(Space|Enter)$/.test(code)) S.lock(st.aim); else st.touched = true; },
 
@@ -164,16 +165,16 @@
     // countdown pill under the arena
     pill(on) {
       let el = document.getElementById('shotPill');
-      if (!on) { if (el) el.remove(); return; }
+      if (!on || !S.st) { document.querySelectorAll('#shotPill').forEach((e) => e.remove()); return; }
       if (!el) {
         el = document.createElement('div'); el.id = 'shotPill'; el.className = 'shot-pill';
+        el.addEventListener('pointerdown', (e) => { if (e.target.closest('.shot-go') && S.st) { e.stopPropagation(); e.preventDefault(); S.lock(S.st.aim); } });
         (document.getElementById('arenaWrap') || document.body).appendChild(el);
       }
       const st = S.st;
-      if (!st) return;
       const secs = Math.max(0, Math.ceil(st.t));
       const html = st.my == null
-        ? `<span>Time to shoot</span><b class="${secs <= 2 ? 'hot' : ''}">${secs}</b>`
+        ? `<span>Aim</span><b class="${secs <= 2 ? 'hot' : ''}">${secs}</b><button class="shot-go">Launch</button>`
         : `<span>Locked in</span><i>waiting for ${BB.meta.cleanName(st.sr.foeName)}…</i>`;
       if (el._h !== html) { el.innerHTML = html; el._h = html; }
       el.style.setProperty('--p', (Math.max(0, st.t) / AIM_TIME).toFixed(3));

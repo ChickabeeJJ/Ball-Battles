@@ -59,7 +59,7 @@
   const STEPS = [
     {
       title: 'Aim your shot',
-      text: 'Before every round you get <b>6 seconds</b> to aim. Drag back like a slingshot and let go to fire. On a keyboard, <b>A / D</b> (or ← →) turn the arrow and <b>Space</b> fires. Try it!',
+      text: 'Before every round you get <b>6 seconds</b> to aim. Drag back like a slingshot to aim, then tap <b>Launch</b>. On a keyboard, <b>A / D</b> (or ← →) turn the arrow and <b>Space</b> fires. Try it!',
       demo(stage) {
         const px = size(), a = arena(stage, [[{ id: 'sword', hp: 100, slot: 0 }], [{ id: 'dummy', hp: 60, slot: 1 }]], px, 9);
         const me = a.sim.balls[0], foe = a.sim.balls[1];
@@ -76,7 +76,8 @@
         };
         a.cv.addEventListener('pointerdown', (e) => { if (launched) return; drag = { x0: world(e).x, y0: world(e).y, len: 0, a: 0 }; a.cv.setPointerCapture(e.pointerId); e.preventDefault(); });
         a.cv.addEventListener('pointermove', (e) => { if (!drag) return; const p = world(e), dx = drag.x0 - p.x, dy = drag.y0 - p.y; drag.len = Math.hypot(dx, dy); if (drag.len > 6) { drag.a = Math.atan2(dy, dx); aim0 = drag.a; touched = true; } });
-        a.cv.addEventListener('pointerup', () => { if (drag && drag.len > 18) lock(drag.a); drag = null; });
+        a.cv.addEventListener('pointerup', () => { if (drag && drag.len > 18) { aim0 = drag.a; touched = true; } drag = null; });
+        pill.addEventListener('pointerdown', (e) => { if (e.target.closest('.shot-go') && !launched) { e.preventDefault(); lock(aim0); } });
         const overlay = (ctx) => {
           if (launched && t < -0.6) return;
           const b = me, r = b.r, now = performance.now() / 1000;
@@ -107,7 +108,7 @@
           if (a.sim.over || t < -9) { stop(); T.go(T.i); return; } // replay the demo
           const secs = Math.max(0, Math.ceil(t));
           pill.style.display = launched ? 'none' : '';
-          pill.innerHTML = `<span>Time to shoot</span><b class="${secs <= 2 ? 'hot' : ''}">${secs}</b>`; pill.style.setProperty('--p', (Math.max(0, t) / 6).toFixed(3));
+          const ph = `<span>Aim</span><b class="${secs <= 2 ? 'hot' : ''}">${secs}</b><button class="shot-go">Launch</button>`; if (pill._h !== ph) { pill.innerHTML = ph; pill._h = ph; } pill.style.setProperty('--p', (Math.max(0, t) / 6).toFixed(3));
           a.R.draw(a.sim, { overlay });
           raf = requestAnimationFrame(loop);
         };

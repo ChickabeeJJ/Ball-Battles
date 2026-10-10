@@ -345,6 +345,7 @@
     },
 
     toMenu() {
+      if (BB.shoot) { BB.shoot.st = null; BB.shoot.active = false; BB.shoot.pill(false); } // never leave the aim pill behind
       App.state = 'menu';
       if (BB.music) BB.music.endTheme();
       App.sim = null;
