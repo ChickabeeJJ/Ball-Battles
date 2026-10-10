@@ -104,7 +104,6 @@
       const warm = () => { const t0 = performance.now(); while (ids.length && performance.now() - t0 < 8) BB.icon(ids.shift()); if (ids.length) setTimeout(warm, 30); };
       setTimeout(warm, 200);
       BB.meta.refreshBadges();
-      if (BB.season) BB.season.boot(); // events + season pass
       setInterval(() => BB.meta.playTick(), 1000); // daily playtime rewards
       $('btnProfile').classList.toggle('hidden', !App.pvpAvailable());
       document.documentElement.classList.toggle('touch', matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window);
@@ -118,6 +117,7 @@
         g.onclick = () => { BB.audio.unlock(); BB.audio.play('click'); BB.meta.openPvp(); };
         $('btnCup').parentNode.prepend(g);
       }
+      if (BB.season) BB.season.boot(); // events + season pass (after the PvP button so the layout counts both)
       // A friend's challenge link takes priority; otherwise first-time players get the tutorial.
       BB.meta.checkAbandon();
       setInterval(() => App.bgTick(), 250);
@@ -523,6 +523,7 @@
           case 'bump': BB.audio.play('bump'); break;
           case 'shoot': BB.audio.play('shoot', e); break;
           case 'boom': BB.audio.play('boom', e); App.vibrate(30); break;
+          case 'nova': BB.audio.play('kamiSlam'); App.shake = 18; App.vibrate(60); break; // Nova's supernova
           case 'death': BB.audio.play('death'); if (e.main) App.vibrate(60); if (e.main && e.kami) { App.kamiKill = true; App.kamiAsc = !!e.asc; } break;
           case 'kami': {
             const cine = App.st().kamiCine !== false;

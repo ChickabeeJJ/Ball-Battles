@@ -42,8 +42,9 @@
     const out = [];
     for (let k = 1; k <= TIERS; k++) {
       const base = Math.round((40 + k * 4) / 5) * 5;
-      const free = k % 10 === 0 ? { t: 'ball', min: 'rare' } : { t: 'coins', n: base };
-      const elite = k === 30 && SEASON_BALL[season] ? { t: 'item', id: SEASON_BALL[season] } : k % 10 === 0 ? { t: 'ball', min: 'rare' } : { t: 'coins', n: Math.round((base * 1.35) / 5) * 5 };
+      // profile titles: Free tier 50 and Elite tier 40 (Season 1)
+      const free = k === 50 && season === 1 ? { t: 'title', id: 's1v' } : k % 10 === 0 ? { t: 'ball', min: 'rare' } : { t: 'coins', n: base };
+      const elite = k === 30 && SEASON_BALL[season] ? { t: 'item', id: SEASON_BALL[season] } : k === 40 && season === 1 ? { t: 'title', id: 's1e' } : k % 10 === 0 ? { t: 'ball', min: 'rare' } : { t: 'coins', n: Math.round((base * 1.35) / 5) * 5 };
       out.push({ free, elite });
     }
     return out;
@@ -417,6 +418,8 @@
       const row = document.querySelector('.feat-row');
       if (row) row.after(s);
       S.refreshStrip();
+      // the arena is sized from the menu panel's real height: re-measure now the strip is in
+      if (BB.app.layout) { BB.app.layout(); requestAnimationFrame(() => BB.app.layout()); }
       setInterval(S.refreshStrip, 60000);
     },
     refreshStrip() {
@@ -442,7 +445,7 @@
         // Elite card
         if (!p.elite) {
           const ec = el('div', 'bp-elite', `<div class="bpe-l"><div class="bpe-k">${BB.ICON.gem}ELITE PASS</div><div class="bpe-t">The premium track: more on every tier</div>
-            <ul>${SEASON_BALL[se.n] ? `<li>Exclusive Legendary ball <b>${esc(BB.ITEM[SEASON_BALL[se.n]].name)}</b> at tier 30</li>` : ''}<li><b>5 more</b> Rare+ balls (every 10 tiers)</li><li><b>35% more coins</b> on every other tier</li><li>Unlocks every tier you've already reached</li></ul></div>`);
+            <ul>${SEASON_BALL[se.n] ? `<li>Exclusive Legendary ball <b>${esc(BB.ITEM[SEASON_BALL[se.n]].name)}</b> at tier 30</li>` : ''}<li>Rare+ balls every 10 tiers + the <b>Season ${se.n} Elite</b> profile title</li><li><b>35% more coins</b> on every other tier</li><li>Unlocks every tier you've already reached</li></ul></div>`);
           const buy = el('button', 'btn primary bpe-buy', 'Unlock ' + coin(ELITE_COST));
           buy.disabled = BB.save.data.coins < ELITE_COST;
           if (buy.disabled) buy.title = 'Not enough coins';
