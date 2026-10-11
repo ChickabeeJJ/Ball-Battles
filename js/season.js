@@ -333,7 +333,7 @@
       if (r.t === 'ball') {
         // roll the rarity (90 / 9 / 1), then a random ball of it you don't own. If you own every ball of
         // that rarity, the nearest rarity that still has one is used; own them all = coins instead.
-        const own = (i) => i.cat !== 'hidden' && i.id !== 'dummy' && !limited(i) && !sv.unlocked[i.id];
+        const own = (i) => i.cat !== 'hidden' && i.cat !== 'special' && i.id !== 'dummy' && !limited(i) && !sv.unlocked[i.id]; // weapons only, never special balls
         let x = Math.random(), want = 'legendary';
         for (const [rar, p] of ODDS) { if (x < p) { want = rar; break; } x -= p; }
         const order = [want, ...['rare', 'epic', 'legendary'].filter((q) => q !== want).sort((a, b) => Math.abs(RANK[a] - RANK[want]) - Math.abs(RANK[b] - RANK[want]))];

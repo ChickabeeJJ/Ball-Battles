@@ -157,9 +157,10 @@
     isOwned(id) { return !!(BB.save.data.unlocked[id] || App.trials[id]); },
 
     // Player-picked UI colour: every panel/button/menu shade is derived from one base colour.
+    // Set inline on <body> so it wins over both the light (:root) and dark (body.dark) defaults.
     UI_DEFAULT: '#2f2f33',
     applyUiColor(hex) {
-      const r = document.documentElement.style, keys = ['--panel', '--panel2', '--g1', '--g2', '--g3', '--g4', '--g5', '--well', '--sheet', '--deep', '--menu', '--muted2'];
+      const r = document.body.style, keys = ['--panel', '--panel2', '--g1', '--g2', '--g3', '--g4', '--g5', '--well', '--sheet', '--deep', '--menu', '--muted2'];
       if (!hex || hex.toLowerCase() === App.UI_DEFAULT) { keys.forEach((k) => r.removeProperty(k)); return; }
       const n = parseInt(hex.slice(1), 16), c = [n >> 16, (n >> 8) & 255, n & 255];
       const mix = (t, k) => '#' + c.map((v) => Math.round(v + (t - v) * k).toString(16).padStart(2, '0')).join('');
