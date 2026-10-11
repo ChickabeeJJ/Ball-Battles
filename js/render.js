@@ -344,9 +344,46 @@
     const c = document.createElement('canvas');
     c.width = c.height = size;
     const ctx = c.getContext('2d');
-    BB.drawIcon(ctx, id, size / 2, size / 2, size);
+    const it = BB.ITEM[id];
+    if (it && it.cat !== 'special' && id !== 'unarmed' && id !== 'dummy' && BB.ITEM[id].cat !== 'hidden') weaponBadge(ctx, id, size);
+    else {
+      // ball-style icons get the same soft colour glow so the whole grid matches
+      if (it && it.cat !== 'hidden' && id !== 'dummy') { const col = BB.itemColor(id), g = ctx.createRadialGradient(size / 2, size * 0.46, 0, size / 2, size / 2, size * 0.5); g.addColorStop(0, rgbaHex(col, 0.45)); g.addColorStop(0.6, rgbaHex(col, 0.18)); g.addColorStop(1, rgbaHex(col, 0)); ctx.fillStyle = g; ctx.fillRect(0, 0, size, size); }
+      BB.drawIcon(ctx, id, size / 2, size / 2, size);
+    }
     return (iconCache[key] = c.toDataURL());
   };
+
+  // Weapon icons as stickers: the art is auto-fitted to fill the badge, given a light outline so dark
+  // handles still read on dark tiles, a soft drop shadow, and a glow disc in the weapon's colour.
+  function weaponBadge(ctx, id, size) {
+    const S = size * 2, raw = document.createElement('canvas'); raw.width = raw.height = S;
+    const r = raw.getContext('2d');
+    BB.drawIcon(r, id, S / 2, S / 2, S * 1.15);
+    // bounding box of the drawn weapon
+    const d = r.getImageData(0, 0, S, S).data; let x0 = S, y0 = S, x1 = 0, y1 = 0;
+    for (let y = 0; y < S; y += 2) for (let x = 0; x < S; x += 2) if (d[(y * S + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    if (x1 <= x0) { BB.drawIcon(ctx, id, size / 2, size / 2, size); return; }
+    const bw = x1 - x0 + 2, bh = y1 - y0 + 2, fit = (size * 0.74) / Math.max(bw, bh), dw = bw * fit, dh = bh * fit, dx = (size - dw) / 2, dy = (size - dh) / 2;
+    // glow disc in the weapon's colour
+    const col = BB.itemColor(id), g = ctx.createRadialGradient(size / 2, size * 0.46, 0, size / 2, size / 2, size * 0.5);
+    g.addColorStop(0, rgbaHex(col, 0.55)); g.addColorStop(0.6, rgbaHex(col, 0.22)); g.addColorStop(1, rgbaHex(col, 0));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, size, size);
+    // silhouette (for outline + shadow)
+    const sil = document.createElement('canvas'); sil.width = sil.height = size;
+    const sc = sil.getContext('2d'); sc.drawImage(raw, x0, y0, bw, bh, dx, dy, dw, dh);
+    sc.globalCompositeOperation = 'source-in'; sc.fillStyle = '#ffffff'; sc.fillRect(0, 0, size, size);
+    const o = Math.max(1.5, size * 0.028);
+    ctx.save(); ctx.globalAlpha = 0.35; ctx.filter = 'blur(' + (size * 0.025) + 'px)'; ctx.globalCompositeOperation = 'source-over';
+    const shadow = document.createElement('canvas'); shadow.width = shadow.height = size; const shc = shadow.getContext('2d'); shc.drawImage(sil, 0, 0); shc.globalCompositeOperation = 'source-in'; shc.fillStyle = '#000'; shc.fillRect(0, 0, size, size);
+    ctx.drawImage(shadow, 0, size * 0.04); ctx.restore();
+    ctx.save(); ctx.globalAlpha = 0.92;
+    for (let k = 0; k < 12; k++) { const a = (k / 12) * Math.PI * 2; ctx.drawImage(sil, Math.cos(a) * o, Math.sin(a) * o); }
+    ctx.restore();
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(raw, x0, y0, bw, bh, dx, dy, dw, dh);
+  }
+  function rgbaHex(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; }
 
   // Draws an item icon centred at (x, y) within a box of `size`.
   BB.drawIcon = function (ctx, id, x, y, size, opts) {
