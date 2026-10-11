@@ -1630,7 +1630,7 @@ html.cport .feat-row .bp-strip { margin-top: 0; }
 .beg-t { font-family: var(--display); font-size: 24px; color: #fff; text-shadow: 0 2px 0 #111; }
 .beg-s { font-size: 13px; color: #e9fff2; margin: 2px 0 8px; } .beg-s b { color: #ffd23f; }
 .beg-s .coin-ic { width: 14px; height: 14px; vertical-align: -2px; }
-.beg-orb { flex: 0 0 auto; width: 40px; height: 40px; }
-.day-r.pt-cp { font-size: 15px; }
+.pt-orb.beg-orb { flex: 0 0 auto; width: 40px; height: 40px; font-size: 22px; border-width: 3px; padding-bottom: 3px; text-shadow: 0 2px 0 #111; }
+.day-r.pt-cp { font-size: 12px; }
 .fade-black { position: fixed; inset: 0; z-index: 9999; background: #000; opacity: 0; pointer-events: all; transition: opacity .25s ease; }
 .fade-black.on { opacity: 1; }

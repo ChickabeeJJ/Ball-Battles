@@ -540,7 +540,7 @@
         row.appendChild(btn); body.appendChild(row);
       });
       const fin = document.createElement('div'); fin.className = 'ev-final' + (all ? ' ready' : '');
-      fin.innerHTML = `<span class="rw-orb r-rare beg-orb">?</span><div class="q-main"><div class="q-t">Grand prize: a Rare+ ball + ${BEGINNER_PRIZE} coins</div><div class="ev-f-s">${done} / ${BEGINNER.length} quests claimed</div></div>`;
+      fin.innerHTML = `<span class="rw-orb r-rare pt-orb beg-orb">?</span><div class="q-main"><div class="q-t">Grand prize: a Rare+ ball + ${BEGINNER_PRIZE} coins</div><div class="ev-f-s">${done} / ${BEGINNER.length} quests claimed</div></div>`;
       const fb = document.createElement('button'); fb.className = 'btn ' + (all ? 'primary ev-claim' : ''); fb.textContent = 'Claim'; fb.disabled = !all;
       fb.onclick = () => {
         g.done = true; BB.save.data.coins += BEGINNER_PRIZE;

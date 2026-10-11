@@ -188,6 +188,7 @@
     st() {
       const s = BB.save.data.settings;
       // a new player's first 3 sandbox battles run a bit faster (only while the speed button is at 1x)
+      if (BB.save.data.firstFight === 'playing' && !App.isPvpBattle() && !App.event) return Object.assign({}, s, { speed: 2 });
       if (!App.isPvpBattle() && !App.event && BB.save.data.stats.battles < 3 && BB.save.data.firstFight !== 'playing' && (s.speed || 1) === 1) return Object.assign({}, s, { speed: 1.5 });
       return App.isPvpBattle() ? Object.assign({}, s, { callouts: true, kamiCine: true, finisher: true, impact: false, speed: 1.33 }) : s; },
     refreshSpeed() { $('btnSpeed').textContent = (BB.save.data.settings.speed || 1) + 'x'; },
@@ -539,6 +540,7 @@
         if (w === 0) BB.sdk.happytime();
       }
       const stats = 'Battle time ' + Math.round(sim.t) + 's · Biggest hit ' + BB.fmt(App.maxHit);
+      if (BB.save.data.firstFight === 'playing') { App.afterResults(false); return; } // straight from Kami's finisher into the tutorial
       setTimeout(() => BB.ui.results({ winner: w, title, sub, icon, coins, stats, pvp }), 300);
     },
 
