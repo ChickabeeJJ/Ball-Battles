@@ -400,7 +400,7 @@
             d.className = 'day' + (got ? ' done' : '') + (now ? ' now' : '') + (big ? ' big' : '') + (min === 10 ? ' pt-hot' : '');
             const pct = Math.min(100, (p.secs / (min * 60)) * 100);
             const ball = typeof c !== 'number';
-            d.innerHTML = `<div class="day-n">${min} min</div><div class="day-ic">${got ? BB.ICON.star : ball ? '<span class="rw-orb r-common pt-orb">?</span>' : '<span class="coin-ic"></span>'}</div><div class="day-r">${ball ? 'Ball' : c}</div>${!got && !now ? `<div class="pt-bar"><i style="width:${pct}%"></i></div>` : ''}`;
+            d.innerHTML = `<div class="day-n">${min} min</div><div class="day-ic">${got ? BB.ICON.star : ball ? '<span class="rw-orb r-common pt-orb">?</span>' : '<span class="coin-ic"></span>'}</div><div class="day-r${ball ? ' pt-cp' : ''}">${ball ? 'Common+' : c}</div>${!got && !now ? `<div class="pt-bar"><i style="width:${pct}%"></i></div>` : ''}`;
             if (now) { d.style.cursor = 'pointer'; d.onclick = claim; }
             list.appendChild(d);
           });
@@ -408,7 +408,7 @@
           btn.className = 'btn' + (ready.length ? ' primary' : '');
           btn.disabled = !ready.length;
           const next = M.PLAYTIME.find(([min], i) => !p.got.includes(i) && p.secs < min * 60);
-          btn.innerHTML = ready.length ? 'Claim ' + (amt ? coin(amt) : '') + (hasBall ? (amt ? ' + ' : '') + 'Ball' : '') : next ? 'Next reward in ' + M.fmtTime(next[0] * 60 - p.secs) : 'All claimed today!';
+          btn.innerHTML = ready.length ? 'Claim ' + (amt ? coin(amt) : '') + (hasBall ? (amt ? ' + ' : '') + 'Common+ Ball' : '') : next ? 'Next reward in ' + M.fmtTime(next[0] * 60 - p.secs) : 'All claimed today!';
         };
         render();
         const iv = setInterval(() => {

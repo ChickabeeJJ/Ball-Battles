@@ -544,6 +544,12 @@
       };
       window.addEventListener('resize', place); place();
     },
+    // Quick dip to black: mid() runs while the screen is covered, after() once it has faded back in.
+    fadeBlack(mid, after) {
+      const f = document.createElement('div'); f.className = 'fade-black'; document.body.appendChild(f);
+      requestAnimationFrame(() => f.classList.add('on'));
+      setTimeout(() => { mid && mid(); setTimeout(() => { f.classList.remove('on'); setTimeout(() => { f.remove(); after && after(); }, 260); }, 220); }, 260);
+    },
     tutorial(done) {
       const steps = [
         { sel: '#arenaWrap', title: 'Welcome to Ball Vs Ball!', text: 'Balls bounce around the arena with spinning weapons. Every hit makes a weapon stronger. Last ball standing wins!' },

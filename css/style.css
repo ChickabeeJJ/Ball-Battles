@@ -1614,7 +1614,7 @@ html.cport .feat-row .bp-strip { margin-top: 0; }
 .gc-mark::before { top: 0; border-top-color: #ffd23f; } .gc-mark::after { bottom: 0; border-bottom-color: #ffd23f; }
 .gc-tap { font-size: 12px; color: rgba(255,255,255,.55); }
 .rw-orb.r-common { background: radial-gradient(circle at 35% 30%, #d6dbe0, #9aa3ad 60%); }
-.pt-orb { width: 26px; height: 26px; display: inline-grid; place-items: center; font-size: 14px; border-width: 2px; }
+.pt-orb { width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; line-height: 1; padding: 0 0 2px; border-width: 2px; text-shadow: 0 1px 0 #111; box-sizing: border-box; }
 
 .r-again { font-size: 20px; padding-top: 12px; padding-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .r-again svg { width: 16px; height: 16px; }
@@ -1631,3 +1631,6 @@ html.cport .feat-row .bp-strip { margin-top: 0; }
 .beg-s { font-size: 13px; color: #e9fff2; margin: 2px 0 8px; } .beg-s b { color: #ffd23f; }
 .beg-s .coin-ic { width: 14px; height: 14px; vertical-align: -2px; }
 .beg-orb { flex: 0 0 auto; width: 40px; height: 40px; }
+.day-r.pt-cp { font-size: 15px; }
+.fade-black { position: fixed; inset: 0; z-index: 9999; background: #000; opacity: 0; pointer-events: all; transition: opacity .25s ease; }
+.fade-black.on { opacity: 1; }
