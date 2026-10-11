@@ -289,9 +289,9 @@ input[type=range] { width: 160px; accent-color: var(--green); }
      Surfaces: --panel (cards, buttons), --panel2 (raised), --g1..g5 (nested boxes), --sheet (pop-up
      windows), --menu (menu panel), --deep / --well (inputs, bars, tracks).
      Text on surfaces: --panel-ink (main), --muted2 (secondary). */
-  --panel: #fffaf2; --panel2: #f1e6d4; --panel-ink: #2a2622; --muted2: #8a7f72;
-  --g1: #f6eee1; --g2: #efe5d4; --g3: #f4ecdf; --g4: #f1e7d7; --g5: #ebe0cd; --well: #e3d6c1;
-  --sheet: #fbf4e8; --deep: #ece1cf; --menu: rgba(255,250,242,0.97);
+  --panel: #f3ead9; --panel2: #e6d9c2; --panel-ink: #2a2622; --muted2: #7e7366;
+  --g1: #ece2d0; --g2: #e4d8c3; --g3: #e9dfcc; --g4: #e6dbc6; --g5: #ddd0b9; --well: #d6c7ad;
+  --sheet: #f0e6d4; --deep: #dfd1b9; --menu: rgba(243,234,217,0.97);
   --radius: 4px; --shadow: 0 4px 0 #111; --shadow-sm: 0 3px 0 #111;
 }
 html, body { font-weight: 600; letter-spacing: 0.01em; }
@@ -380,7 +380,7 @@ body.dark { background: radial-gradient(ellipse at 50% 0%, #2a2b33, #17181c 70%)
 }
 #menuPanel::before { content: 'FIGHTERS'; font-size: 12px; letter-spacing: .14em; color: #b9b4ac; margin-bottom: -6px; }
 #menuPanel .slots .vs-mid { color: #fff; font-family: var(--display); font-size: 22px; opacity: 1; }
-.slot { background: var(--panel2); border-left-width: 8px; }
+.slot { background: var(--panel2); border-left-width: 5px; }
 .opt { background: var(--panel2); }
 .opts { grid-template-columns: repeat(3, 1fr); }
 #menuPanel.has-pvp .opts { grid-template-columns: repeat(4, 1fr); }
