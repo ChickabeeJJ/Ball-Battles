@@ -1595,3 +1595,23 @@ html.cport .feat-row .bp-strip { margin-top: 0; }
   .uic-row { flex-wrap: nowrap; gap: 4px; width: 100%; justify-content: space-between; }
   .uic { flex: 1 1 0; min-width: 0; width: auto; height: auto; aspect-ratio: 1; max-width: 30px; border-width: 2.5px; }
 }
+
+/* gacha strip roll */
+.gc-wrap { position: fixed; inset: 0; z-index: 955; display: grid; place-items: center; background: rgba(6,6,12,.85); opacity: 0; transition: opacity .2s; cursor: pointer; }
+.gc-wrap.on { opacity: 1; } .gc-wrap.out { opacity: 0; }
+.gc-box { width: min(720px, 94vw); display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.gc-h { font-family: var(--display); font-size: 30px; color: #fff; text-shadow: 0 3px 0 #111; letter-spacing: .03em; }
+.gc-win { position: relative; width: 100%; height: 132px; overflow: hidden; border: 3px solid #111; border-radius: 12px; background: #15151a; box-shadow: 0 5px 0 #111, inset 0 0 30px rgba(0,0,0,.8);
+  -webkit-mask: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); mask: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
+.gc-strip { position: absolute; left: 0; top: 10px; display: flex; gap: 8px; will-change: transform; }
+.gc-c { flex: 0 0 96px; height: 106px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 3px solid #111; border-radius: 10px; background: linear-gradient(180deg, color-mix(in srgb, var(--rc) 35%, #2a2a31), #22222a); box-shadow: inset 0 -5px 0 var(--rc); color: #fff; }
+.gc-c img { width: 62px; height: 62px; }
+.gc-c span { max-width: 90px; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gc-c.won { animation: gcWon .5s ease-out both; box-shadow: inset 0 -5px 0 var(--rc), 0 0 0 3px #ffd23f, 0 0 26px var(--rc); }
+@keyframes gcWon { 40% { transform: scale(1.12); } 100% { transform: scale(1.05); } }
+.gc-mark { position: absolute; left: 50%; top: 0; bottom: 0; width: 4px; margin-left: -2px; background: #ffd23f; box-shadow: 0 0 10px #ffd23f; }
+.gc-mark::before, .gc-mark::after { content: ''; position: absolute; left: 50%; transform: translateX(-50%); border: 9px solid transparent; }
+.gc-mark::before { top: 0; border-top-color: #ffd23f; } .gc-mark::after { bottom: 0; border-bottom-color: #ffd23f; }
+.gc-tap { font-size: 12px; color: rgba(255,255,255,.55); }
+.rw-orb.r-common { background: radial-gradient(circle at 35% 30%, #d6dbe0, #9aa3ad 60%); }
+.pt-orb { width: 26px; height: 26px; display: inline-grid; place-items: center; font-size: 14px; border-width: 2px; }

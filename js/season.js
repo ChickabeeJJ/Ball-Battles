@@ -53,7 +53,11 @@
     return out;
   }
   // Rare+ ball drop odds: 90% Rare, 9% Epic, 1% Legendary. Never limited balls (Kami, King, event or season exclusives).
-  const ODDS = [['rare', 0.9], ['epic', 0.09], ['legendary', 0.01]];
+  // Random ball rolls, by tier: odds per rarity, and the coins given instead if you already own every ball it could give.
+  const ROLLS = {
+    common: { odds: [['common', 0.85], ['rare', 0.14], ['epic', 0.01]], fallback: 300 },
+    rare: { odds: [['rare', 0.9], ['epic', 0.09], ['legendary', 0.01]], fallback: 500 },
+  };
   const limited = (i) => i.kami || i.dailyOnly || i.eventOnly || i.seasonBall || i.rarity === 'iridescent';
 
   const S = (BB.season = {
@@ -334,17 +338,18 @@
         // roll the rarity (90 / 9 / 1), then a random ball of it you don't own. If you own every ball of
         // that rarity, the nearest rarity that still has one is used; own them all = coins instead.
         const own = (i) => i.cat !== 'hidden' && i.cat !== 'special' && i.id !== 'dummy' && !limited(i) && !sv.unlocked[i.id]; // weapons only, never special balls
-        let x = Math.random(), want = 'legendary';
-        for (const [rar, p] of ODDS) { if (x < p) { want = rar; break; } x -= p; }
-        const order = [want, ...['rare', 'epic', 'legendary'].filter((q) => q !== want).sort((a, b) => Math.abs(RANK[a] - RANK[want]) - Math.abs(RANK[b] - RANK[want]))];
+        const roll = ROLLS[r.min] || ROLLS.rare, tiers = roll.odds.map((o) => o[0]);
+        let x = Math.random(), want = tiers[tiers.length - 1];
+        for (const [rar, p] of roll.odds) { if (x < p) { want = rar; break; } x -= p; }
+        const order = [want, ...tiers.filter((q) => q !== want).sort((a, b) => Math.abs(RANK[a] - RANK[want]) - Math.abs(RANK[b] - RANK[want]))];
         for (const rar of order) {
           const pool = BB.ITEMS.filter((i) => own(i) && i.rarity === rar);
           if (!pool.length) continue;
           const it = pool[Math.floor(Math.random() * pool.length)];
           sv.unlocked[it.id] = true;
-          return { t: 'ball', id: it.id };
+          return { t: 'ball', id: it.id, rolled: r.min };
         }
-        const n = BB.RARITY.rare.price + 200; sv.coins += n; return { t: 'coins', n, note: 'Duplicate converted' };
+        sv.coins += roll.fallback; return { t: 'coins', n: roll.fallback, note: 'You own every ball it could give' };
       }
       return null;
     },
@@ -358,7 +363,7 @@
         const g = S.grant(R[k - 1][track]); if (g) got.push(g);
       }
       BB.save.write(); BB.app.refreshCoins();
-      if (got.length) { BB.audio.play(got.some((g) => g.t !== 'coins') ? 'unlock' : 'coin'); S.reveal(got); }
+      if (got.length) S.revealRolls(got);
       BB.meta.refreshBadges();
       return got;
     },
@@ -412,6 +417,52 @@
       return '';
     },
     // full-screen "you got" card for anything claimed
+    // random balls get the gacha strip first (one after another), then the usual reward card
+    revealRolls(got, head) {
+      const rolls = got.filter((g) => g.rolled);
+      const next = (i) => {
+        if (i >= rolls.length) { BB.audio.play(got.some((g) => g.t !== 'coins') ? 'unlock' : 'coin'); S.reveal(got, head); return; }
+        S.gacha(rolls[i].id, rolls[i].rolled, () => next(i + 1));
+      };
+      next(0);
+    },
+    // Horizontal-strip roll: a reel of random balls whizzes past a centre marker, slows down and lands
+    // on the won ball (rarity-coloured frames; tap to skip).
+    gacha(id, tier, done) {
+      const roll = ROLLS[tier] || ROLLS.rare, rars = roll.odds.map((o) => o[0]);
+      const pool = BB.ITEMS.filter((i) => i.cat === 'weapon' && i.id !== 'dummy' && rars.includes(i.rarity) && !limited(i));
+      const pickR = () => { let x = Math.random(); for (const [r, p] of roll.odds) { if (x < p) return r; x -= p; } return rars[0]; };
+      const N = 46, WIN = 40, cells = [];
+      for (let k = 0; k < N; k++) {
+        let it;
+        if (k === WIN) it = BB.ITEM[id];
+        else { const r = (k === WIN - 1 || k === WIN + 1) && Math.random() < 0.6 ? rars[rars.length - 1] : pickR(); const pp = pool.filter((i) => i.rarity === r); it = pp[Math.floor(Math.random() * pp.length)] || pool[0]; }
+        cells.push(`<div class="gc-c r-${it.rarity}" style="--rc:${BB.RARITY[it.rarity].color}"><img src="${BB.icon(it.id)}" alt=""><span>${esc(it.name)}</span></div>`);
+      }
+      const ov = el('div', 'gc-wrap', `<div class="gc-box"><div class="gc-h">${BB.RARITY[tier].name}+ Ball</div><div class="gc-win"><div class="gc-strip">${cells.join('')}</div><i class="gc-mark"></i></div><div class="gc-tap">Tap to skip</div></div>`);
+      document.body.appendChild(ov);
+      const strip = ov.querySelector('.gc-strip'), win = ov.querySelector('.gc-win');
+      const cw = strip.firstElementChild.getBoundingClientRect().width + 8, jitter = (Math.random() - 0.5) * cw * 0.6;
+      const target = WIN * cw + cw / 2 - win.clientWidth / 2 + jitter, DUR = 4200;
+      let ended = false, t0 = performance.now(), last = -1;
+      const ease = (x) => 1 - Math.pow(1 - x, 4);
+      const finish = () => {
+        if (ended) return; ended = true;
+        strip.style.transform = `translateX(${-(WIN * cw + cw / 2 - win.clientWidth / 2)}px)`;
+        const c = strip.children[WIN]; c.classList.add('won');
+        BB.audio.play(BB.ITEM[id].rarity === 'common' ? 'coin' : 'unlock');
+        setTimeout(() => { ov.classList.add('out'); setTimeout(() => { ov.remove(); done(); }, 250); }, 1100);
+      };
+      const step = (now) => {
+        if (ended) return;
+        const k = Math.min(1, (now - t0) / DUR), x = target * ease(k), idx = Math.floor((x + win.clientWidth / 2) / cw);
+        strip.style.transform = `translateX(${-x}px)`;
+        if (idx !== last) { last = idx; BB.audio.play('beep'); }
+        if (k >= 1) finish(); else requestAnimationFrame(step);
+      };
+      requestAnimationFrame(() => { ov.classList.add('on'); requestAnimationFrame(step); });
+      setTimeout(() => ov.addEventListener('pointerdown', finish), 300);
+    },
     reveal(got, head) {
       document.querySelectorAll('.bp-reveal').forEach((x) => x.remove());
       const coins = got.filter((g) => g.t === 'coins').reduce((n, g) => n + g.n, 0), items = got.filter((g) => g.t !== 'coins');

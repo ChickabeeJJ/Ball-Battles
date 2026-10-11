@@ -4,8 +4,9 @@
   const KEY = 'ballbattles_save_v1';
 
   function defaults() {
+    // new players start with 8 common balls (enough for a Cup); every other ball is unlocked by playing
     const unlocked = {};
-    for (const it of BB.ITEMS) if (it.price === 0) unlocked[it.id] = true;
+    for (const id of BB.STARTER) if (BB.ITEM[id]) unlocked[id] = true;
     return {
       v: 1,
       coins: 0,

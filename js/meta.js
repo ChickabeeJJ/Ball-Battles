@@ -257,7 +257,7 @@
 
     // ------------------------------------------------------------- playtime rewards
     // Time spent in the game today (tab visible) unlocks coin milestones, up to 30 minutes.
-    PLAYTIME: [[1, 50], [3, 75], [5, 100], [10, 500], [15, 250], [20, 350], [30, 3000]],
+    PLAYTIME: [[1, 50], [3, 75], [5, 100], [10, { t: 'ball', min: 'common' }], [15, 250], [20, 350], [30, 3000]], // 10 min: a Common+ ball
     playData() {
       const m = M.data();
       if (!m.play || m.play.day !== today()) m.play = { day: today(), secs: 0, got: [] };
@@ -356,12 +356,17 @@
         const btn = document.createElement('button'); btn.className = 'btn';
         const claim = () => {
           const ready = M.playReady(); if (!ready.length) return;
-          const p = M.playData(); let amt = 0;
-          for (const i of ready) { p.got.push(i); amt += M.PLAYTIME[i][1]; }
+          const p = M.playData(); let amt = 0; const got = [];
+          for (const i of ready) {
+            p.got.push(i); const r = M.PLAYTIME[i][1];
+            if (typeof r === 'number') amt += r; else { const g = BB.season.grant(r); if (g) got.push(g); }
+          }
           if (BB.season) BB.season.addXP(BB.season.XP.play * ready.length, 'Playtime reward');
           BB.save.data.coins += amt; BB.save.write(); BB.app.refreshCoins();
-          BB.audio.play('coin'); if (ready.includes(M.PLAYTIME.length - 1)) BB.sdk.happytime();
-          BB.ui.toast('+' + amt + ' coins!'); render(); M.refreshBadges();
+          if (ready.includes(M.PLAYTIME.length - 1)) BB.sdk.happytime();
+          if (got.length) { if (amt) got.push({ t: 'coins', n: amt }); BB.season.revealRolls(got, 'Playtime reward!'); }
+          else { BB.audio.play('coin'); BB.ui.toast('+' + amt + ' coins!'); }
+          render(); M.refreshBadges();
         };
         btn.onclick = claim;
         let sig = '';
@@ -374,15 +379,16 @@
             const d = document.createElement('div');
             d.className = 'day' + (got ? ' done' : '') + (now ? ' now' : '') + (big ? ' big' : '') + (min === 10 ? ' pt-hot' : '');
             const pct = Math.min(100, (p.secs / (min * 60)) * 100);
-            d.innerHTML = `<div class="day-n">${min} min</div><div class="day-ic">${got ? BB.ICON.star : '<span class="coin-ic"></span>'}</div><div class="day-r">${c}</div>${!got && !now ? `<div class="pt-bar"><i style="width:${pct}%"></i></div>` : ''}`;
+            const ball = typeof c !== 'number';
+            d.innerHTML = `<div class="day-n">${min} min</div><div class="day-ic">${got ? BB.ICON.star : ball ? '<span class="rw-orb r-common pt-orb">?</span>' : '<span class="coin-ic"></span>'}</div><div class="day-r">${ball ? 'Ball' : c}</div>${!got && !now ? `<div class="pt-bar"><i style="width:${pct}%"></i></div>` : ''}`;
             if (now) { d.style.cursor = 'pointer'; d.onclick = claim; }
             list.appendChild(d);
           });
-          const amt = ready.reduce((n, i) => n + M.PLAYTIME[i][1], 0);
-          btn.className = 'btn' + (amt ? ' primary' : '');
-          btn.disabled = !amt;
+          const amt = ready.reduce((n, i) => n + (typeof M.PLAYTIME[i][1] === 'number' ? M.PLAYTIME[i][1] : 0), 0), hasBall = ready.some((i) => typeof M.PLAYTIME[i][1] !== 'number');
+          btn.className = 'btn' + (ready.length ? ' primary' : '');
+          btn.disabled = !ready.length;
           const next = M.PLAYTIME.find(([min], i) => !p.got.includes(i) && p.secs < min * 60);
-          btn.innerHTML = amt ? 'Claim ' + coin(amt) : next ? 'Next reward in ' + M.fmtTime(next[0] * 60 - p.secs) : 'All claimed today!';
+          btn.innerHTML = ready.length ? 'Claim ' + (amt ? coin(amt) : '') + (hasBall ? (amt ? ' + ' : '') + 'Ball' : '') : next ? 'Next reward in ' + M.fmtTime(next[0] * 60 - p.secs) : 'All claimed today!';
         };
         render();
         const iv = setInterval(() => {

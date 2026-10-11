@@ -6,7 +6,7 @@
   const D2R = Math.PI / 180;
 
   BB.RARITY = {
-    common: { name: 'Common', color: '#9aa3ad', price: 0 },
+    common: { name: 'Common', color: '#9aa3ad', price: 100 },
     rare: { name: 'Rare', color: '#3d8bf2', price: 250 },
     epic: { name: 'Epic', color: '#a259ff', price: 600 },
     legendary: { name: 'Legendary', color: '#ff8a1f', price: 1500 },
@@ -445,5 +445,6 @@
   BB.MODE = {};
   for (const m of BB.MODES) BB.MODE[m.id] = m;
 
+  BB.STARTER = ['unarmed', 'sword', 'dagger', 'spear', 'axe', 'dummy', 'club', 'pickaxe'];
   BB.DEFAULT_SLOTS = ['unarmed', 'sword', 'dagger', 'spear', 'axe', 'unarmed'];
 })();
