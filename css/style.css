@@ -1590,3 +1590,8 @@ html.cport .feat-row .bp-strip { margin-top: 0; }
 .uic.custom { background: conic-gradient(#ff5e7e, #ffd23f, #35d047, #3d8bf2, #a259ff, #ff5e7e); }
 .uic.custom input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; border: 0; padding: 0; }
 .field.uic-f { flex-wrap: wrap; gap: 8px; }
+/* phones: all colour swatches on one row (they shrink to fit) */
+@media (max-width: 520px) {
+  .uic-row { flex-wrap: nowrap; gap: 4px; width: 100%; justify-content: space-between; }
+  .uic { flex: 1 1 0; min-width: 0; width: auto; height: auto; aspect-ratio: 1; max-width: 30px; border-width: 2.5px; }
+}
