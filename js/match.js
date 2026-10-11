@@ -116,8 +116,8 @@
       const tok = ++MM.token;
       MM.searching = true; MM.matched = false;
       MM.showSearch();
-      // nobody around: after 24-35s pair up with a stand-in opponent instead of waiting forever
-      MM.botTimer = setTimeout(() => { if (MM.live(tok)) MM.botMatch(); }, 24000 + Math.random() * 11000);
+      // nobody around: after 8-15s pair up with a stand-in opponent instead of waiting forever
+      MM.botTimer = setTimeout(() => { if (MM.live(tok)) MM.botMatch(); }, 8000 + Math.random() * 7000);
       try { await Net.loadLib(); } catch (e) { return MM.fail(tok, 'Could not load multiplayer. Check your connection and try again.'); }
       let failures = 0;
       while (MM.live(tok)) {
