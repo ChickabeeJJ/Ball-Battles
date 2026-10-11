@@ -122,7 +122,7 @@
       const handled = App.pvpAvailable() && App.openInvite((k) => BB.sdk.getInviteParam(k));
       // CrazyGames instant multiplayer: the party leader opens a friend room straight away
       if (!handled && App.pvpAvailable() && BB.sdk.instantMultiplayer()) BB.party.create();
-      else if (!handled && !BB.save.data.tutorialDone && !App.capture) setTimeout(() => BB.ui.tutorial(), 400);
+      else if (!handled && !BB.save.data.tutorialDone && !App.capture) setTimeout(() => App.firstFight(), 500);
       // joining a friend's room while the game is already running (invite notification / friends drawer)
       if (App.pvpAvailable()) BB.sdk.onJoinRoom((params) => {
         const p = params || {};
@@ -185,7 +185,11 @@
     // PvP uses fixed settings so both players see the same thing: ability text and finishers on,
     // impact frames off, speed locked at 1x.
     isPvpBattle() { return !!(App.pvp || (App.event && App.event.kind === 'pvp3')); },
-    st() { const s = BB.save.data.settings; return App.isPvpBattle() ? Object.assign({}, s, { callouts: true, kamiCine: true, finisher: true, impact: false, speed: 1.33 }) : s; },
+    st() {
+      const s = BB.save.data.settings;
+      // a new player's first 3 sandbox battles run a bit faster (only while the speed button is at 1x)
+      if (!App.isPvpBattle() && !App.event && BB.save.data.stats.battles < 3 && BB.save.data.firstFight !== 'playing' && (s.speed || 1) === 1) return Object.assign({}, s, { speed: 1.5 });
+      return App.isPvpBattle() ? Object.assign({}, s, { callouts: true, kamiCine: true, finisher: true, impact: false, speed: 1.33 }) : s; },
     refreshSpeed() { $('btnSpeed').textContent = (BB.save.data.settings.speed || 1) + 'x'; },
 
     vibrate(ms) {
@@ -415,7 +419,27 @@
       App.startBattle();
     },
 
+    // A new player's very first battle is a showcase: Tenshi (ascended Kami) vs BALL. A prompt points at
+    // Start Battle; they press it to play. When it ends, the usual tutorial runs.
+    firstFight() {
+      const sv = BB.save.data, s = sv.setup;
+      if (App.state !== 'menu') return;
+      App.trials.kami = true; App.trials.ball = true;
+      s.mode = '1v1'; s.map = 'classic';
+      s.slots[0] = Object.assign({}, s.slots[0], { id: 'kami', hp: 100, scale: 1, ov: { damage: 0, spin: 0, speed: 0 } });
+      s.slots[1] = Object.assign({}, s.slots[1], { id: 'ball', hp: 100, scale: 1, ov: { damage: 0, spin: 0, speed: 0 } });
+      sv.firstFight = 'ready'; BB.save.write();
+      App.refreshMenu();
+      BB.ui.pressStart(() => {
+        // skipped: back to a normal setup, no tutorial
+        App.trials = {}; s.slots[0].id = 'unarmed'; s.slots[1].id = 'sword';
+        sv.firstFight = 'done'; sv.tutorialDone = true; BB.save.write(); App.refreshMenu();
+      });
+    },
     startBattle() {
+      document.querySelectorAll('.tut.ps').forEach((x) => x.remove());
+      const firstFight = BB.save.data.firstFight === 'ready' && !App.pvp && !App.event;
+      if (firstFight) { BB.save.data.firstFight = 'playing'; BB.save.write(); }
       App.slowmo = 0; App.shake = 0; App.impact = null; App.lastKO = null; App.cine = false; App.cineQ = 0;
       BB.audio.unlock();
       const setup = BB.save.data.setup;
@@ -428,6 +452,10 @@
         settings: cu ? Object.assign({}, App.st(), { overtime: true, reverseB: false }) : BB.save.data.settings, controlSlot: null,
       });
       void mode;
+      if (firstFight) { // Kami starts already ascended (Tenshi)
+        const k = App.sim.balls.find((b) => b.def.id === 'kami');
+        if (k) { k.tenshi = true; k.ascended = true; k.w.regenMul = 1.3; k.w.touch = {}; k.w.servCd = 1.5; k.w.cool = { beam: 1.2, gate: 4.5, rain: 2.6 }; }
+      }
       App.maxHit = 0;
       App.state = 'battle';
       App.paused = false;
@@ -499,6 +527,7 @@
         }
       }
       coins = BB.meta.matchReward(sim, 250); // up to 250, full at 100s+ (any result)
+      if (save.stats.battles <= 5) coins += 100; // rookie bonus: early battles pay enough for a first unlock fast
       save.coins += coins;
       App.trials = {};
       BB.save.write();
@@ -514,6 +543,7 @@
     },
 
     async afterResults(rematch) {
+      if (BB.save.data.firstFight === 'playing') { BB.save.data.firstFight = 'done'; BB.save.write(); App.toMenu(); setTimeout(() => BB.ui.tutorial(), 400); return; }
       await BB.sdk.maybeMidgame();
       if (App.pvp && !rematch) App.pvp = null;
       if (rematch) { App.refreshMenu(); App.startBattle(); }

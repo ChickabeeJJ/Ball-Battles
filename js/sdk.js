@@ -11,6 +11,7 @@
     playing: false,
     adPlaying: false,
     lastMidgame: Date.now(),
+    t0: 0, // session start (performance.now()); midgame ads wait 5 minutes from here
 
     on(evt, fn) { (listeners[evt] = listeners[evt] || []).push(fn); },
     emit(evt, a) { (listeners[evt] || []).forEach((fn) => { try { fn(a); } catch (e) { console.error(e); } }); },
@@ -94,6 +95,8 @@
     // Midgame ads only at natural breaks and at most every 3 minutes.
     async maybeMidgame() {
       if (!S.ready) return;
+      // never in a player's first 3 battles or first 5 minutes: let them get hooked first
+      if ((BB.save.data && BB.save.data.stats.battles < 3) || performance.now() - S.t0 < 300000) return;
       if (Date.now() - S.lastMidgame < 180000) return;
       S.lastMidgame = Date.now();
       await S.requestAd('midgame');

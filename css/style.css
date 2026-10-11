@@ -1615,3 +1615,19 @@ html.cport .feat-row .bp-strip { margin-top: 0; }
 .gc-tap { font-size: 12px; color: rgba(255,255,255,.55); }
 .rw-orb.r-common { background: radial-gradient(circle at 35% 30%, #d6dbe0, #9aa3ad 60%); }
 .pt-orb { width: 26px; height: 26px; display: inline-grid; place-items: center; font-size: 14px; border-width: 2px; }
+
+.r-again { font-size: 20px; padding-top: 12px; padding-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.r-again svg { width: 16px; height: 16px; }
+
+/* first-launch "press start" prompt: the spotlight lets clicks through to the real button */
+.tut.ps { pointer-events: none; }
+.tut.ps .ps-card { pointer-events: auto; }
+.ps-spot { animation: psPulse 1.2s ease-in-out infinite; }
+@keyframes psPulse { 50% { box-shadow: 0 0 0 9999px rgba(0,0,0,.55), 0 0 0 6px #ffd23f, 0 0 30px #ffd23f; } }
+.ps-card .tut-t { font-size: 28px; }
+
+.beg-hero { padding: 12px 14px; border: 3px solid #111; border-radius: 12px; box-shadow: 0 4px 0 #111; background: linear-gradient(120deg, #2f8f5b, #1f6d8f); margin-bottom: 8px; }
+.beg-t { font-family: var(--display); font-size: 24px; color: #fff; text-shadow: 0 2px 0 #111; }
+.beg-s { font-size: 13px; color: #e9fff2; margin: 2px 0 8px; } .beg-s b { color: #ffd23f; }
+.beg-s .coin-ic { width: 14px; height: 14px; vertical-align: -2px; }
+.beg-orb { flex: 0 0 auto; width: 40px; height: 40px; }

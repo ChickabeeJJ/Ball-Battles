@@ -34,6 +34,17 @@
     { id: 'pvpwin', text: 'Win a PvP series', goal: 1, reward: 180, ev: 'pvpwin', pvp: true },
   ];
 
+  // Beginner quests: a one-time starter path (its own Quests tab, gone once finished).
+  const BEGINNER = [
+    { id: 'b1', text: 'Finish your first battle', goal: 1, reward: 50, ev: 'done' },
+    { id: 'b2', text: 'Unlock a new ball', goal: 1, reward: 100, ev: 'unlock' },
+    { id: 'b3', text: 'Claim a daily reward', goal: 1, reward: 100, ev: 'gift' },
+    { id: 'b4', text: 'Play a team or Free For All battle', goal: 1, reward: 100, ev: 'teamwin' },
+    { id: 'b5', text: 'Finish 5 battles', goal: 5, reward: 150, ev: 'done' },
+    { id: 'b6', text: 'Play a Cup match', goal: 1, reward: 150, ev: 'cupwin' },
+  ];
+  const BEGINNER_PRIZE = 200; // + a Rare+ ball roll
+
   const M = (BB.meta = {
     data() {
       const s = BB.save.data;
@@ -55,8 +66,17 @@
     },
 
     // ------------------------------------------------------------- tracking
+    beg() {
+      const m = M.data();
+      if (!m.beg) m.beg = { q: {}, done: (BB.save.data.stats.battles || 0) >= 10 }; // veterans skip it
+      for (const q of BEGINNER) m.beg.q[q.id] = m.beg.q[q.id] || { p: 0, c: false };
+      return m.beg;
+    },
+    begActive() { return !M.beg().done; },
+    begReady() { const g = M.beg(); return !g.done && (BEGINNER.some((q) => !g.q[q.id].c && g.q[q.id].p >= q.goal) || BEGINNER.every((q) => g.q[q.id].c)); },
     track(ev, val) {
       const m = M.data();
+      if (M.begActive()) { const g = M.beg(); for (const q of BEGINNER) if (q.ev === ev && g.q[q.id].p < q.goal) g.q[q.id].p = Math.min(q.goal, g.q[q.id].p + (val || 1)); }
       for (const q of m.quests) {
         const def = QUEST_POOL.find((x) => x.id === q.id);
         if (!def || q.claimed || def.ev !== ev) continue;
@@ -250,7 +270,7 @@
       const m = M.data();
       const claimable = m.quests.some((q) => !q.claimed && q.p >= QUEST_POOL.find((x) => x.id === q.id).goal);
       const ev = BB.season && BB.season.event();
-      const qb = $('btnQuests'); if (qb) { qb.classList.toggle('ready', claimable || !!(BB.season && BB.season.eventReady())); qb.classList.toggle('has-ev', !!ev); }
+      const qb = $('btnQuests'); if (qb) { qb.classList.toggle('ready', claimable || M.begReady() || !!(BB.season && BB.season.eventReady())); qb.classList.toggle('has-ev', !!ev); }
       if (BB.season) BB.season.refreshStrip();
       const gb = $('btnGift'); if (gb) gb.classList.toggle('ready', m.gift.day !== today() || M.playReady().length > 0);
     },
@@ -315,7 +335,7 @@
         btn.disabled = claimedToday;
         btn.onclick = () => {
           const amt = REWARDS[dayIdx];
-          m.gift.streak = streak + 1; m.gift.day = today();
+          m.gift.streak = streak + 1; m.gift.day = today(); M.track('gift', 1);
           if (kingDay) { if (BB.season) BB.season.addXP(BB.season.XP.gift, 'Daily reward'); BB.save.data.unlocked.king = true; BB.save.write(); BB.audio.play('unlock'); BB.sdk.happytime(); M.claimGift('daily'); BB.ui.toast('The King is yours!'); BB.app.refreshMenu(); return; }
           BB.save.data.coins += amt; BB.save.write();
           BB.app.refreshCoins(); BB.audio.play('coin');
@@ -459,20 +479,22 @@
     openQuests(tab) {
       const m = M.data(), S = BB.season;
       // first visit during an event: the intro cinematic plays, then the Event tab opens
-      if (S && S.needsIntro()) { S.playIntro(() => M.openQuests('event')); return; }
-      tab = tab || 'daily';
+      if (S && S.needsIntro()) { S.playIntro(() => M.openQuests(tab || (M.begActive() ? 'beginner' : 'event'))); return; }
+      tab = tab || (M.begActive() ? 'beginner' : 'daily');
+      if (tab === 'beginner' && !M.begActive()) tab = 'daily';
       BB.ui.open((sheet) => {
         const body = BB.ui.head(sheet, 'Quests');
         const tabs = document.createElement('div'); tabs.className = 'tabs rw-tabs';
-        for (const [k, n] of [['daily', 'Daily'], ['event', 'Event']]) {
+        for (const [k, n] of [...(M.begActive() ? [['beginner', 'Beginner']] : []), ['daily', 'Daily'], ['event', 'Event']]) {
           const t = document.createElement('button'); t.className = 'tab' + (k === tab ? ' on' : '') + (k === 'event' && S && S.event() ? ' ev-tab' : '');
-          const dot = k === 'event' ? S && S.eventReady() : M.dailyReady();
+          const dot = k === 'event' ? S && S.eventReady() : k === 'beginner' ? M.begReady() : M.dailyReady();
           t.innerHTML = n + (k === 'event' && S && S.event() ? ' <i class="ev-live">LIVE</i>' : '') + (dot && k !== tab ? '<i class="rw-dot"></i>' : '');
           t.onclick = () => { if (k === tab) return; BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); M.openQuests(k); };
           tabs.appendChild(t);
         }
         body.appendChild(tabs);
         if (tab === 'event') { S.renderEvent(body, sheet); return; }
+        if (tab === 'beginner') { M.renderBeginner(body); return; }
         body.appendChild(Object.assign(document.createElement('div'), { className: 'f-s', textContent: 'New quests every day. Progress counts in every mode.' }));
         for (const q of m.quests) {
           const def = QUEST_POOL.find((x) => x.id === q.id);
@@ -503,6 +525,31 @@
         mb.onclick = () => { BB.audio.play('click'); M.openMastery(); };
         body.appendChild(mb);
       }, { width: '520px', onClose: () => M.refreshBadges() });
+    },
+    questDef(id) { return QUEST_POOL.find((x) => x.id === id); },
+    renderBeginner(body) {
+      const g = M.beg(), done = BEGINNER.filter((q) => g.q[q.id].c).length, all = done === BEGINNER.length;
+      body.appendChild(Object.assign(document.createElement('div'), { className: 'beg-hero', innerHTML: `<div class="beg-t">Beginner Quests</div><div class="beg-s">Finish them all for a <b>free Rare+ ball</b> and ${coin(BEGINNER_PRIZE)}</div><div class="ev-segs">${BEGINNER.map((q) => `<i class="${g.q[q.id].c ? 'on' : ''}"></i>`).join('')}</div>` }));
+      BEGINNER.forEach((q, i) => {
+        const st = g.q[q.id], ok = st.p >= q.goal;
+        const row = document.createElement('div');
+        row.className = 'quest ev-q' + (st.c ? ' claimed' : ok ? ' ready' : '');
+        row.innerHTML = `<em class="ev-n">${st.c ? BB.ICON.check : i + 1}</em><div class="q-main"><div class="q-t">${esc(q.text)}</div><div class="q-bar"><i style="width:${(st.p / q.goal) * 100}%"></i><b>${Math.floor(st.p)} / ${q.goal}</b></div></div>`;
+        const btn = document.createElement('button'); btn.className = 'btn ' + (st.c ? '' : ok ? 'green' : ''); btn.innerHTML = st.c ? 'Done' : coin(q.reward); btn.disabled = st.c || !ok;
+        btn.onclick = () => { st.c = true; BB.save.data.coins += q.reward; BB.save.write(); BB.audio.play('coin'); BB.app.refreshCoins(); BB.ui.onClose = null; BB.ui.close(); M.openQuests('beginner'); };
+        row.appendChild(btn); body.appendChild(row);
+      });
+      const fin = document.createElement('div'); fin.className = 'ev-final' + (all ? ' ready' : '');
+      fin.innerHTML = `<span class="rw-orb r-rare beg-orb">?</span><div class="q-main"><div class="q-t">Grand prize: a Rare+ ball + ${BEGINNER_PRIZE} coins</div><div class="ev-f-s">${done} / ${BEGINNER.length} quests claimed</div></div>`;
+      const fb = document.createElement('button'); fb.className = 'btn ' + (all ? 'primary ev-claim' : ''); fb.textContent = 'Claim'; fb.disabled = !all;
+      fb.onclick = () => {
+        g.done = true; BB.save.data.coins += BEGINNER_PRIZE;
+        const r = BB.season.grant({ t: 'ball', min: 'rare' }); BB.save.write(); BB.app.refreshCoins();
+        BB.ui.onClose = null; BB.ui.close();
+        BB.season.revealRolls([r, { t: 'coins', n: BEGINNER_PRIZE }], 'Beginner quests complete!');
+        M.refreshBadges();
+      };
+      fin.appendChild(fb); body.appendChild(fin);
     },
     dailyReady() { return M.data().quests.some((q) => !q.claimed && q.p >= (QUEST_POOL.find((x) => x.id === q.id) || { goal: 1e9 }).goal); },
 

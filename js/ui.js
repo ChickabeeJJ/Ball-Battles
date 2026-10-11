@@ -293,6 +293,7 @@
               if (save.coins < it.price) return;
               save.coins -= it.price;
               save.unlocked[sel] = true;
+              BB.meta.track('unlock', 1);
               BB.save.write();
               BB.audio.play('unlock');
               BB.sdk.happytime();
@@ -524,6 +525,25 @@
     },
 
     // ------------------------------------------------------------- tutorial
+    // First-launch prompt: spotlight on Start Battle, the real button stays clickable
+    pressStart(onSkip) {
+      const ov = el('div', 'tut ps'), spot = el('div', 'tut-spot ps-spot'), card = el('div', 'tut-card ps-card');
+      ov.append(spot, card); document.body.appendChild(ov);
+      card.innerHTML = `<div class="tut-step">Your first battle</div><div class="tut-t">TENSHI vs BALL</div><div class="tut-x">Two of the rarest balls in the game. Press <b>START BATTLE</b> to play!</div>`;
+      const row = el('div', 'tut-row'), skip = el('button', 'btn', 'Skip');
+      skip.onclick = () => { BB.audio.play('click'); ov.remove(); window.removeEventListener('resize', place); if (onSkip) onSkip(); };
+      row.appendChild(skip); card.appendChild(row);
+      const place = () => {
+        if (!ov.isConnected) return window.removeEventListener('resize', place);
+        const r = $('btnStart').getBoundingClientRect(), pad = 8, cw = Math.min(320, innerWidth - 24);
+        Object.assign(spot.style, { left: r.left - pad + 'px', top: r.top - pad + 'px', width: r.width + pad * 2 + 'px', height: r.height + pad * 2 + 'px' });
+        card.style.width = cw + 'px';
+        const ch = card.offsetHeight || 150;
+        card.style.top = Math.max(10, r.top - ch - 18) + 'px';
+        card.style.left = BB.clamp(r.left + r.width / 2 - cw / 2, 12, innerWidth - cw - 12) + 'px';
+      };
+      window.addEventListener('resize', place); place();
+    },
     tutorial(done) {
       const steps = [
         { sel: '#arenaWrap', title: 'Welcome to Ball Vs Ball!', text: 'Balls bounce around the arena with spinning weapons. Every hit makes a weapon stronger. Last ball standing wins!' },
@@ -610,7 +630,7 @@
         }
         const row = el('div', '');
         row.style.cssText = 'display:flex;gap:8px';
-        const again = el('button', 'btn primary', 'Rematch');
+        const again = el('button', 'btn primary r-again', BB.ICON.play + ' Play again');
         again.style.flex = '1';
         again.onclick = () => { BB.audio.play('click'); UI.onClose = null; UI.close(); app.afterResults(true); };
         const cont = el('button', 'btn green', 'Continue');

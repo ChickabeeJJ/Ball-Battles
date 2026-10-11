@@ -88,13 +88,13 @@ await page.waitForTimeout(100);
 check('audio restored after ad', await page.evaluate(() => BB.audio.blocked === false));
 check('rewarded triples coins', (await page.evaluate(() => BB.save.data.coins)) === coins0 * 3);
 
-// midgame: skipped before 3 minutes, shown after
+// midgame: skipped early (first 3 minutes / new players), shown after
 await page.click('text=Continue');
 await page.waitForTimeout(300);
 log = await page.evaluate(() => __log.slice());
 check('no midgame within 3 minutes of start', !log.includes('requestAd:midgame'));
 await page.click('#btnStart');
-await page.evaluate(() => { BB.sdk.lastMidgame = Date.now() - 200000; BB.app.sim.balls.filter((b) => b.team === 1).forEach((b) => (b.hp = 0.5)); });
+await page.evaluate(() => { BB.sdk.lastMidgame = Date.now() - 200000; BB.sdk.t0 = -400000; BB.save.data.stats.battles = 5; BB.app.sim.balls.filter((b) => b.team === 1).forEach((b) => (b.hp = 0.5)); });
 await page.waitForSelector('.result', { timeout: 30000 });
 await page.click('text=Continue');
 await page.waitForTimeout(800);
