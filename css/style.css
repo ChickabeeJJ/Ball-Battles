@@ -289,9 +289,11 @@ input[type=range] { width: 160px; accent-color: var(--green); }
      Surfaces: --panel (cards, buttons), --panel2 (raised), --g1..g5 (nested boxes), --sheet (pop-up
      windows), --menu (menu panel), --deep / --well (inputs, bars, tracks).
      Text on surfaces: --panel-ink (main), --muted2 (secondary). */
-  --panel: #6a6158; --panel2: #776d63; --panel-ink: #ffffff; --muted2: #ddd3c6;
-  --g1: #625a51; --g2: #6f665c; --g3: #5d554d; --g4: #665e55; --g5: #575049; --well: #4d4740;
-  --sheet: #625a52; --deep: #4f4943; --menu: rgba(106,97,88,0.97);
+  /* default UI colour is the dark-mode grey in both modes; players can pick their own in Settings
+     (BB.app.applyUiColor sets these same variables inline from one chosen colour) */
+  --panel: #2f2f33; --panel2: #3c3c42; --panel-ink: #ffffff; --muted2: #b9b4ac;
+  --g1: #2a2a31; --g2: #34343a; --g3: #26262b; --g4: #2c2c34; --g5: #1f1f26; --well: #1e1e21;
+  --sheet: #252528; --deep: #1d1d22; --menu: rgba(47,47,51,0.96);
   --radius: 4px; --shadow: 0 4px 0 #111; --shadow-sm: 0 3px 0 #111;
 }
 html, body { font-weight: 600; letter-spacing: 0.01em; }
@@ -1579,10 +1581,12 @@ html.cport .feat-row .bp-strip { margin-top: 0; }
 @media (hover: hover) { .ch-it:not(.off):hover { filter: brightness(1.1); } }
 .bp-track { cursor: grab; } .bp-track.dragging { cursor: grabbing; user-select: none; } .bp-track.dragging .bp-cell { pointer-events: none; }
 
-/* ---- light mode: mid-tone warm surfaces keep light text; only small touches needed ---- */
-body:not(.dark) .q-bar b, body:not(.dark) .m-bar b, body:not(.dark) .bp-xp b { text-shadow: 0 1px 0 #111, 1px 0 0 #111, -1px 0 0 #111, 0 -1px 0 #111; }
-body:not(.dark) .d-r, body:not(.dark) .d-d, body:not(.dark) .f-s, body:not(.dark) .mp-d, body:not(.dark) .rw-time, body:not(.dark) .bp-earn-h, body:not(.dark) .bp-fine,
-body:not(.dark) .ev-pg-t span, body:not(.dark) .bonus-note small, body:not(.dark) .pvx-rec span, body:not(.dark) .q-stats span, body:not(.dark) .pf-grid span { color: #e8dfd2 !important; }
-body:not(.dark) .d-r[style] { filter: brightness(1.35); }
-body:not(.dark) .ev-never { color: #ffb3c4; }
-body:not(.dark) .pvx-rec .l b { color: #ff8a8f; } body:not(.dark) .pvx-rec .w b { color: #6ff08a; }
+/* bar labels keep an outline so they read on any UI colour */
+.q-bar b, .m-bar b, .bp-xp b { text-shadow: 0 1px 0 #111, 1px 0 0 #111, -1px 0 0 #111, 0 -1px 0 #111; }
+/* settings: UI colour swatches */
+.uic-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.uic { position: relative; width: 30px; height: 30px; border-radius: 8px; border: 3px solid #111; background: var(--c); cursor: pointer; box-shadow: 0 2px 0 #111; padding: 0; }
+.uic.on { outline: 3px solid #ffd23f; outline-offset: 1px; }
+.uic.custom { background: conic-gradient(#ff5e7e, #ffd23f, #35d047, #3d8bf2, #a259ff, #ff5e7e); }
+.uic.custom input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; border: 0; padding: 0; }
+.field.uic-f { flex-wrap: wrap; gap: 8px; }

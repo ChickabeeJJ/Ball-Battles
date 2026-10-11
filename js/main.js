@@ -156,8 +156,24 @@
     teamOfSlot(i) { return App.mode().teams.findIndex((t) => t.includes(i)); },
     isOwned(id) { return !!(BB.save.data.unlocked[id] || App.trials[id]); },
 
+    // Player-picked UI colour: every panel/button/menu shade is derived from one base colour.
+    UI_DEFAULT: '#2f2f33',
+    applyUiColor(hex) {
+      const r = document.documentElement.style, keys = ['--panel', '--panel2', '--g1', '--g2', '--g3', '--g4', '--g5', '--well', '--sheet', '--deep', '--menu', '--muted2'];
+      if (!hex || hex.toLowerCase() === App.UI_DEFAULT) { keys.forEach((k) => r.removeProperty(k)); return; }
+      const n = parseInt(hex.slice(1), 16), c = [n >> 16, (n >> 8) & 255, n & 255];
+      const mix = (t, k) => '#' + c.map((v) => Math.round(v + (t - v) * k).toString(16).padStart(2, '0')).join('');
+      const lum = (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255;
+      // very light picks get darkened a bit so white text always stays readable
+      const base = lum > 0.55 ? mix(0, (lum - 0.55) / lum + 0.05) : hex;
+      const b = parseInt(base.slice(1), 16); c[0] = b >> 16; c[1] = (b >> 8) & 255; c[2] = b & 255;
+      const set = { '--panel': base, '--panel2': mix(255, 0.1), '--g1': mix(0, 0.1), '--g2': mix(255, 0.05), '--g3': mix(0, 0.18), '--g4': mix(0, 0.06), '--g5': mix(0, 0.3),
+        '--well': mix(0, 0.35), '--sheet': mix(0, 0.15), '--deep': mix(0, 0.38), '--menu': `rgba(${c.join(',')},0.96)`, '--muted2': mix(255, 0.65) };
+      for (const k in set) r.setProperty(k, set[k]);
+    },
     applySettings() {
       const st = BB.save.data.settings;
+      App.applyUiColor(st.uiColor);
       document.body.classList.toggle('dark', !!st.dark);
       if (App.renderer) App.renderer.dark = !!st.dark;
       App.applyAudio();

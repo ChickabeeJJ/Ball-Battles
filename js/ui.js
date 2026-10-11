@@ -415,6 +415,16 @@
           ['reverseB', 'Reverse Team Two Spin', 'Team Two spins the other way'],
           ['vibrate', 'Vibration', 'On supported phones'],
         ];
+        // UI colour: presets + a custom picker; applies to menus and buttons in both light and dark mode
+        const uf = el('div', 'field uic-f', '<div><div class="f-k">Button Colour</div><div class="f-s">Menus and buttons, light and dark mode</div></div>');
+        const row = el('div', 'uic-row');
+        const PRE = ['#2f2f33', '#5b6472', '#2d4a6b', '#3d2f5c', '#5a2a3c', '#2f5248', '#6a6158', '#7a5a48'];
+        const cur = (st.uiColor || app.UI_DEFAULT).toLowerCase();
+        const pick = (hex) => { st.uiColor = hex; BB.save.write(); app.applyUiColor(hex); row.querySelectorAll('.uic').forEach((x) => x.classList.toggle('on', x.dataset.c === hex)); };
+        for (const h of PRE) { const s = el('button', 'uic' + (h === cur ? ' on' : '')); s.dataset.c = h; s.style.setProperty('--c', h); s.setAttribute('aria-label', 'Colour ' + h); s.onclick = () => { BB.audio.play('click'); pick(h); }; row.appendChild(s); }
+        const cu = el('label', 'uic custom' + (PRE.includes(cur) ? '' : ' on'), `<input type="color" value="${cur}" aria-label="Custom colour">`); cu.dataset.c = PRE.includes(cur) ? 'custom' : cur;
+        const ci = cu.querySelector('input'); ci.oninput = () => { cu.dataset.c = ci.value; app.applyUiColor(ci.value); }; ci.onchange = () => { cu.dataset.c = ci.value; pick(ci.value); };
+        row.appendChild(cu); uf.appendChild(row); body.appendChild(uf);
         for (const [k, n, sub] of toggles) {
           const f = el('div', 'field');
           f.innerHTML = `<div><div class="f-k">${n}</div>${sub ? `<div class="f-s">${sub}</div>` : ''}</div>`;
