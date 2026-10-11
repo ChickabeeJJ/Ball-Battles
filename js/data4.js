@@ -519,7 +519,7 @@
   BB.drawIcon = function (ctx, id, x, y, size, opts) {
     baseIcon(ctx, id, x, y, size, opts);
     if (!EM[id]) return;
-    ctx.save(); ctx.translate(x, y); emblem(ctx, id, size * 0.33); ctx.restore();
+    ctx.save(); ctx.translate(x, y); emblem(ctx, id, size * 0.39); ctx.restore();
   };
 
   // in-battle visuals: ground effects drawn under the ball, auras / emblems over it

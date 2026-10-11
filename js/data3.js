@@ -165,7 +165,7 @@
     baseIcon(ctx, id, x, y, size, opts);
     const em = { frost: 1, shocker: 1, blinker: 1, pinball: 1 };
     if (!em[id]) return;
-    const r = size * 0.33;
+    const r = size * 0.39;
     ctx.save(); ctx.translate(x, y); ctx.strokeStyle = '#ffffff'; ctx.fillStyle = '#ffffff'; ctx.lineCap = 'round'; ctx.lineWidth = r * 0.13;
     if (id === 'frost') for (let i = 0; i < 3; i++) { const a = (i * Math.PI) / 3; ctx.beginPath(); ctx.moveTo(-Math.cos(a) * r * 0.6, -Math.sin(a) * r * 0.6); ctx.lineTo(Math.cos(a) * r * 0.6, Math.sin(a) * r * 0.6); ctx.stroke(); }
     if (id === 'shocker') { ctx.beginPath(); ctx.moveTo(r * 0.15, -r * 0.65); ctx.lineTo(-r * 0.3, r * 0.08); ctx.lineTo(r * 0.08, r * 0.08); ctx.lineTo(-r * 0.15, r * 0.65); ctx.lineTo(r * 0.35, -r * 0.12); ctx.lineTo(-r * 0.02, -r * 0.12); ctx.closePath(); ctx.fill(); }

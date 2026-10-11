@@ -39,6 +39,29 @@
     path(ctx, [x0, -h / 2, x1, -h / 2, x1, h / 2, x0, h / 2]);
     fillStroke(ctx, fill, lw);
   }
+  // A glossy toy ball: contact shadow, sphere shading from the top-left, a dark outline, a bounce
+  // light along the bottom rim and a crisp specular highlight.
+  function shadedBall(ctx, r, col, lw) {
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(r * 0.06, r * 0.98, r * 0.8, r * 0.16, 0, 0, TAU); ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.fill();
+    const g = ctx.createRadialGradient(-r * 0.35, -r * 0.4, r * 0.08, 0, 0, r * 1.05);
+    g.addColorStop(0, shadeHex(col, 0.45)); g.addColorStop(0.45, col); g.addColorStop(1, shadeHex(col, -0.38));
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.fillStyle = g; ctx.fill();
+    ctx.save(); ctx.clip();
+    const rim = ctx.createRadialGradient(r * 0.15, r * 0.25, r * 0.6, 0, 0, r * 1.02);
+    rim.addColorStop(0, 'rgba(255,255,255,0)'); rim.addColorStop(0.8, 'rgba(255,255,255,0)'); rim.addColorStop(1, 'rgba(255,255,255,0.28)');
+    ctx.fillStyle = rim; ctx.fillRect(-r, -r, r * 2, r * 2);
+    ctx.restore();
+    ctx.lineWidth = lw * 1.5; ctx.strokeStyle = '#1d1d22'; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(-r * 0.36, -r * 0.46, r * 0.26, r * 0.15, -0.6, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(-r * 0.6, -r * 0.18, r * 0.06, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fill();
+    ctx.restore();
+  }
+  function shadeHex(hex, k) {
+    const n = parseInt(String(hex).replace('#', '').slice(0, 6), 16); if (isNaN(n)) return hex;
+    const c = [n >> 16, (n >> 8) & 255, n & 255].map((v) => Math.round(k >= 0 ? v + (255 - v) * k : v * (1 + k)));
+    return 'rgb(' + c.join(',') + ')';
+  }
   function circle(ctx, x, y, r, fill, lw) {
     ctx.beginPath(); ctx.arc(x, y, r, 0, TAU);
     fillStroke(ctx, fill, lw);
@@ -347,15 +370,12 @@
     const it = BB.ITEM[id];
     if (it && it.cat !== 'special' && id !== 'unarmed' && id !== 'dummy' && BB.ITEM[id].cat !== 'hidden') weaponBadge(ctx, id, size);
     else {
-      // ball-style icons get the same soft colour glow so the whole grid matches
-      if (it && it.cat !== 'hidden' && id !== 'dummy') { const col = BB.itemColor(id), g = ctx.createRadialGradient(size / 2, size * 0.46, 0, size / 2, size / 2, size * 0.5); g.addColorStop(0, rgbaHex(col, 0.45)); g.addColorStop(0.6, rgbaHex(col, 0.18)); g.addColorStop(1, rgbaHex(col, 0)); ctx.fillStyle = g; ctx.fillRect(0, 0, size, size); }
       BB.drawIcon(ctx, id, size / 2, size / 2, size);
     }
     return (iconCache[key] = c.toDataURL());
   };
 
-  // Weapon icons as stickers: the art is auto-fitted to fill the badge, given a light outline so dark
-  // handles still read on dark tiles, a soft drop shadow, and a glow disc in the weapon's colour.
+  // Weapon icons: the art is auto-fitted so every weapon fills the badge evenly, with a soft drop shadow.
   function weaponBadge(ctx, id, size) {
     const S = size * 2, raw = document.createElement('canvas'); raw.width = raw.height = S;
     const r = raw.getContext('2d');
@@ -365,10 +385,6 @@
     for (let y = 0; y < S; y += 2) for (let x = 0; x < S; x += 2) if (d[(y * S + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
     if (x1 <= x0) { BB.drawIcon(ctx, id, size / 2, size / 2, size); return; }
     const bw = x1 - x0 + 2, bh = y1 - y0 + 2, fit = (size * 0.74) / Math.max(bw, bh), dw = bw * fit, dh = bh * fit, dx = (size - dw) / 2, dy = (size - dh) / 2;
-    // glow disc in the weapon's colour
-    const col = BB.itemColor(id), g = ctx.createRadialGradient(size / 2, size * 0.46, 0, size / 2, size / 2, size * 0.5);
-    g.addColorStop(0, rgbaHex(col, 0.55)); g.addColorStop(0.6, rgbaHex(col, 0.22)); g.addColorStop(1, rgbaHex(col, 0));
-    ctx.fillStyle = g; ctx.fillRect(0, 0, size, size);
     // silhouette (for outline + shadow)
     const sil = document.createElement('canvas'); sil.width = sil.height = size;
     const sc = sil.getContext('2d'); sc.drawImage(raw, x0, y0, bw, bh, dx, dy, dw, dh);
@@ -377,9 +393,6 @@
     ctx.save(); ctx.globalAlpha = 0.35; ctx.filter = 'blur(' + (size * 0.025) + 'px)'; ctx.globalCompositeOperation = 'source-over';
     const shadow = document.createElement('canvas'); shadow.width = shadow.height = size; const shc = shadow.getContext('2d'); shc.drawImage(sil, 0, 0); shc.globalCompositeOperation = 'source-in'; shc.fillStyle = '#000'; shc.fillRect(0, 0, size, size);
     ctx.drawImage(shadow, 0, size * 0.04); ctx.restore();
-    ctx.save(); ctx.globalAlpha = 0.92;
-    for (let k = 0; k < 12; k++) { const a = (k / 12) * Math.PI * 2; ctx.drawImage(sil, Math.cos(a) * o, Math.sin(a) * o); }
-    ctx.restore();
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(raw, x0, y0, bw, bh, dx, dy, dw, dh);
   }
@@ -393,14 +406,15 @@
     const lw = Math.max(1.5, size * 0.03);
     ctx.save(); ctx.translate(x, y);
     if (it.cat === 'special' || id === 'unarmed' || id === 'dummy') {
-      const r = size * 0.33;
+      const r = size * (id === 'spiky' || id === 'orbital' ? 0.36 : 0.39);
       const col = opts.color || it.color || (id === 'dummy' ? '#f1ece3' : '#35d047');
       if (id === 'spiky') spikes(ctx, 0, 0, r * 0.85, 10, r * 0.35, 0, lw);
       if (id === 'orbital') { for (let i = 0; i < 3; i++) { const a = -0.6 + (i * TAU) / 3; circle(ctx, Math.cos(a) * r * 1.15, Math.sin(a) * r * 1.15, r * 0.24, '#c9ced6', lw); } }
       const br = id === 'spiky' ? r * 0.85 : id === 'orbital' ? r * 0.75 : r;
-      circle(ctx, 0, 0, br, col, lw * 1.4);
-      ctx.beginPath(); ctx.arc(-br * 0.3, -br * 0.35, br * 0.22, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fill();
-      emblem(ctx, id, br, lw);
+      shadedBall(ctx, br, col, lw);
+      // emblem gets a soft dark drop so white symbols read on light balls too
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowOffsetY = Math.max(1, br * 0.05); ctx.shadowBlur = br * 0.06;
+      emblem(ctx, id, br, lw); ctx.restore();
     } else {
       ctx.rotate(-Math.PI / 4);
       const L = size * 0.86, W = Math.max(size * 0.11, L * (it.base.width / Math.max(it.base.len, 20)) * 0.75);

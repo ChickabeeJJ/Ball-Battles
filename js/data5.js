@@ -81,7 +81,7 @@
     baseIcon(ctx, id, x, y, size, opts);
     if (id === 'nova') {
       // a bright star core with four flare points
-      const r = size * 0.33;
+      const r = size * 0.39;
       ctx.save(); ctx.translate(x, y);
       const g = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 0.6); g.addColorStop(0, '#ffffff'); g.addColorStop(0.5, '#fff1b8'); g.addColorStop(1, 'rgba(255,241,184,0)');
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, r * 0.6, 0, TAU); ctx.fill();
@@ -91,7 +91,7 @@
       return;
     }
     if (id !== 'ball') return;
-    const r = size * 0.33, lw = Math.max(1.5, size * 0.03);
+    const r = size * 0.39, lw = Math.max(1.5, size * 0.03);
     ctx.save(); ctx.translate(x, y);
     for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.arc(0, 0, r - lw * 0.2, (i / 5) * TAU - Math.PI / 2, ((i + 1) / 5) * TAU - Math.PI / 2); ctx.strokeStyle = RAINBOW[i]; ctx.lineWidth = lw * 1.3; ctx.stroke(); }
     const s = r * 0.24;

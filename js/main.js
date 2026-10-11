@@ -66,21 +66,16 @@
     },
 
     async boot() {
-      const ld = document.getElementById('loader');
-      // photosensitivity: play the intro fight at 82.5% speed (fewer, slower flashes)
-      if (ld && ld.getAnimations) { try { for (const a of ld.getAnimations({ subtree: true })) a.playbackRate = 0.825; } catch (e) { /* older browsers */ } }
       App.loader.set(0);
       await BB.sdk.init();
       App.loader.set(1);
       BB.sdk.loadingStart();
       BB.save.load();
-      // music starts as soon as the game loads (or on the first touch if the browser blocks autoplay)
       App.applyAudio();
-      BB.music.start();
       App.loader.set(2);
 
       try {
-        await Promise.race([Promise.all([document.fonts.load('20px Anton'), document.fonts.load('20px "Pixelify Sans"')]), new Promise((r) => setTimeout(r, 200))]);
+        await Promise.race([Promise.all([document.fonts.load('20px Anton'), document.fonts.load('20px "Pixelify Sans"')]), new Promise((r) => setTimeout(r, 120))]);
       } catch (e) { /* fall back to system font */ }
       App.loader.set(3);
 
@@ -98,6 +93,8 @@
 
       BB.sdk.loadingStop();
       if (!App.capture) requestAnimationFrame(App.frame);
+      // music starts once the menu is up, so its download never competes with the game's own files
+      setTimeout(() => BB.music.start(), 150);
       await App.loader.done();
       // warm the icon cache in idle time after the menu is up, so loading isn't held up by it
       const ids = BB.ITEMS.filter((i) => i.cat !== 'hidden').map((i) => i.id);

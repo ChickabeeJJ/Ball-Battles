@@ -352,7 +352,7 @@
   const prevIcon = BB.drawIcon;
   BB.drawIcon = function (ctx, id, x, y, size, opts) {
     prevIcon(ctx, id, x, y, size, opts);
-    const r = size * 0.33;
+    const r = size * 0.39;
     ctx.save(); ctx.translate(x, y);
     ctx.strokeStyle = '#ffffff'; ctx.fillStyle = '#ffffff'; ctx.lineWidth = r * 0.12; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     switch (id) {
