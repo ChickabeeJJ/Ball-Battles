@@ -528,7 +528,6 @@
         }
       }
       coins = BB.meta.matchReward(sim, 250); // up to 250, full at 100s+ (any result)
-      if (save.stats.battles <= 5) coins += 100; // rookie bonus: early battles pay enough for a first unlock fast
       save.coins += coins;
       App.trials = {};
       BB.save.write();
