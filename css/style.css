@@ -1655,8 +1655,9 @@ html.cport .feat-row .bp-strip { margin-top: 0; }
 .fo-ring.r2 { border-color: rgba(255,120,180,.5); border-style: dashed; animation-delay: .7s, 1.4s; left: -112px; top: -112px; width: 224px; height: 224px; }
 @keyframes foRing { to { transform: scale(1); } }
 @keyframes foSpin { from { rotate: 0deg; } to { rotate: 360deg; } }
-.fo-balls img { position: absolute; left: -24px; top: -24px; width: 48px; height: 48px; opacity: 0; transform: translate(0,0) scale(.2); animation: foBall .55s cubic-bezier(.2,1.5,.4,1) forwards, foSpin 9s linear infinite reverse; /* counter-spin keeps icons upright */ filter: drop-shadow(0 3px 0 rgba(0,0,0,.5)); }
-@keyframes foBall { to { opacity: 1; transform: translate(var(--x), var(--y)) scale(1); } }
+.fo-balls img { position: absolute; left: -24px; top: -24px; width: 48px; height: 48px; opacity: 0; translate: 0 0; scale: .2; animation: foBall .55s cubic-bezier(.2,1.5,.4,1) forwards, foUp 9s linear infinite reverse; /* counter-spin keeps icons upright */ filter: drop-shadow(0 3px 0 rgba(0,0,0,.5)); }
+@keyframes foBall { to { opacity: 1; translate: var(--x) var(--y); scale: 1; } }
+@keyframes foUp { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .fo-txt { position: absolute; left: 0; right: 0; top: calc(42% + 150px); text-align: center; padding: 0 20px; }
 .fo-t { font-family: var(--display); font-size: 52px; line-height: 1; color: #ffd23f; text-shadow: 0 4px 0 #111, 0 0 28px rgba(255,210,63,.5); opacity: 0; transform: translateY(16px) scale(.9); animation: foT .6s cubic-bezier(.2,1.4,.4,1) 1.6s forwards; }
 @keyframes foT { to { opacity: 1; transform: none; } }
