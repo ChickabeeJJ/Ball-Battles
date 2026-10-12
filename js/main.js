@@ -545,7 +545,7 @@
     },
 
     async afterResults(rematch) {
-      if (BB.save.data.firstFight === 'playing') { BB.save.data.firstFight = 'done'; BB.save.write(); BB.ui.fadeBlack(() => App.toMenu(), () => BB.ui.tutorial(), { slow: true, text: 'Now you know what a Special ball can do.<br><b>Let\'s build your own team.</b>' }); return; }
+      if (BB.save.data.firstFight === 'playing') { BB.save.data.firstFight = 'done'; BB.save.write(); BB.ui.firstOutro(() => App.toMenu(), () => BB.ui.tutorial()); return; }
       await BB.sdk.maybeMidgame();
       if (App.pvp && !rematch) App.pvp = null;
       if (rematch) { App.refreshMenu(); App.startBattle(); }
@@ -616,7 +616,7 @@
               const slow = BB.save.data.firstFight === 'playing' ? 0.75 : 1; // the first-ever battle lingers on the finisher
               App.impact = { t: 0, slow, dur: App.kamiAsc ? 3.0 : 2.8, kamiFin: true, asc: !!App.kamiAsc, x: 0, y: 0, seed: (Math.random() * 1e6) | 0, foe: foe ? BB.itemColor(foe.def.id) : '#e8473f' };
               BB.audio.play('kamiFinisher');
-              setTimeout(() => BB.ui.banner('K.O.!', 900), (App.kamiAsc ? 2900 : 2700) / slow);
+              if (slow === 1) setTimeout(() => BB.ui.banner('K.O.!', 900), App.kamiAsc ? 2900 : 2700);
             } else if (App.ballKill && e.winner >= 0 && App.st().finisher && BB.ballFinisher) {
               // BALL (or one of its summons) lands the final blow: its rainbow finisher
               const foe = sim.balls.find((b) => b.main && !b.alive && b.team !== e.winner);
@@ -660,7 +660,14 @@
         if (App.impactCd > 0) App.impactCd -= dt;
         if (running && App.impact) {
           App.impact.t += dt * (App.impact.slow || 1);
-          if (App.impact.t >= App.impact.dur) App.impact = null;
+          if (App.impact.t >= App.impact.dur) {
+            // first-ever battle: the outro starts the moment Kami's finisher ends
+            if (App.impact.kamiFin && BB.save.data.firstFight === 'playing' && !App.resultsShown) {
+              const s = App.sim; if (!s.over) s.over = { winner: s.winner != null ? s.winner : 0, t: s.t };
+              App.impact = null; App.renderStats(s, true); App.onOver(); return;
+            }
+            App.impact = null;
+          }
           App.handleEvents(App.sim);
         } else if (running) {
           App.sim.input = App.readInput();

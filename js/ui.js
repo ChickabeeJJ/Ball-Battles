@@ -556,6 +556,22 @@
       requestAnimationFrame(() => requestAnimationFrame(() => f.classList.add('on')));
       setTimeout(() => { mid && mid(); setTimeout(() => { f.classList.add('out'); f.classList.remove('on'); setTimeout(() => { f.remove(); after && after(); }, tout); }, hold); }, tin);
     },
+    // After the first-ever battle: an iris closes to a starry void, the player's starter balls pop in
+    // around a glowing ring, "YOUR TURN" lands with a shine, then the iris opens on the menu.
+    firstOutro(mid, after) {
+      const sv = BB.save.data, own = BB.ITEMS.filter((i) => sv.unlocked[i.id] && i.cat === 'weapon').slice(0, 8);
+      const f = el('div', 'fo');
+      const stars = Array.from({ length: 36 }, () => `<i style="left:${Math.random() * 100}%;top:${Math.random() * 100}%;animation-delay:${(Math.random() * 2).toFixed(2)}s;--s:${(1 + Math.random() * 2).toFixed(1)}px"></i>`).join('');
+      const balls = own.map((it, k) => { const a = (k / own.length) * Math.PI * 2 - Math.PI / 2; return `<img src="${BB.icon(it.id)}" alt="" style="--x:${(Math.cos(a) * 118).toFixed(0)}px;--y:${(Math.sin(a) * 118).toFixed(0)}px;animation-delay:${(0.9 + k * 0.09).toFixed(2)}s">`; }).join('');
+      f.innerHTML = `<div class="fo-stars">${stars}</div><div class="fo-core"><div class="fo-ring"></div><div class="fo-ring r2"></div><div class="fo-balls">${balls}</div></div>
+        <div class="fo-txt"><div class="fo-t">YOUR TURN</div><div class="fo-s">These ${own.length} balls are yours. Build your team!</div></div>`;
+      document.body.appendChild(f);
+      BB.audio.play('unlock');
+      requestAnimationFrame(() => requestAnimationFrame(() => f.classList.add('in')));
+      setTimeout(() => { mid && mid(); }, 700);
+      setTimeout(() => { BB.audio.play('coin'); }, 1700);
+      setTimeout(() => { f.classList.add('out'); setTimeout(() => { f.remove(); after && after(); }, 750); }, 3600);
+    },
     tutorial(done) {
       const steps = [
         { sel: '#arenaWrap', title: 'Welcome to Ball Vs Ball!', text: 'Balls bounce around the arena with spinning weapons. Every hit makes a weapon stronger. Last ball standing wins!' },
