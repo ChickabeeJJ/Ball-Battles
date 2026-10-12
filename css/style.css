@@ -1663,3 +1663,7 @@ html.cport .feat-row .bp-strip { margin-top: 0; }
 @keyframes foT { to { opacity: 1; transform: none; } }
 .fo-s { margin-top: 10px; color: #d9d4ea; font-size: 16px; opacity: 0; animation: foT .6s ease 2s forwards; }
 .fo-balls { position: absolute; left: 0; top: 0; width: 0; height: 0; animation: foUp 6s linear .9s infinite; }
+
+/* phone idle screen: HP bars only (no stat text) so the arena can grow */
+html.idlecmp .stat-row .stx, html.idlecmp .stat-row .tr em { display: none; }
+html.idlecmp .stat-row { min-height: 0; }

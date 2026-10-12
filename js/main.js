@@ -219,6 +219,7 @@
       const header = (cland ? 30 : 46) * ui, stats = (cland ? (teamMode ? 50 : 34) : (teamMode ? 70 : 58)) * ui;
       let S;
       const inBattle = App.state === 'battle';
+      document.documentElement.classList.toggle('idlecmp', !inBattle && !land);
       if (inBattle) {
         // nothing to show beside the arena mid-fight: give it the whole screen
         const t2 = cland ? 0 : top;
@@ -235,7 +236,9 @@
         // use the menu panel's real height so the arena takes all the space that's actually free
         const mp = $('menuPanel'), real = mp && mp.offsetHeight ? mp.getBoundingClientRect().height : 0;
         const panel = real > 50 ? real : (teamMode ? 300 : 270) * ui;
-        S = Math.min(vw - 24, vh - top - header - stats - 12 - panel);
+        // idle on a phone: the stat text under the HP bars is hidden, so only the bars' real height is reserved
+        const sr = $('statRow'), sh = sr && sr.offsetHeight ? sr.getBoundingClientRect().height + 4 : stats;
+        S = Math.min(vw - 24, vh - top - header - Math.min(stats, sh) - 12 - panel);
       }
       S = Math.max(150, Math.floor(S));
       document.documentElement.style.setProperty('--arena', S + 'px');
