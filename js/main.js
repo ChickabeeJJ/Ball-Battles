@@ -188,7 +188,7 @@
     st() {
       const s = BB.save.data.settings;
       // a new player's first 3 sandbox battles run a bit faster (only while the speed button is at 1x)
-      if (BB.save.data.firstFight === 'playing' && !App.isPvpBattle() && !App.event) return Object.assign({}, s, { speed: 2 });
+      if (BB.save.data.firstFight === 'playing' && !App.isPvpBattle() && !App.event) return Object.assign({}, s, { speed: 1.33 });
       if (!App.isPvpBattle() && !App.event && BB.save.data.stats.battles < 3 && BB.save.data.firstFight !== 'playing' && (s.speed || 1) === 1) return Object.assign({}, s, { speed: 1.5 });
       return App.isPvpBattle() ? Object.assign({}, s, { callouts: true, kamiCine: true, finisher: true, impact: false, speed: 1.33 }) : s; },
     refreshSpeed() { $('btnSpeed').textContent = (BB.save.data.settings.speed || 1) + 'x'; },
@@ -438,7 +438,7 @@
       });
     },
     startBattle() {
-      document.querySelectorAll('.tut.ps').forEach((x) => x.remove());
+      document.querySelectorAll('.tut.ps').forEach((x) => x.remove()); $('btnStart').classList.remove('ps-hl');
       const firstFight = BB.save.data.firstFight === 'ready' && !App.pvp && !App.event;
       if (firstFight) { BB.save.data.firstFight = 'playing'; BB.save.write(); }
       App.slowmo = 0; App.shake = 0; App.impact = null; App.lastKO = null; App.cine = false; App.cineQ = 0;
@@ -545,7 +545,7 @@
     },
 
     async afterResults(rematch) {
-      if (BB.save.data.firstFight === 'playing') { BB.save.data.firstFight = 'done'; BB.save.write(); BB.ui.fadeBlack(() => App.toMenu(), () => BB.ui.tutorial()); return; }
+      if (BB.save.data.firstFight === 'playing') { BB.save.data.firstFight = 'done'; BB.save.write(); BB.ui.fadeBlack(() => App.toMenu(), () => BB.ui.tutorial(), { slow: true, text: 'Now you know what a Legendary can do.<br><b>Let\'s build your own team.</b>' }); return; }
       await BB.sdk.maybeMidgame();
       if (App.pvp && !rematch) App.pvp = null;
       if (rematch) { App.refreshMenu(); App.startBattle(); }
@@ -613,9 +613,10 @@
             if (App.kamiKill && e.winner >= 0 && App.st().finisher) {
               const foe = sim.balls.find((b) => b.main && !b.alive && b.team !== e.winner);
               // an ascended Kami's kill gets the enhanced (crimson) finisher
-              App.impact = { t: 0, dur: App.kamiAsc ? 3.0 : 2.8, kamiFin: true, asc: !!App.kamiAsc, x: 0, y: 0, seed: (Math.random() * 1e6) | 0, foe: foe ? BB.itemColor(foe.def.id) : '#e8473f' };
+              const slow = BB.save.data.firstFight === 'playing' ? 0.75 : 1; // the first-ever battle lingers on the finisher
+              App.impact = { t: 0, slow, dur: App.kamiAsc ? 3.0 : 2.8, kamiFin: true, asc: !!App.kamiAsc, x: 0, y: 0, seed: (Math.random() * 1e6) | 0, foe: foe ? BB.itemColor(foe.def.id) : '#e8473f' };
               BB.audio.play('kamiFinisher');
-              setTimeout(() => BB.ui.banner('K.O.!', 900), App.kamiAsc ? 2900 : 2700);
+              setTimeout(() => BB.ui.banner('K.O.!', 900), (App.kamiAsc ? 2900 : 2700) / slow);
             } else if (App.ballKill && e.winner >= 0 && App.st().finisher && BB.ballFinisher) {
               // BALL (or one of its summons) lands the final blow: its rainbow finisher
               const foe = sim.balls.find((b) => b.main && !b.alive && b.team !== e.winner);
@@ -658,7 +659,7 @@
         const running = (pvp || (!App.paused && !BB.sdk.adPlaying && !document.hidden)) && !App.cine && !BB.shoot.active;
         if (App.impactCd > 0) App.impactCd -= dt;
         if (running && App.impact) {
-          App.impact.t += dt;
+          App.impact.t += dt * (App.impact.slow || 1);
           if (App.impact.t >= App.impact.dur) App.impact = null;
           App.handleEvents(App.sim);
         } else if (running) {

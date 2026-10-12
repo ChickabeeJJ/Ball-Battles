@@ -1620,10 +1620,14 @@ html.cport .feat-row .bp-strip { margin-top: 0; }
 .r-again svg { width: 16px; height: 16px; }
 
 /* first-launch "press start" prompt: the spotlight lets clicks through to the real button */
-.tut.ps { pointer-events: none; }
+.tut.ps, .tut.pass { pointer-events: none; }
+.tut.pass .tut-card { pointer-events: auto; }
+.tut.ps .tut-spot { box-shadow: 0 0 0 9999px rgba(4,4,8,.86); }
+#btnStart.ps-hl { position: relative; z-index: 31; animation: psBtn 1.4s ease-in-out infinite; }
+@keyframes psBtn { 0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,210,63,.7), 0 0 18px rgba(255,210,63,.5); } 50% { transform: scale(1.04); box-shadow: 0 0 0 8px rgba(255,210,63,0), 0 0 36px rgba(255,210,63,.85); } }
 .tut.ps .ps-card { pointer-events: auto; }
 .ps-spot { animation: psPulse 1.2s ease-in-out infinite; }
-@keyframes psPulse { 50% { box-shadow: 0 0 0 9999px rgba(0,0,0,.55), 0 0 0 6px #ffd23f, 0 0 30px #ffd23f; } }
+@keyframes psPulse { 50% { box-shadow: 0 0 0 9999px rgba(4,4,8,.86), 0 0 0 6px #ffd23f, 0 0 30px #ffd23f; } }
 .ps-card .tut-t { font-size: 28px; }
 
 .beg-hero { padding: 12px 14px; border: 3px solid #111; border-radius: 12px; box-shadow: 0 4px 0 #111; background: linear-gradient(120deg, #2f8f5b, #1f6d8f); margin-bottom: 8px; }
@@ -1632,5 +1636,10 @@ html.cport .feat-row .bp-strip { margin-top: 0; }
 .beg-s .coin-ic { width: 14px; height: 14px; vertical-align: -2px; }
 .pt-orb.beg-orb { flex: 0 0 auto; width: 40px; height: 40px; font-size: 22px; border-width: 3px; padding-bottom: 3px; text-shadow: 0 2px 0 #111; }
 .day-r.pt-cp { font-size: 12px; }
-.fade-black { position: fixed; inset: 0; z-index: 9999; background: #000; opacity: 0; pointer-events: all; transition: opacity .25s ease; }
+.fade-black { position: fixed; inset: 0; z-index: 9999; background: #000; opacity: 0; pointer-events: all; transition: opacity .25s ease; display: grid; place-items: center; }
+.fade-black.slow { background: radial-gradient(circle at 50% 45%, #1a1030 0%, #07060c 70%); transition: opacity .9s cubic-bezier(.45,0,.25,1); }
+.fb-text { color: #d9d4ea; font-size: 18px; line-height: 1.5; text-align: center; padding: 0 28px; opacity: 0; transform: translateY(10px); transition: opacity .8s ease .55s, transform 1.2s ease .55s; }
+.fb-text b { display: block; font-family: var(--display); font-size: 26px; color: #ffd23f; letter-spacing: .02em; margin-top: 4px; }
+.fade-black.on .fb-text { opacity: 1; transform: none; }
+.fade-black.out .fb-text { opacity: 0; transform: translateY(-8px); transition: opacity .5s ease, transform .9s ease; }
 .fade-black.on { opacity: 1; }

@@ -529,9 +529,10 @@
     pressStart(onSkip) {
       const ov = el('div', 'tut ps'), spot = el('div', 'tut-spot ps-spot'), card = el('div', 'tut-card ps-card');
       ov.append(spot, card); document.body.appendChild(ov);
+      $('btnStart').classList.add('ps-hl');
       card.innerHTML = `<div class="tut-step">Your first battle</div><div class="tut-t">TENSHI vs BALL</div><div class="tut-x">Two of the rarest balls in the game. Press <b>START BATTLE</b> to play!</div>`;
       const row = el('div', 'tut-row'), skip = el('button', 'btn', 'Skip');
-      skip.onclick = () => { BB.audio.play('click'); ov.remove(); window.removeEventListener('resize', place); if (onSkip) onSkip(); };
+      skip.onclick = () => { BB.audio.play('click'); ov.remove(); $('btnStart').classList.remove('ps-hl'); window.removeEventListener('resize', place); if (onSkip) onSkip(); };
       row.appendChild(skip); card.appendChild(row);
       const place = () => {
         if (!ov.isConnected) return window.removeEventListener('resize', place);
@@ -545,17 +546,22 @@
       window.addEventListener('resize', place); place();
     },
     // Quick dip to black: mid() runs while the screen is covered, after() once it has faded back in.
-    fadeBlack(mid, after) {
-      const f = document.createElement('div'); f.className = 'fade-black'; document.body.appendChild(f);
-      requestAnimationFrame(() => f.classList.add('on'));
-      setTimeout(() => { mid && mid(); setTimeout(() => { f.classList.remove('on'); setTimeout(() => { f.remove(); after && after(); }, 260); }, 220); }, 260);
+    // opts.slow: a gentler version (soft vignette in, a line of text that drifts up, slow fade out).
+    fadeBlack(mid, after, opts) {
+      const o = opts || {}, f = document.createElement('div');
+      f.className = 'fade-black' + (o.slow ? ' slow' : '');
+      if (o.text) f.innerHTML = `<div class="fb-text">${o.text}</div>`;
+      document.body.appendChild(f);
+      const [tin, hold, tout] = o.slow ? [900, o.text ? 1900 : 500, 900] : [260, 220, 260];
+      requestAnimationFrame(() => requestAnimationFrame(() => f.classList.add('on')));
+      setTimeout(() => { mid && mid(); setTimeout(() => { f.classList.add('out'); f.classList.remove('on'); setTimeout(() => { f.remove(); after && after(); }, tout); }, hold); }, tin);
     },
     tutorial(done) {
       const steps = [
         { sel: '#arenaWrap', title: 'Welcome to Ball Vs Ball!', text: 'Balls bounce around the arena with spinning weapons. Every hit makes a weapon stronger. Last ball standing wins!' },
         { sel: '#slots', title: 'Pick your fighters', text: 'Tap a ball card to choose its weapon and set its health and size.' },
         { sel: '.opts', title: 'Modes & maps', text: 'Switch between 1v1, team fights and Free For All, pick a map, or roll random foes.' },
-        { sel: '#btnStart', title: 'Start the battle', text: 'Press Start Battle and watch the chaos. Wins earn coins to unlock 36 different balls.' },
+        { sel: '#btnStart', title: 'Start the battle', text: 'Tap Start Battle and watch the chaos. Every battle earns coins to unlock new balls.' },
       ];
       let i = 0;
       const ov = el('div', 'tut');
@@ -563,7 +569,9 @@
       const card = el('div', 'tut-card');
       ov.append(spot, card);
       document.body.appendChild(ov);
-      const finish = () => { ov.remove(); window.removeEventListener('resize', show); BB.save.data.tutorialDone = true; BB.save.write(); if (done) done(); };
+      const startHit = () => { if (ov.classList.contains('pass')) finish(); };
+      $('btnStart').addEventListener('click', startHit, true);
+      const finish = () => { ov.remove(); window.removeEventListener('resize', show); $('btnStart').removeEventListener('click', startHit, true); BB.save.data.tutorialDone = true; BB.save.write(); if (done) done(); };
       const show = () => {
         const s = steps[i], tgt = document.querySelector(s.sel);
         const r = tgt ? tgt.getBoundingClientRect() : { left: innerWidth / 2, top: innerHeight / 2, width: 0, height: 0, bottom: innerHeight / 2 };
@@ -572,7 +580,9 @@
         card.innerHTML = `<div class="tut-step">${i + 1} / ${steps.length}</div><div class="tut-t">${esc(s.title)}</div><div class="tut-x">${esc(s.text)}</div>`;
         const row = el('div', 'tut-row');
         const skip = el('button', 'btn', 'Skip'); skip.onclick = () => { BB.audio.play('click'); finish(); };
-        const next = el('button', 'btn primary', i === steps.length - 1 ? "Let's go!" : 'Next');
+        const last = i === steps.length - 1;
+        ov.classList.toggle('pass', last); // last step: the real Start Battle button works too
+        const next = el('button', 'btn primary', last ? "Let's go!" : 'Next');
         next.onclick = () => { BB.audio.unlock(); BB.audio.play('click'); i++; if (i >= steps.length) finish(); else show(); };
         row.append(skip, next);
         card.appendChild(row);
