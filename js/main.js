@@ -237,7 +237,7 @@
         const mp = $('menuPanel'), real = mp && mp.offsetHeight ? mp.getBoundingClientRect().height : 0;
         const panel = real > 50 ? real : (teamMode ? 300 : 270) * ui;
         // idle on a phone: the stat text under the HP bars is hidden, so only the bars' real height is reserved
-        const sr = $('statRow'), sh = sr && sr.offsetHeight ? sr.getBoundingClientRect().height + 4 : stats;
+        const sr = $('statRow'), sh = sr ? (sr.offsetHeight ? sr.getBoundingClientRect().height + 4 : 0) : stats;
         S = Math.min(vw - 24, vh - top - header - Math.min(stats, sh) - 12 - panel);
       }
       S = Math.max(150, Math.floor(S));
