@@ -545,7 +545,7 @@
     },
 
     async afterResults(rematch) {
-      if (BB.save.data.firstFight === 'playing') { BB.save.data.firstFight = 'done'; BB.save.write(); BB.ui.fadeBlack(() => App.toMenu(), () => BB.ui.tutorial(), { slow: true, text: 'Now you know what a Legendary can do.<br><b>Let\'s build your own team.</b>' }); return; }
+      if (BB.save.data.firstFight === 'playing') { BB.save.data.firstFight = 'done'; BB.save.write(); BB.ui.fadeBlack(() => App.toMenu(), () => BB.ui.tutorial(), { slow: true, text: 'Now you know what a Special ball can do.<br><b>Let\'s build your own team.</b>' }); return; }
       await BB.sdk.maybeMidgame();
       if (App.pvp && !rematch) App.pvp = null;
       if (rematch) { App.refreshMenu(); App.startBattle(); }

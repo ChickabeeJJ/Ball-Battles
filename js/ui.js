@@ -530,7 +530,7 @@
       const ov = el('div', 'tut ps'), spot = el('div', 'tut-spot ps-spot'), card = el('div', 'tut-card ps-card');
       ov.append(spot, card); document.body.appendChild(ov);
       $('btnStart').classList.add('ps-hl');
-      card.innerHTML = `<div class="tut-step">Your first battle</div><div class="tut-t">TENSHI vs BALL</div><div class="tut-x">Two of the rarest balls in the game. Press <b>START BATTLE</b> to play!</div>`;
+      card.innerHTML = `<div class="tut-step">Your first battle</div><div class="tut-t">TENSHI vs BALL</div><div class="tut-x">Two Special balls, the rarest in the game. Press <b>START BATTLE</b> to play!</div>`;
       const row = el('div', 'tut-row'), skip = el('button', 'btn', 'Skip');
       skip.onclick = () => { BB.audio.play('click'); ov.remove(); $('btnStart').classList.remove('ps-hl'); window.removeEventListener('resize', place); if (onSkip) onSkip(); };
       row.appendChild(skip); card.appendChild(row);
