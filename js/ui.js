@@ -140,12 +140,13 @@
       R.dark = !!BB.save.data.settings.dark;
       const px = Math.min(360, window.innerWidth - 56, window.innerHeight - 220);
       R.resize(Math.max(200, px));
-      let sim = null, t0 = 0, last = performance.now(), acc = 0, seed = 1, imp = null, kfin = null;
+      let sim = null, t0 = 0, last = performance.now(), acc = 0, seed = 1, imp = null, kfin = null, awoke = false, cine = false;
       const fresh = () => {
         sim = new BB.Sim({ seed: seed++, map: 'classic', teams: [[{ id, hp: 100, slot: 0 }], [{ id: 'dummy', hp: 100, slot: 1 }]],
           settings: { dmgNumbers: true, callouts: true, hitlag: false, parrylag: false, impact: false, finisher: false, overtime: false } });
         t0 = 0; kfin = null;
-        if (tenshi) { // showcase Kami's revived (Tenshi) form
+        if (tenshi && !awoke) sim.balls[0].tenshi = true; // first run: base Kami falls, then the awakening plays
+        else if (tenshi) { // later loops: straight into the revived (Tenshi) form
           const k = sim.balls[0];
           k.tenshi = true; k.ascended = true; k.w.regenMul = 1.3; k.w.touch = {}; k.w.servCd = 1.5; k.w.cool = { beam: 1.2, gate: 4.5, rain: 2.6 };
         }
@@ -158,8 +159,14 @@
           imp.t += Math.min(0.1, acc); acc = 0;
           if (imp.t >= imp.dur) imp = null;
         }
-        while (!imp && acc >= 1 / 120) {
+        if (cine) acc = 0; // the awakening cutscene holds the clip
+        // Tenshi preview: after a moment the base form is struck down, which triggers the revival
+        if (tenshi && !awoke && !cine && t0 >= 2.2) { const k = sim.balls[0]; if (!k.ascended) { sim.burst(k.x, k.y, 30, ['#ffffff', '#e8473f', '#111'], 420, 4); sim.kill(k, sim.balls[1]); } }
+        const awaken = () => { if (!awoke && sim.events.some((e) => e.type === 'kami' && e.k === 'awaken')) { awoke = true; cine = true; sim.events.length = 0; BB.audio.play('death'); BB.kamiAwaken(() => { cine = false; last = performance.now(); }); } };
+        awaken();
+        while (!imp && !cine && acc >= 1 / 120) {
           sim.step(1 / 120); acc -= 1 / 120; t0 += 1 / 120;
+          awaken(); if (cine) break;
           for (const e of sim.events) if (e.type === 'death' && e.main && (e.kami || e.ballKill)) kfin = { asc: !!e.asc, ball: !!e.ballKill && !e.kami, done: false };
           // Kami's (or BALL's) knockout plays its finisher before the clip restarts
           if (sim.over && kfin && !kfin.done && BB.save.data.settings.finisher !== false) {
