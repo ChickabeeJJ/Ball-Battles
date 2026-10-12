@@ -1647,7 +1647,7 @@ html.cport .feat-row .bp-strip { margin-top: 0; }
 /* first-battle outro */
 .fo { position: fixed; inset: 0; z-index: 9999; pointer-events: all; background: radial-gradient(circle at 50% 42%, #2a1640 0%, #0c0816 55%, #05040a 100%); clip-path: circle(0% at 50% 42%); transition: clip-path .7s cubic-bezier(.6,0,.3,1); overflow: hidden; }
 .fo.in { clip-path: circle(150% at 50% 42%); }
-.fo.out { clip-path: circle(0% at 50% 42%); transition: clip-path .75s cubic-bezier(.7,0,.4,1); }
+.fo.out { opacity: 0; transition: opacity .75s ease; }
 .fo-stars i { position: absolute; width: var(--s); height: var(--s); border-radius: 50%; background: #fff; opacity: .2; animation: foTw 2.2s ease-in-out infinite; }
 @keyframes foTw { 50% { opacity: .9; } }
 .fo-core { position: absolute; left: 50%; top: 42%; width: 0; height: 0; }
