@@ -568,6 +568,12 @@
     firstOutro(mid, after) {
       const sv = BB.save.data, own = BB.ITEMS.filter((i) => sv.unlocked[i.id] && i.cat === 'weapon').slice(0, 8);
       const f = el('div', 'fo');
+      // Scale the full ring-and-balls graphic against the available viewport.
+      // Desktop gets a much larger presentation; short/narrow screens stay inside the viewport.
+      const vw = window.innerWidth || 1024, vh = window.innerHeight || 768;
+      const scale = Math.max(0.82, Math.min(1.75, vw / 950, vh / 560));
+      f.style.setProperty('--fo-scale', scale.toFixed(3));
+      f.style.setProperty('--fo-title-offset', Math.round(150 * scale) + 'px');
       const stars = Array.from({ length: 36 }, () => `<i style="left:${Math.random() * 100}%;top:${Math.random() * 100}%;animation-delay:${(Math.random() * 2).toFixed(2)}s;--s:${(1 + Math.random() * 2).toFixed(1)}px"></i>`).join('');
       const balls = own.map((it, k) => { const a = (k / own.length) * Math.PI * 2 - Math.PI / 2; return `<img src="${BB.icon(it.id)}" alt="" style="--x:${(Math.cos(a) * 118).toFixed(0)}px;--y:${(Math.sin(a) * 118).toFixed(0)}px;animation-delay:${(0.9 + k * 0.09).toFixed(2)}s, .9s">`; }).join('');
       f.innerHTML = `<div class="fo-stars">${stars}</div><div class="fo-core"><div class="fo-ring"></div><div class="fo-ring r2"></div><div class="fo-balls">${balls}</div></div>
