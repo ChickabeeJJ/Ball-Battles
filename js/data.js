@@ -268,6 +268,10 @@
     base: {}, melee: true, blocks: true,
     init(w) { w.dummyAwakened = false; w.dmyPulse = 0; },
     awakenDummy(sim, b, cinematic) { awakenDummySkin(sim, b, b.w, cinematic); },
+    onDamaged(sim, b) {
+      // Crossing the half-health threshold by a large hit still triggers the skin before a KO resolves.
+      if (b.dummySkin && !b.w.dummyAwakened && b.hp <= b.maxHp * 0.5) awakenDummySkin(sim, b, b.w, true);
+    },
     update(sim, b, w, dt) {
       if (!b.dummySkin) return;
       if (!w.dummyAwakened && b.hp <= b.maxHp * 0.5) awakenDummySkin(sim, b, w, true);
