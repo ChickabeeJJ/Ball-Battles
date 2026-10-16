@@ -281,12 +281,6 @@
             tb.onclick = () => { BB.audio.play('click'); UI.preview(sel, { tenshi: true }); };
             detail.querySelector('.d-acts').appendChild(tb);
           }
-          if (it.id === 'dummy') {
-            const db = el('button', 'd-prev d-prev2 d-prev-dmy', BB.ICON.play + '<span>D.U.M.M.Y.</span>');
-            db.onclick = () => { BB.audio.play('click'); UI.preview(sel, { dummyAsc: true }); };
-            detail.querySelector('.d-acts').appendChild(db);
-            detail.insertAdjacentHTML('beforeend', '<div class="k-abil"><b>D.U.M.M.Y. · Mastery Lv4</b><p>At half health the limiter breaks: a cinematic awakening, a full heal, temporary invulnerability, extreme damage, and repeated reality-shattering pulses.</p></div>');
-          }
           if (it.kami) detail.insertAdjacentHTML('beforeend', '<div class="k-abil">' + [['Divine Grace', 'Teleports away from any attack while charged. Refills slower as it drains and only trickles back at 20% or below. HP locked at 1.'], ['Seraph Beam', 'Angel wings unfurl, then a beam of light pierces the arena. 20 dmg · ' + BB.KAMI.AB.beam.cd + 's'], ['Golden Gates', 'Imprisons a foe in a golden cage, then slams it shut. 18 dmg · ' + BB.KAMI.AB.gate.cd + 's'], ['Heaven\'s Arsenal', 'Portals open and rain ' + BB.KAMI.AB.rain.swords + ' holy swords. 3 dmg each · ' + BB.KAMI.AB.rain.cd + 's'], ['Tenshi (Mastery Lv20 skin)', 'Refuses its first death and ascends: crimson arts that hit harder, Angelic Touch (brush-spear hits on foes restore Grace), faster Grace recharge above 60% (very fast above 90%) and Heavenly Servants. Not used in PvP.']].map(([n, d]) => `<div><b>${n}</b><span>${d}</span></div>`).join('') + '</div>');
           if (app.isOwned(sel)) { detail.insertAdjacentHTML('beforeend', '<div class="m-inline">' + BB.meta.masteryBlock(sel) + '</div>'); BB.meta.bindSkins(detail, sel, () => app.refreshMenu()); }
           foot.innerHTML = '';
