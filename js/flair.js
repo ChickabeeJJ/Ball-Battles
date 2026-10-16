@@ -268,5 +268,74 @@
       ctx.save(); ctx.globalAlpha = 0.16 + 0.14 * k;
       ctx.beginPath(); ctx.arc(b.x, b.y, R2, 0, TAU); ctx.arc(b.x, b.y, r, 0, TAU, true); ctx.fillStyle = g; ctx.fill(); ctx.restore();
     }
+
+    // Draw Verity's face LAST so no later ball artwork or aura can hide the expression.
+    if (id === 'verity') {
+      const stage = Math.max(0, Math.min(2, w.stage || 0));
+      ctx.save();
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      const face = stage === 2 ? '#ffd05a' : stage === 1 ? '#ffda42' : '#ffdf3f';
+      ctx.beginPath(); ctx.arc(b.x, b.y, r * 0.99, 0, TAU);
+      const fg = ctx.createRadialGradient(b.x - r * 0.34, b.y - r * 0.4, r * 0.05, b.x, b.y, r);
+      fg.addColorStop(0, '#fff2a3'); fg.addColorStop(0.58, face); fg.addColorStop(1, stage === 2 ? '#e89326' : '#e7a921');
+      ctx.fillStyle = fg; ctx.fill(); ctx.lineWidth = Math.max(2.2, r * 0.095); ctx.strokeStyle = '#171717'; ctx.stroke();
+
+      if (stage === 0) {
+        // Happy: bold oval eyes and an unmistakable curved smile.
+        for (const dx of [-0.29, 0.29]) {
+          ctx.beginPath(); ctx.ellipse(b.x + dx * r, b.y - r * 0.2, r * 0.075, r * 0.11, 0, 0, TAU);
+          ctx.fillStyle = '#171717'; ctx.fill();
+        }
+        ctx.beginPath(); ctx.moveTo(b.x - r * 0.35, b.y + r * 0.025);
+        ctx.quadraticCurveTo(b.x, b.y + r * 0.53, b.x + r * 0.35, b.y + r * 0.025);
+        ctx.strokeStyle = '#171717'; ctx.lineWidth = r * 0.105; ctx.stroke();
+      } else if (stage === 1) {
+        // Displeased: heavy inward-slanting brows, narrow eyes, deep frown.
+        for (const side of [-1, 1]) {
+          const cx = b.x + side * r * 0.29;
+          ctx.beginPath(); ctx.moveTo(cx - r * 0.13, b.y - r * 0.38);
+          ctx.lineTo(cx + r * 0.13, b.y - r * 0.27);
+          ctx.strokeStyle = '#171717'; ctx.lineWidth = r * 0.105; ctx.stroke();
+          ctx.beginPath(); ctx.ellipse(cx, b.y - r * 0.13, r * 0.073, r * 0.083, 0, 0, TAU);
+          ctx.fillStyle = '#171717'; ctx.fill();
+        }
+        ctx.beginPath(); ctx.moveTo(b.x - r * 0.3, b.y + r * 0.29);
+        ctx.quadraticCurveTo(b.x, b.y - r * 0.02, b.x + r * 0.3, b.y + r * 0.29);
+        ctx.strokeStyle = '#171717'; ctx.lineWidth = r * 0.11; ctx.stroke();
+      } else {
+        // Monster: slashing brows, glaring red pupils and a wide jagged mouth full of teeth.
+        for (const side of [-1, 1]) {
+          const cx = b.x + side * r * 0.29;
+          ctx.beginPath(); ctx.moveTo(cx - r * 0.15, b.y - r * 0.4);
+          ctx.lineTo(cx + r * 0.14, b.y - r * 0.27);
+          ctx.strokeStyle = '#171717'; ctx.lineWidth = r * 0.12; ctx.stroke();
+          ctx.beginPath(); ctx.ellipse(cx, b.y - r * 0.13, r * 0.1, r * 0.13, 0, 0, TAU);
+          ctx.fillStyle = '#fff9dc'; ctx.fill(); ctx.lineWidth = r * 0.035; ctx.strokeStyle = '#171717'; ctx.stroke();
+          ctx.beginPath(); ctx.arc(cx, b.y - r * 0.12, r * 0.055, 0, TAU);
+          ctx.fillStyle = '#ef233c'; ctx.fill();
+          ctx.beginPath(); ctx.arc(cx, b.y - r * 0.12, r * 0.024, 0, TAU);
+          ctx.fillStyle = '#171717'; ctx.fill();
+        }
+        ctx.beginPath();
+        ctx.moveTo(b.x - r * 0.4, b.y + r * 0.01);
+        ctx.lineTo(b.x - r * 0.31, b.y + r * 0.34);
+        ctx.lineTo(b.x - r * 0.18, b.y + r * 0.25);
+        ctx.lineTo(b.x - r * 0.06, b.y + r * 0.42);
+        ctx.lineTo(b.x + r * 0.07, b.y + r * 0.25);
+        ctx.lineTo(b.x + r * 0.2, b.y + r * 0.35);
+        ctx.lineTo(b.x + r * 0.4, b.y + r * 0.01);
+        ctx.closePath(); ctx.fillStyle = '#171017'; ctx.fill();
+        ctx.lineWidth = r * 0.045; ctx.strokeStyle = '#171717'; ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(b.x - r * 0.31, b.y + r * 0.07); ctx.lineTo(b.x - r * 0.2, b.y + r * 0.2);
+        ctx.lineTo(b.x - r * 0.11, b.y + r * 0.08); ctx.lineTo(b.x, b.y + r * 0.24);
+        ctx.lineTo(b.x + r * 0.12, b.y + r * 0.08); ctx.lineTo(b.x + r * 0.25, b.y + r * 0.21);
+        ctx.strokeStyle = '#fff1b2'; ctx.lineWidth = r * 0.085; ctx.stroke();
+        ctx.shadowColor = '#ff3b24'; ctx.shadowBlur = r * 0.23;
+        ctx.beginPath(); ctx.arc(b.x, b.y, r * 1.035, 0, TAU);
+        ctx.strokeStyle = 'rgba(255,48,28,0.85)'; ctx.lineWidth = r * 0.065; ctx.stroke();
+      }
+      ctx.restore();
+    }
   };
 })();
