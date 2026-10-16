@@ -288,10 +288,11 @@
         sim.burst(b.x, b.y, 20, ['#ffffff', '#ff244d', '#a259ff'], 420, 4);
       }
     },
-    onHit(sim, b, w, t) {
+    onHit(sim, b, w, t, dealt) {
       if (!b.dummyAscended) return;
       w.damage = Math.min(180, w.damage + 8);
-      sim.heal(b, 14);
+      // Heal only 2% of actual damage dealt, not a flat amount per hit.
+      sim.heal(b, Math.max(0, dealt || 0) * 0.02);
       if (t && t.alive) sim.ring(t.x, t.y, t.r, t.r * 2.5, '#ff244d', 0.24);
     },
     stats: (w, b) => b && b.dummyAscended ? ['D.U.M.M.Y.', 'Damage: ' + fmt(w.damage), 'GODMODE'] : ['Just vibing'],
