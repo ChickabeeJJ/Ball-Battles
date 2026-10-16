@@ -122,7 +122,7 @@
     update(sim, b, w, dt) { w.timer -= dt; if (w.timer <= 0) { w.timer = 1.4; shoot(sim, b, w, 1, 0, 520, { kind: 'fireball', r: 9 * w.scale, dmg: w.damage, life: 2.5, burn: w.burn }); sim.emit({ type: 'shoot', x: b.x, y: b.y }); } },
     onHit(sim, b, w) { w.burn += 1; }, stats: (w) => ['Fireball: ' + fmt(w.damage), 'Burn: ' + w.burn + '/s'] });
   add({ id: 'thunderrod', name: 'Thunder Rod', cat: 'weapon', rarity: 'legendary', color: '#f1c40f',
-    desc: 'Channels lightning to the nearest enemy for 0.8 seconds, ticking every 0.1 seconds. Each damage tick increases the next by 0.02.',
+    desc: 'Channels lightning to the nearest enemy for 1.8 seconds, ticking every 0.1 seconds. Recharges every 2 seconds. Each damage tick increases the next by 0.02.',
     base: { damage: 1, spin: 160, len: 46, width: 12 }, melee: true, blocks: true,
     init(w) { w.timer = 1.2; w.zap = 0.1; w.channel = 0; w.tick = 0; },
     update(sim, b, w, dt) {
@@ -143,7 +143,7 @@
         } else w.tick = Math.max(w.tick, 0.1);
       }
       if (w.timer <= 0) {
-        w.timer = 3; w.channel = 0.8; w.tick = 0;
+        w.timer = 2; w.channel = 1.8; w.tick = 0;
         sim.emit({ type: 'shoot', x: b.x, y: b.y, small: true });
       }
     },
