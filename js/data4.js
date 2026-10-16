@@ -47,11 +47,11 @@
   });
   add({
     id: 'harpoon', name: 'Harpoon', cat: 'weapon', rarity: 'legendary', color: '#1e6fa8',
-    desc: 'Fires a hooked harpoon that ricochets around the arena with a trailing rope. It latches onto a ball, reels it in and deals repeated damage. +0.6 damage every hit.',
+    desc: 'Fires a hooked harpoon that ricochets around the arena with a trailing rope. It latches onto a ball, reels it in and deals repeated damage. Latching has a 4.5-second cooldown. +0.6 damage every hit.',
     base: { damage: 2, spin: 130, len: 40, width: 8 }, melee: true, blocks: true,
-    init(w) { w.timer = 1.6; },
+    init(w) { w.timer = 1.6; w.hookCd = 0; },
     update(sim, b, w, dt) {
-      w.timer -= dt;
+      w.timer -= dt; w.hookCd = Math.max(0, w.hookCd - dt);
       if (w.timer > 0) return;
       const e = sim.nearestEnemy(b.team, b.x, b.y);
       if (!e) return;
@@ -62,7 +62,8 @@
         vx: Math.cos(a) * 620, vy: Math.sin(a) * 620, angle: a, r: 6 * b.scale,
         dmg: w.damage * 0.7, life: 7.5, bounces: 999, knock: 0, rope: [{ x: b.x, y: b.y }],
         onHit(s, p, t) {
-          if (!t.alive || !p.owner.alive) return;
+          if (!t.alive || !p.owner.alive || w.hookCd > 0) return;
+          w.hookCd = 4.5;
           p.hookedTarget = t; p.hookT = 0.82; p.hookDmg = Math.max(0.16, p.dmg * 0.22);
           p.damageTick = 0.1; p.life = 0.82; p.pierce = true; p.knock = 0; p.homing = 0;
           p.vx = 0; p.vy = 0; p.angle = Math.atan2(p.owner.y - t.y, p.owner.x - t.x);
@@ -72,7 +73,7 @@
       sim.emit({ type: 'shoot', x: b.x, y: b.y });
     },
     onHit(sim, b, w) { w.damage += 0.6; },
-    stats: (w) => ['Damage: ' + fmt(w.damage), 'Harpoon: ' + Math.max(0, Math.ceil(w.timer)) + 's'],
+    stats: (w) => ['Damage: ' + fmt(w.damage), 'Harpoon: ' + Math.max(0, Math.ceil(w.timer)) + 's', 'Latch: ' + (w.hookCd > 0 ? Math.ceil(w.hookCd) + 's' : 'Ready')],
   });
   add({
     id: 'kusarigama', name: 'Kusarigama', cat: 'weapon', rarity: 'epic', color: '#16a085',
