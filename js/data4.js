@@ -15,7 +15,7 @@
   // ================================================================ weapons
   add({
     id: 'yoyo', name: 'Yo-Yo', cat: 'weapon', rarity: 'rare', color: '#ff6b81',
-    desc: 'The string reels out and back in. Hits at full reach deal +60%. +0.4 damage every hit.',
+    desc: 'The yo-yo string extends and reels back in like a real yo-yo. Hits at full reach deal +60%. +0.4 damage every hit.',
     base: { damage: 1.5, spin: 170, len: 30, width: 15 }, melee: true, blocks: true,
     init(w) { w.len0 = w.len; w.reel = 0; },
     update(sim, b, w, dt) { w.reel += dt * 2.6; w.len = w.len0 * (1 + 1.5 * (0.5 - 0.5 * Math.cos(w.reel))); },
@@ -25,16 +25,29 @@
   });
   add({
     id: 'drill', name: 'Drill', cat: 'weapon', rarity: 'epic', color: '#95a5a6',
-    desc: 'Hits in quick succession drill deeper: each one within 0.6s adds +25% damage (up to triple). +0.25 every hit.',
+    desc: 'Bores into enemies briefly on hit. Rapid follow-ups within 0.6s add +25% damage (up to triple). +0.25 damage every hit.',
     base: { damage: 1.5, spin: 240, len: 44, width: 13 }, melee: true, blocks: true, hitCd: 0.15,
-    init(w) { w.combo = 1; w.lastHit = -9; },
+    init(w) { w.combo = 1; w.lastHit = -9; w.len0 = w.len; w.embedTarget = null; w.embedT = 0; },
+    update(sim, b, w, dt) {
+      if (w.embedT > 0) {
+        w.embedT = Math.max(0, w.embedT - dt);
+        const target = w.embedTarget;
+        if (target && target.alive && w.embedT > 0) {
+          const dx = target.x - b.x, dy = target.y - b.y, dist = Math.hypot(dx, dy);
+          w.angle = Math.atan2(dy, dx);
+          w.len = Math.max(5, dist - b.r - w.gap + target.r * 0.35);
+          return;
+        }
+      }
+      w.embedTarget = null; w.len = w.len0;
+    },
     damageFn(sim, b, w) { w.combo = sim.t - w.lastHit < 0.6 ? Math.min(3, w.combo + 0.25) : 1; w.lastHit = sim.t; return [w.damage * w.combo, w.combo >= 2]; },
-    onHit(sim, b, w, t) { w.damage += 0.25; if (w.combo >= 2 && t && sim.frng() < 0.5) sim.burst(t.x, t.y, 5, ['#dfe6e9', '#ffd23f'], 260, 2); },
+    onHit(sim, b, w, t) { w.damage += 0.25; if (t && t.alive) { w.embedTarget = t; w.embedT = 0.24; } if (w.combo >= 2 && t && sim.frng() < 0.5) sim.burst(t.x, t.y, 5, ['#dfe6e9', '#ffd23f'], 260, 2); },
     stats: (w) => ['Damage: ' + fmt(w.damage), 'Drill: x' + w.combo.toFixed(2)],
   });
   add({
     id: 'harpoon', name: 'Harpoon', cat: 'weapon', rarity: 'legendary', color: '#1e6fa8',
-    desc: 'Every 3s it fires a harpoon that hooks the enemy and reels it in, stunned. +0.6 damage every hit.',
+    desc: 'Fires a hooked harpoon that ricochets around the arena with a trailing rope. It latches onto a ball, reels it in and deals repeated damage. +0.6 damage every hit.',
     base: { damage: 2, spin: 130, len: 40, width: 8 }, melee: true, blocks: true,
     init(w) { w.timer = 1.6; },
     update(sim, b, w, dt) {
@@ -44,13 +57,18 @@
       if (!e) return;
       w.timer = 3;
       const a = Math.atan2(e.y - b.y, e.x - b.x);
-      sim.spawnProj({ owner: b, kind: 'harpoon', x: b.x + Math.cos(a) * b.r, y: b.y + Math.sin(a) * b.r, vx: Math.cos(a) * 620, vy: Math.sin(a) * 620, angle: a, r: 6 * b.scale, dmg: w.damage * 1.2, life: 1.4, knock: 0, homing: 1.6, // a little homing
+      sim.spawnProj({
+        owner: b, kind: 'harpoon', x: b.x + Math.cos(a) * b.r, y: b.y + Math.sin(a) * b.r,
+        vx: Math.cos(a) * 620, vy: Math.sin(a) * 620, angle: a, r: 6 * b.scale,
+        dmg: w.damage * 0.7, life: 7.5, bounces: 999, knock: 0, rope: [{ x: b.x, y: b.y }],
         onHit(s, p, t) {
           if (!t.alive || !p.owner.alive) return;
-          const dx = p.owner.x - t.x, dy = p.owner.y - t.y, d = Math.hypot(dx, dy) || 1;
-          t.vx = (dx / d) * 760; t.vy = (dy / d) * 760; t.flyT = 0.35; t.stunT = Math.max(t.stunT, 0.3);
+          p.hookedTarget = t; p.hookT = 0.82; p.hookDmg = Math.max(0.16, p.dmg * 0.22);
+          p.damageTick = 0.1; p.life = 0.82; p.pierce = true; p.knock = 0; p.homing = 0;
+          p.vx = 0; p.vy = 0; p.angle = Math.atan2(p.owner.y - t.y, p.owner.x - t.x);
           s.fxTag(t.x, t.y + t.r + 18, 'HOOKED', '#7fd3ff');
-        } });
+        },
+      });
       sim.emit({ type: 'shoot', x: b.x, y: b.y });
     },
     onHit(sim, b, w) { w.damage += 0.6; },
@@ -112,7 +130,7 @@
   });
   add({
     id: 'chakram', name: 'Chakram', cat: 'weapon', rarity: 'epic', color: '#f39c12',
-    desc: 'Every 3s it throws a spinning ring blade that pierces and bounces off walls twice. +0.5 damage every hit.',
+    desc: 'Throws spinning ring blades that pierce enemies and bounce off walls twice. They linger three times longer, so several can fly at once. +0.5 damage every hit.',
     base: { damage: 1.5, spin: 190, len: 30, width: 20 }, melee: true, blocks: true,
     init(w) { w.timer = 1.4; },
     update(sim, b, w, dt) {
@@ -120,9 +138,9 @@
       if (w.timer > 0) return;
       const e = sim.nearestEnemy(b.team, b.x, b.y);
       if (!e) return;
-      w.timer = 3.2;
+      w.timer = 2.2;
       const a = Math.atan2(e.y - b.y, e.x - b.x);
-      sim.spawnProj({ owner: b, kind: 'chakram', x: b.x + Math.cos(a) * b.r, y: b.y + Math.sin(a) * b.r, vx: Math.cos(a) * 520, vy: Math.sin(a) * 520, angle: a, r: 10 * b.scale, dmg: w.damage, life: 2.2, pierce: true, bounces: 2, knock: 160 });
+      sim.spawnProj({ owner: b, kind: 'chakram', x: b.x + Math.cos(a) * b.r, y: b.y + Math.sin(a) * b.r, vx: Math.cos(a) * 520, vy: Math.sin(a) * 520, angle: a, r: 10 * b.scale, dmg: w.damage, life: 6.6, pierce: true, bounces: 2, knock: 160 });
       sim.emit({ type: 'shoot', x: b.x, y: b.y });
     },
     onHit(sim, b, w) { w.damage += 0.5; },

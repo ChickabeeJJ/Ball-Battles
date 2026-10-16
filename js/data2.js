@@ -110,10 +110,10 @@
     update(sim, b, w, dt) { w.timer -= dt; if (w.timer <= 0) { w.timer = 0.55; shoot(sim, b, w, 1, 0, 600, { kind: 'pebble', r: 5 * w.scale, dmg: w.damage, life: 2.5, bounces: 1 }); sim.emit({ type: 'shoot', x: b.x, y: b.y, small: true }); } },
     onHit(sim, b, w) { w.damage += 0.5; }, stats: dmgStat });
   add({ id: 'bubblewand', name: 'Bubble Wand', cat: 'weapon', rarity: 'rare', color: '#74b9ff',
-    desc: 'Blows homing bubbles that slow whatever they pop on. Every 2 hits adds a bubble.',
+    desc: 'Shoots homing bubbles that slow enemies for 1.8 seconds on impact. Every 2 hits adds another bubble.',
     base: { damage: 1, spin: 160, len: 40, width: 16 }, blocks: true,
     init(w) { w.timer = 0.8; w.n = 2; },
-    update(sim, b, w, dt) { w.timer -= dt; if (w.timer <= 0) { w.timer = 1.6; shoot(sim, b, w, Math.floor(w.n), 30, 280, { kind: 'bubble', r: 9 * w.scale, dmg: w.damage, life: 4, homing: 2.5, slow: 1.2, knock: 35 }); sim.emit({ type: 'shoot', x: b.x, y: b.y, small: true }); } },
+    update(sim, b, w, dt) { w.timer -= dt; if (w.timer <= 0) { w.timer = 1.6; shoot(sim, b, w, Math.floor(w.n), 30, 280, { kind: 'bubble', r: 9 * w.scale, dmg: w.damage, life: 4, homing: 2.5, slow: 1.8, knock: 35 }); sim.emit({ type: 'shoot', x: b.x, y: b.y, small: true }); } },
     onHit(sim, b, w) { w.n = Math.min(w.n + 0.5, 8); }, stats: (w) => ['Bubbles: ' + Math.floor(w.n)] });
   add({ id: 'firestaff', name: 'Fire Staff', cat: 'weapon', rarity: 'epic', color: '#d35400',
     desc: 'Launches fireballs that set enemies ablaze. Flames burn hotter every hit.',
@@ -122,22 +122,34 @@
     update(sim, b, w, dt) { w.timer -= dt; if (w.timer <= 0) { w.timer = 1.4; shoot(sim, b, w, 1, 0, 520, { kind: 'fireball', r: 9 * w.scale, dmg: w.damage, life: 2.5, burn: w.burn }); sim.emit({ type: 'shoot', x: b.x, y: b.y }); } },
     onHit(sim, b, w) { w.burn += 1; }, stats: (w) => ['Fireball: ' + fmt(w.damage), 'Burn: ' + w.burn + '/s'] });
   add({ id: 'thunderrod', name: 'Thunder Rod', cat: 'weapon', rarity: 'legendary', color: '#f1c40f',
-    desc: 'Zaps the nearest enemy with lightning every 3s, anywhere in the arena. Zaps grow every hit.',
-    base: { damage: 2, spin: 160, len: 46, width: 12 }, melee: true, blocks: true,
-    init(w) { w.timer = 1.2; w.zap = 2; },
+    desc: 'Channels lightning to the nearest enemy for 0.8 seconds, ticking every 0.1 seconds. Each damage tick increases the next by 0.02.',
+    base: { damage: 1, spin: 160, len: 46, width: 12 }, melee: true, blocks: true,
+    init(w) { w.timer = 1.2; w.zap = 0.1; w.channel = 0; w.tick = 0; },
     update(sim, b, w, dt) {
       w.timer -= dt;
-      if (w.timer > 0) return;
-      w.timer = 3;
-      const e = sim.nearestEnemy(b.team, b.x, b.y);
-      if (!e) return;
-      const tipA = w.angle, s = b.r + w.gap + w.len;
-      sim.fx.push({ k: 'z', x: b.x + Math.cos(tipA) * s, y: b.y + Math.sin(tipA) * s, x2: e.x, y2: e.y, life: 0.25, max: 0.25 });
-      const dealt = sim.damage(e, w.zap, b, { x: e.x, y: e.y, lag: true });
-      sim.emit({ type: 'boom', x: e.x, y: e.y, small: true });
-      if (dealt || e._dg) sim.onHit(b, e, dealt);
+      if (w.channel > 0) {
+        w.channel = Math.max(0, w.channel - dt);
+        w.tick -= dt;
+        const e = sim.nearestEnemy(b.team, b.x, b.y);
+        if (e) {
+          const tip = b.r + w.gap + w.len;
+          sim.fx.push({ k: 'z', x: b.x + Math.cos(w.angle) * tip, y: b.y + Math.sin(w.angle) * tip,
+            x2: e.x, y2: e.y, life: 0.12, max: 0.12 });
+          while (w.tick <= 0 && w.channel > 0 && e.alive) {
+            const dealt = sim.damage(e, w.zap, b, { x: e.x, y: e.y, dot: true, color: '#ffe36e' });
+            if (dealt > 0) sim.onHit(b, e, dealt);
+            w.tick += 0.1;
+          }
+        } else w.tick = Math.max(w.tick, 0.1);
+      }
+      if (w.timer <= 0) {
+        w.timer = 3; w.channel = 0.8; w.tick = 0;
+        sim.emit({ type: 'shoot', x: b.x, y: b.y, small: true });
+      }
     },
-    onHit(sim, b, w) { w.zap += 0.25; }, stats: (w) => ['Zap: ' + fmt(w.zap)] });
+    onHit(sim, b, w) { w.zap += 0.02; },
+    stats: (w) => ['Tick: ' + fmt(w.zap), w.channel > 0 ? 'Channel: ' + w.channel.toFixed(1) + 's' : 'Next: ' + Math.max(0, Math.ceil(w.timer)) + 's'],
+  });
 
   // ---------------------------------------------------------------- special balls
   add({ id: 'magnet', name: 'Magnet', cat: 'special', rarity: 'rare', color: '#d63031',
@@ -157,7 +169,7 @@
     },
     onHit(sim, b, w) { w.damage += 1; }, stats: dmgStat });
   add({ id: 'mirror', name: 'Mirror', cat: 'special', rarity: 'epic', color: '#dfe6e9',
-    desc: 'Its shiny body reflects every projectile. Slams for 1.5, +0.5 every hit.',
+    desc: 'Reflects enemy projectiles but still takes 10% of their damage. Slams for 1.5, +0.5 every hit.',
     base: { damage: 1.5 }, contact: true, mirrorBody: true,
     onHit(sim, b, w) { w.damage += 0.5; }, stats: dmgStat });
   add({ id: 'healer', name: 'Healer', cat: 'special', rarity: 'rare', color: '#55efc4',
