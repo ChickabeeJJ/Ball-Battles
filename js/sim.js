@@ -460,6 +460,9 @@
         for (const o of this.obstacles) this.obstacleHit(b, o);
       }
 
+      // Dead owners stop moving, but persistent arena hazards (Spider webs) remain active.
+      for (const b of balls) if (!b.alive && b.def.updateDead) b.def.updateDead(this, b, b.w, dt);
+
       // Ball vs ball
       for (let i = 0; i < balls.length; i++) {
         const a = balls[i];
