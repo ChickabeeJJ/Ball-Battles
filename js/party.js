@@ -101,6 +101,8 @@
       else if (d.t === 'start' && !P.host && BB.meta.validIds(d.ids || []) && BB.meta.validMaps(d.maps || []) && P.myReady) P.begin(d.ids, d.maps, d.seed | 0);
       else if (d.t === 'bye') P.foeLeft();
       else if (d.t === 'aim') BB.shoot.onPeer(d);
+      else if (d.t === 'mapVote') BB.meta.mapVotePeer(d);
+      else if (d.t === 'mapVoteResult') BB.meta.applyMapVoteResult(d);
     },
     ready(ids) { P.myReady = ids; P.send({ t: 'ready', ids }); P.refresh(); P.maybeStart(); },
     maybeStart() {
