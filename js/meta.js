@@ -70,7 +70,7 @@
       const m = M.data();
       if (m.secretCoinEgg) return;
       m.secretCoinEggClicks = Math.min(10, (m.secretCoinEggClicks || 0) + 1);
-      if (m.secretCoinEggClicks < 10) return;
+      if (m.secretCoinEggClicks < 10) { BB.save.write(); return; }
 
       m.secretCoinEgg = true;
       const xp = M.xpData();
