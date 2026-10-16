@@ -1742,14 +1742,18 @@ html.cland .feat-row.non-cg-pvp .feat { font-size: 11px; }
 .feat-row.non-cg-pvp #btnGauntlet { gap:2px; font-size:clamp(9px, 2.7vw, 12px)!important; padding-left:2px; padding-right:2px; }
 .feat-row.non-cg-pvp #btnGauntlet .feat-ic .ico { width:14px; height:14px; }
 
-/* In-match Hide UI toggle. Keep this one button available so the HUD can be restored. */
-.hide-ui-btn { zoom:var(--ui); position:absolute; right:10px; bottom:10px; width:40px; height:40px; opacity:.88; z-index:8; display:none; }
+/* In-match Hide UI toggle: fixed to the viewport, independent of arena size/layout. */
+.hide-ui-btn { zoom:var(--ui); position:fixed; right:max(10px,env(safe-area-inset-right)); bottom:max(10px,env(safe-area-inset-bottom)); width:40px; height:40px; opacity:.9; z-index:100520; display:none; }
 .is-battle .hide-ui-btn { display:grid; }
 .hide-ui-btn .eye-hide { display:none; }
 #app.ui-hidden #topbar,
 #app.ui-hidden #panel,
 #app.ui-hidden .pause-btn,
 #app.ui-hidden .speed-btn { display:none!important; }
+#app.ui-hidden #stage { justify-content:center; padding:0; gap:0; min-height:0; }
+#app.ui-hidden #arenaCol { flex:0 0 auto; margin:auto 0; }
+#app.ui-hidden #matchup,
+#app.ui-hidden #statRow { flex-shrink:0; }
 #app.ui-hidden .hide-ui-btn { display:grid!important; }
 #app.ui-hidden .hide-ui-btn .eye-show { display:none; }
 #app.ui-hidden .hide-ui-btn .eye-hide { display:block; }
