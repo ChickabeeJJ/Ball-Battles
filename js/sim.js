@@ -246,6 +246,8 @@
     // Applies damage, returns the amount actually dealt.
     damage(target, amt, src, info) {
       if (!target.alive || amt <= 0) return 0;
+      // D.U.M.M.Y. gets a brief no-sell window after its awakening cutscene.
+      if (target.dummyInvulnT > 0) { target._dg = true; return 0; }
       // dodge hook (Kami's Divine Grace); _dg tells the caller to skip knockback and on-hit effects
       target._dg = false;
       if (target.def.dodge && target.def.dodge(this, target, amt, src, info)) { target._dg = true; return 0; }
@@ -379,6 +381,7 @@
       for (const b of balls) {
         if (!b.alive) continue;
         if (b.flash > 0) b.flash -= dt;
+        if (b.dummyInvulnT > 0) b.dummyInvulnT = Math.max(0, b.dummyInvulnT - dt);
         for (const k in b.cd) { b.cd[k] -= dt; if (b.cd[k] <= 0) delete b.cd[k]; }
 
         if (b.burnT > 0) {
