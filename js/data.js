@@ -23,7 +23,7 @@
     if (w.dummyAwakened) return;
     w.dummyAwakened = true; b.dummyAscended = true;
     const originalMaxHp = b.maxHp;
-    b.maxHp = Math.max(320, originalMaxHp * 2); b.hp = b.maxHp;
+    b.maxHp = originalMaxHp * 2; b.hp = b.maxHp;
     b.dummyInvulnT = 3.2; b.speedMul = 2.45;
     b.r *= 1.16; b.baseR = Math.max(b.baseR, b.r);
     w.damage = 36; w.spin = 760; w.len = 92; w.width = 32; w.gap = 2; w.dmyPulse = 0.35;
