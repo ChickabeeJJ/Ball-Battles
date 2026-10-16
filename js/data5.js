@@ -281,9 +281,41 @@
   // in battle: a slowly turning rainbow rim on BALL; its summons wear a thin rainbow halo
   const baseBall = BB.drawBallArt;
   BB.drawBallArt = function (ctx, sim, b, lw, R) {
+    // Spider's legs are drawn behind its body so the ball remains the visual focal point.
+    if (b.def.id === 'spider' && b.alive) {
+      ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      for (const side of [-1, 1]) for (let i = 0; i < 4; i++) {
+        const sy = (i - 1.5) * b.r * 0.34;
+        ctx.beginPath();
+        ctx.moveTo(b.x + side * b.r * 0.62, b.y + sy * 0.35);
+        ctx.lineTo(b.x + side * b.r * 1.02, b.y + sy - (i - 1.5) * b.r * 0.18);
+        ctx.lineTo(b.x + side * b.r * 1.27, b.y + sy - (i - 1.5) * b.r * 0.3);
+        ctx.strokeStyle = OUT; ctx.lineWidth = Math.max(3, b.r * 0.13); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(b.x + side * b.r * 0.62, b.y + sy * 0.35);
+        ctx.lineTo(b.x + side * b.r * 1.02, b.y + sy - (i - 1.5) * b.r * 0.18);
+        ctx.lineTo(b.x + side * b.r * 1.27, b.y + sy - (i - 1.5) * b.r * 0.3);
+        ctx.strokeStyle = '#d8b7ff'; ctx.lineWidth = Math.max(1.4, b.r * 0.055); ctx.stroke();
+      }
+      ctx.restore();
+    }
     // the supernova sits under the ball (drawn from where it went off, even if Nova has moved since)
     if (b.def.id === 'nova' && b.w.nova > 0) drawNova(ctx, sim, b.w);
     baseBall(ctx, sim, b, lw, R);
+    if (b.def.id === 'spider' && b.alive) {
+      ctx.save();
+      const eyeY = b.y - b.r * 0.16;
+      for (const dx of [-0.24, 0.24]) {
+        ctx.beginPath(); ctx.arc(b.x + dx * b.r, eyeY, b.r * 0.16, 0, TAU);
+        ctx.fillStyle = '#f7edff'; ctx.fill(); ctx.lineWidth = Math.max(1.2, b.r * 0.035); ctx.strokeStyle = OUT; ctx.stroke();
+        ctx.beginPath(); ctx.arc(b.x + dx * b.r + b.r * 0.025, eyeY, b.r * 0.075, 0, TAU);
+        ctx.fillStyle = '#2a173b'; ctx.fill();
+      }
+      ctx.beginPath(); ctx.moveTo(b.x - b.r * 0.1, b.y + b.r * 0.16); ctx.lineTo(b.x - b.r * 0.2, b.y + b.r * 0.34);
+      ctx.moveTo(b.x + b.r * 0.1, b.y + b.r * 0.16); ctx.lineTo(b.x + b.r * 0.2, b.y + b.r * 0.34);
+      ctx.strokeStyle = OUT; ctx.lineWidth = Math.max(1.5, b.r * 0.055); ctx.stroke();
+      ctx.restore();
+    }
     if (b.def.id === 'nova' && b.alive) {
       // the core brightens as it charges; the supernova flashes a white shell
       const w = b.w, k = Math.min(1, (w.charge || 0) / 30), pulse = 0.5 + 0.5 * Math.sin(sim.t * (4 + k * 8));
