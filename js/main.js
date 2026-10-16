@@ -488,25 +488,6 @@
       BB.sdk.gameplayStart();
     },
 
-    // Non-blocking in-game imitation of a browser warning. Native alert() freezes both PvP players.
-    showDummyBrowserWarning() {
-      const previous = document.querySelector('.dmy-browser-warning');
-      if (previous) previous.remove();
-      const warning = document.createElement('div');
-      warning.className = 'dmy-browser-warning';
-      warning.setAttribute('role', 'status');
-      warning.setAttribute('aria-live', 'polite');
-      warning.innerHTML = '<div class="dmy-browser-top"><span class="dmy-browser-tab"><i></i> Dummy</span><div class="dmy-browser-address"><b>⚠</b><span>Not secure</span><span class="dmy-browser-url">dummy.local</span></div><span class="dmy-browser-window">—　□　×</span></div><div class="dmy-browser-card"><div class="dmy-browser-warning-icon">!</div><div class="dmy-browser-copy"><strong>dummy? D.U.M.M.Y.????????????????????????????</strong></div></div>';
-      document.body.appendChild(warning);
-      requestAnimationFrame(() => warning.classList.add('on'));
-      // This decorative warning disappears on its own; it never blocks the other PvP client.
-      setTimeout(() => {
-        if (!warning.isConnected) return;
-        warning.classList.add('out');
-        setTimeout(() => warning.remove(), 180);
-      }, 3000);
-    },
-
     toggleUI() {
       const hidden = $('app').classList.toggle('ui-hidden');
       const button = $('btnHideUI');
@@ -616,8 +597,8 @@
             App.cineQ = (App.cineQ || 0) + 1;
             const go = () => {
               App.cine = true;
-              // Keep the requested warning browser-styled, but never use a blocking native popup.
-              App.showDummyBrowserWarning();
+              // Show the real browser-native alert requested for D.U.M.M.Y.
+              window.alert('dummy? D.U.M.M.Y.????????????????????????????????????????????????????');
               BB.dummyAwaken(() => {
                 App.cine = false; App.last = performance.now(); App.shake = 18;
                 if (--App.cineQ > 0) go();
