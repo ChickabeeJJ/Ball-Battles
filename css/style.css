@@ -1668,18 +1668,17 @@ html.cport .feat-row .bp-strip { margin-top: 0; }
 html.idlecmp .stat-row .stx, html.idlecmp .stat-row .tr em { display: none; }
 html.idlecmp .stat-row { min-height: 0; }
 
-/* Claimable rewards glow with their own game accent, keeping Ball Battles' hard outlines. */
-@keyframes claimGlowGold { 0%,100% { box-shadow: 0 3px 0 #111,0 0 0 0 rgba(255,210,63,0); } 50% { box-shadow: 0 3px 0 #111,0 0 15px 3px rgba(255,210,63,.48); } }
-@keyframes claimGlowGreen { 0%,100% { box-shadow: 0 3px 0 #111,0 0 0 0 rgba(53,208,71,0); } 50% { box-shadow: 0 3px 0 #111,0 0 15px 3px rgba(53,208,71,.42); } }
-@keyframes claimGlowPurple { 0%,100% { box-shadow: 0 3px 0 #111,0 0 0 0 rgba(183,140,255,0); } 50% { box-shadow: 0 3px 0 #111,0 0 15px 3px rgba(183,140,255,.46); } }
-#btnGift.ready { border-color:#ffd23f; background:linear-gradient(145deg,#fff6cf,#ffd95b); animation:claimGlowGold 1.35s ease-in-out infinite; }
-body.dark #btnGift.ready { background:linear-gradient(145deg,#665020,#3c301b); color:#fff4c2; }
-#btnGift.ready svg { filter:drop-shadow(0 0 4px rgba(255,210,63,.7)); }
-#btnQuests.ready { border-color:#35d047; animation:claimGlowGreen 1.35s ease-in-out infinite; }
-#btnPass.hot { border-color:#b78cff; animation:claimGlowPurple 1.35s ease-in-out infinite; }
-#bpStrip.ready { border-color:#ffd23f; box-shadow:0 4px 0 #111,0 0 15px rgba(255,210,63,.34); }
-#bpStrip.hot { animation:claimGlowGold 1.35s ease-in-out infinite; }
-.feat.ready { border-color:#35d047; animation:claimGlowGreen 1.35s ease-in-out infinite; }
+/* Claimable rewards use a soft ambient glow; fills and dark outlines stay unchanged. */
+@keyframes claimGlowGold { 0%,100% { box-shadow: 0 3px 0 #111,0 0 8px 1px rgba(255,210,63,.12); } 50% { box-shadow: 0 3px 0 #111,0 0 14px 4px rgba(255,210,63,.25); } }
+@keyframes claimGlowGreen { 0%,100% { box-shadow: 0 3px 0 #111,0 0 8px 1px rgba(53,208,71,.10); } 50% { box-shadow: 0 3px 0 #111,0 0 14px 4px rgba(53,208,71,.22); } }
+@keyframes claimGlowPurple { 0%,100% { box-shadow: 0 3px 0 #111,0 0 8px 1px rgba(183,140,255,.10); } 50% { box-shadow: 0 3px 0 #111,0 0 14px 4px rgba(183,140,255,.23); } }
+#btnGift.ready { animation:claimGlowGold 1.8s ease-in-out infinite; }
+#btnGift.ready svg { filter:drop-shadow(0 0 2px rgba(255,210,63,.32)); }
+#btnQuests.ready { animation:claimGlowGreen 1.8s ease-in-out infinite; }
+#btnPass.hot { animation:claimGlowPurple 1.8s ease-in-out infinite; }
+#bpStrip.ready { box-shadow:0 4px 0 #111,0 0 10px rgba(255,210,63,.2); }
+#bpStrip.hot { animation:claimGlowGold 1.8s ease-in-out infinite; }
+.feat.ready { animation:claimGlowGreen 1.8s ease-in-out infinite; }
 
 /* Responsive live PvP map vote and roulette panels. */
 .mv-sheet { width:100%; max-width:600px; max-height:calc(100dvh - 24px); overflow-y:auto!important; overscroll-behavior:contain; }
