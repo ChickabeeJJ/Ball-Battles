@@ -317,6 +317,76 @@
     // the supernova sits under the ball (drawn from where it went off, even if Nova has moved since)
     if (b.def.id === 'nova' && b.w.nova > 0) drawNova(ctx, sim, b.w);
     baseBall(ctx, sim, b, lw, R);
+
+    // Verity's three familiar faces: happy, displeased, then the monstrous final form.
+    if (b.def.id === 'verity') {
+      const stage = Math.min(2, b.w.stage || 0), r = b.r;
+      const palette = [['#fff4a8', '#ffd43b'], ['#ffe07b', '#ffad23'], ['#ffba4d', '#e64c2e']][stage];
+      ctx.save();
+      const g = ctx.createRadialGradient(b.x - r * 0.3, b.y - r * 0.42, r * 0.04, b.x, b.y, r * 1.2);
+      g.addColorStop(0, '#fffbe0'); g.addColorStop(0.38, palette[0]); g.addColorStop(1, palette[1]);
+      ctx.beginPath(); ctx.arc(b.x, b.y, r * 0.98, 0, TAU); ctx.fillStyle = g; ctx.fill();
+      ctx.lineWidth = Math.max(2, r * 0.1); ctx.strokeStyle = OUT; ctx.stroke();
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      if (stage === 0) {
+        for (const dx of [-0.28, 0.28]) {
+          ctx.beginPath(); ctx.ellipse(b.x + dx * r, b.y - r * 0.18, r * 0.085, r * 0.13, 0, 0, TAU);
+          ctx.fillStyle = '#1d1d22'; ctx.fill();
+        }
+        ctx.beginPath(); ctx.arc(b.x, b.y - r * 0.02, r * 0.34, 0.18 * Math.PI, 0.82 * Math.PI);
+        ctx.strokeStyle = '#1d1d22'; ctx.lineWidth = r * 0.09; ctx.stroke();
+      } else if (stage === 1) {
+        for (const dx of [-0.28, 0.28]) {
+          ctx.beginPath(); ctx.moveTo(b.x + (dx - 0.11) * r, b.y - r * 0.42); ctx.lineTo(b.x + (dx + 0.10) * r, b.y - r * 0.31);
+          ctx.strokeStyle = '#1d1d22'; ctx.lineWidth = r * 0.075; ctx.stroke();
+          ctx.beginPath(); ctx.ellipse(b.x + dx * r, b.y - r * 0.17, r * 0.07, r * 0.11, 0, 0, TAU); ctx.fillStyle = '#1d1d22'; ctx.fill();
+        }
+        ctx.beginPath(); ctx.moveTo(b.x - r * 0.28, b.y + r * 0.24); ctx.quadraticCurveTo(b.x, b.y + r * 0.02, b.x + r * 0.28, b.y + r * 0.24);
+        ctx.strokeStyle = '#1d1d22'; ctx.lineWidth = r * 0.095; ctx.stroke();
+      } else {
+        // Enlarged red eyes and a jagged, tooth-filled maw.
+        for (const dx of [-0.29, 0.29]) {
+          ctx.beginPath(); ctx.moveTo(b.x + (dx - 0.12) * r, b.y - r * 0.45); ctx.lineTo(b.x + (dx + 0.10) * r, b.y - r * 0.31);
+          ctx.strokeStyle = '#1d1d22'; ctx.lineWidth = r * 0.10; ctx.stroke();
+          ctx.beginPath(); ctx.ellipse(b.x + dx * r, b.y - r * 0.17, r * 0.105, r * 0.15, dx, 0, TAU);
+          ctx.fillStyle = '#f3f3f3'; ctx.fill(); ctx.lineWidth = r * 0.045; ctx.strokeStyle = OUT; ctx.stroke();
+          ctx.beginPath(); ctx.arc(b.x + dx * r, b.y - r * 0.17, r * 0.055, 0, TAU); ctx.fillStyle = '#f32045'; ctx.fill();
+        }
+        ctx.beginPath(); ctx.moveTo(b.x - r * 0.39, b.y + r * 0.02);
+        ctx.lineTo(b.x - r * 0.29, b.y + r * 0.37); ctx.lineTo(b.x - r * 0.13, b.y + r * 0.29);
+        ctx.lineTo(b.x, b.y + r * 0.43); ctx.lineTo(b.x + r * 0.14, b.y + r * 0.29);
+        ctx.lineTo(b.x + r * 0.29, b.y + r * 0.37); ctx.lineTo(b.x + r * 0.39, b.y + r * 0.02);
+        ctx.closePath(); ctx.fillStyle = '#1d1d22'; ctx.fill(); ctx.lineWidth = r * 0.055; ctx.strokeStyle = OUT; ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(b.x - r * 0.28, b.y + r * 0.10); ctx.lineTo(b.x - r * 0.19, b.y + r * 0.24);
+        ctx.lineTo(b.x - r * 0.08, b.y + r * 0.10); ctx.lineTo(b.x + r * 0.02, b.y + r * 0.26);
+        ctx.lineTo(b.x + r * 0.14, b.y + r * 0.10); ctx.lineTo(b.x + r * 0.26, b.y + r * 0.23);
+        ctx.strokeStyle = '#fff0be'; ctx.lineWidth = r * 0.09; ctx.stroke();
+        ctx.shadowColor = '#ff3327'; ctx.shadowBlur = r * (0.2 + 0.1 * Math.sin(sim.t * 9));
+        ctx.beginPath(); ctx.arc(b.x, b.y, r * 1.02, 0, TAU); ctx.strokeStyle = 'rgba(255,55,35,0.7)'; ctx.lineWidth = r * 0.07; ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // D.U.M.M.Y. becomes a glitching, overcharged boss after its mastery transformation.
+    if (b.def.id === 'dummy' && b.dummyAscended) {
+      const r = b.r, pulse = 0.5 + 0.5 * Math.sin(sim.t * 15);
+      ctx.save();
+      const aura = ctx.createRadialGradient(b.x, b.y, r * 0.5, b.x, b.y, r * 2.5);
+      aura.addColorStop(0, 'rgba(255,36,77,0.18)'); aura.addColorStop(0.55, 'rgba(160,40,255,0.14)'); aura.addColorStop(1, 'rgba(255,36,77,0)');
+      ctx.fillStyle = aura; ctx.beginPath(); ctx.arc(b.x, b.y, r * 2.5, 0, TAU); ctx.fill();
+      ctx.lineWidth = 3 + pulse * 3; ctx.strokeStyle = 'rgba(255,36,77,0.86)';
+      ctx.beginPath(); ctx.arc(b.x, b.y, r + 6 + pulse * 6, sim.t * 2, sim.t * 2 + Math.PI * 1.55); ctx.stroke();
+      ctx.strokeStyle = 'rgba(184,123,255,0.9)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(b.x, b.y, r + 13 + pulse * 4, -sim.t * 2.8, -sim.t * 2.8 + Math.PI * 1.45); ctx.stroke();
+      ctx.fillStyle = '#17131e'; ctx.strokeStyle = '#ff244d'; ctx.lineWidth = Math.max(2, r * 0.06);
+      ctx.beginPath(); ctx.moveTo(b.x - r * 0.56, b.y - r * 0.08); ctx.lineTo(b.x - r * 0.13, b.y - r * 0.23); ctx.lineTo(b.x - r * 0.19, b.y + r * 0.10); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(b.x + r * 0.56, b.y - r * 0.08); ctx.lineTo(b.x + r * 0.13, b.y - r * 0.23); ctx.lineTo(b.x + r * 0.19, b.y + r * 0.10); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.font = '900 ' + Math.max(10, r * 0.29) + 'px "Arial Black", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.lineWidth = Math.max(2, r * 0.07); ctx.strokeStyle = '#1d1d22'; ctx.fillStyle = '#ffffff';
+      ctx.strokeText('D.U.M.M.Y.', b.x, b.y + r * 0.55); ctx.fillText('D.U.M.M.Y.', b.x, b.y + r * 0.55);
+      ctx.restore();
+    }
+
     if (b.def.id === 'spider' && b.alive) {
       ctx.save();
       const eyeY = b.y - b.r * 0.16;
@@ -357,5 +427,33 @@
       ctx.beginPath(); ctx.arc(b.x, b.y, r + 4, 0, TAU); ctx.strokeStyle = RAINBOW[Math.floor(t * 3 + b.id) % 5]; ctx.lineWidth = 2.5; ctx.stroke();
     }
     ctx.restore();
+  };
+
+  // D.U.M.M.Y.'s transformation is deliberately louder and more defiant than Tenshi's.
+  BB.dummyAwaken = function (done) {
+    const el = document.createElement('div');
+    el.className = 'dmy-awake';
+    el.innerHTML = '<div class="dmy-scan"></div><div class="dmy-shards"></div><div class="dmy-frame"></div><div class="dmy-warning">SYSTEM FAILURE // DUMMY LIMITER REMOVED</div><div class="dmy-message"><small>YOU LAUGHED. YOU POINTED. YOU PUSHED.</small><h1>I WILL BE BULLIED NO MORE</h1><b>NO MORE LIMITS.</b></div><div class="dmy-stamp">D.U.M.M.Y.</div><div class="dmy-flash"></div>';
+    document.body.appendChild(el);
+    const later = (ms, fn) => setTimeout(fn, ms);
+    const finish = () => {
+      if (done) done();
+      BB.music && BB.music.fade(1, 700);
+      later(650, () => el.remove());
+    };
+    BB.music && BB.music.fade(0, 180);
+    BB.audio.play('death');
+    for (let i = 0; i < 34; i++) {
+      const p = document.createElement('i'); p.className = 'dmy-particle';
+      p.style.left = (Math.random() * 100) + '%'; p.style.top = (Math.random() * 100) + '%';
+      p.style.setProperty('--dx', ((Math.random() - 0.5) * 500).toFixed(0) + 'px');
+      p.style.setProperty('--dy', ((Math.random() - 0.5) * 400).toFixed(0) + 'px');
+      p.style.setProperty('--wait', (Math.random() * 500).toFixed(0) + 'ms');
+      el.appendChild(p);
+    }
+    requestAnimationFrame(() => el.classList.add('on'));
+    later(1250, () => { el.classList.add('rage'); BB.audio.play('awaken'); if (BB.app) BB.app.shake = 28; try { navigator.vibrate && navigator.vibrate([150, 60, 260, 60, 400]); } catch (e) { /* optional */ } });
+    later(2900, () => { el.classList.add('breakout'); BB.audio.play('boom'); if (BB.app) BB.app.shake = 34; });
+    later(4300, finish);
   };
 })();
