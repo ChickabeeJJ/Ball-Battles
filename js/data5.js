@@ -144,16 +144,36 @@
   });
 
 
+  function updateSpiderWebs(sim, b, w) {
+    const halfW = sim.W / 2, halfH = sim.H / 2;
+    for (const web of w.webs) {
+      let ax, ay;
+      if (web.edge === 'left') { ax = -halfW; ay = BB.clamp(web.offset * halfH, -halfH + 5, halfH - 5); }
+      else if (web.edge === 'right') { ax = halfW; ay = BB.clamp(web.offset * halfH, -halfH + 5, halfH - 5); }
+      else if (web.edge === 'top') { ax = BB.clamp(web.offset * halfW, -halfW + 5, halfW - 5); ay = -halfH; }
+      else { ax = BB.clamp(web.offset * halfW, -halfW + 5, halfW - 5); ay = halfH; }
+      // The Spider end moves with the owner; the opposite end stays anchored to the wall.
+      for (const e of sim.balls) {
+        if (!e.alive || e.team === b.team) { web.near[e.id] = false; continue; }
+        const reach = e.r + 4 * b.scale;
+        const touching = segmentDistanceSq(e.x, e.y, b.x, b.y, ax, ay) <= reach * reach;
+        if (touching && !web.near[e.id]) {
+          const dealt = sim.damage(e, w.damage * 0.75, b, { x: e.x, y: e.y, dot: true, color: '#b78cff' });
+          if (dealt > 0) sim.burst(e.x, e.y, 5, ['#b78cff', '#e8d5ff', '#ffffff'], 150, 2);
+        }
+        web.near[e.id] = touching;
+      }
+    }
+  }
+
   // ---------------------------------------------------------------- Spider (wall-hit web strands that follow their owner)
   add({
     id: 'spider', name: 'Spider', cat: 'special', rarity: 'legendary', color: '#a978d3',
-    desc: 'Every wall hit anchors a permanent web strand from Spider to that wall. The strands follow Spider as it moves and damage enemies that cross them.',
+    desc: 'Every wall hit anchors a permanent web strand from Spider to that wall. The strands follow Spider as it moves and remain dangerous for the whole battle.',
     base: { damage: 1.5 }, contact: true,
     init(w) { w.webs = []; },
     onWall(sim, b, w, edges) {
       for (const edge of edges || []) {
-        // Store a normalized point along the edge so the anchor stays on the wall
-        // even when the Shrinking arena moves its boundaries.
         const vertical = edge === 'left' || edge === 'right';
         const offset = vertical ? b.y / Math.max(1, sim.H / 2) : b.x / Math.max(1, sim.W / 2);
         w.webs.push({ edge, offset: BB.clamp(offset, -0.94, 0.94), near: {} });
@@ -161,28 +181,8 @@
         sim.emit({ type: 'build', x: b.x, y: b.y });
       }
     },
-    update(sim, b, w, dt) {
-      const halfW = sim.W / 2, halfH = sim.H / 2;
-      for (const web of w.webs) {
-        let ax, ay;
-        if (web.edge === 'left') { ax = -halfW; ay = BB.clamp(web.offset * halfH, -halfH + 5, halfH - 5); }
-        else if (web.edge === 'right') { ax = halfW; ay = BB.clamp(web.offset * halfH, -halfH + 5, halfH - 5); }
-        else if (web.edge === 'top') { ax = BB.clamp(web.offset * halfW, -halfW + 5, halfW - 5); ay = -halfH; }
-        else { ax = BB.clamp(web.offset * halfW, -halfW + 5, halfW - 5); ay = halfH; }
-
-        // A web's moving endpoint is always the Spider itself; the far endpoint is fixed to its wall.
-        for (const e of sim.balls) {
-          if (!e.alive || e.team === b.team) { web.near[e.id] = false; continue; }
-          const reach = e.r + 4 * b.scale;
-          const touching = segmentDistanceSq(e.x, e.y, b.x, b.y, ax, ay) <= reach * reach;
-          if (touching && !web.near[e.id]) {
-            const dealt = sim.damage(e, w.damage * 0.75, b, { x: e.x, y: e.y, dot: true, color: '#b78cff' });
-            if (dealt > 0) sim.burst(e.x, e.y, 5, ['#b78cff', '#e8d5ff', '#ffffff'], 150, 2);
-          }
-          web.near[e.id] = touching;
-        }
-      }
-    },
+    update(sim, b, w) { updateSpiderWebs(sim, b, w); },
+    updateDead(sim, b, w) { updateSpiderWebs(sim, b, w); },
     stats: (w) => ['Webs: ' + w.webs.length],
   });
 
