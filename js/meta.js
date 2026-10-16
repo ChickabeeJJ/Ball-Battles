@@ -886,18 +886,21 @@
               <button class="pvx-change">${squad ? 'Change' : 'Pick squad'}</button></div>
             <button class="pvx-find">${BB.ICON.swords}<span>Find a match</span></button>
           </div>
-          <div class="pvx-friend"><div class="pvx-ft"><b>Play a Friend</b><span>Send a code, they answer it. 3 rounds, most wins takes it.</span></div><div class="pvx-fb"></div></div>
+          ${BB.sdk.env === 'crazygames' ? '<div class="pvx-friend"><div class="pvx-ft"><b>Play a Friend</b><span>Send a code, they answer it. 3 rounds, most wins takes it.</span></div><div class="pvx-fb"></div></div>' : ''}
           ${pv.hist.length ? `<div class="section-t">Recent matches</div><div class="pvp-hist">${pv.hist.map((h) => `<div class="ph ${h.r > 0 ? 'w' : h.r < 0 ? 'l' : 'd'}"><span class="ph-r">${h.r > 0 ? 'WIN' : h.r < 0 ? 'LOSS' : 'DRAW'}</span><span class="ph-n">vs ${esc(h.n)}</span><b>${esc(h.s)}</b><small>${h.d >= 0 ? '+' : ''}${h.d}</small></div>`).join('')}</div>` : ''}
           <button class="pvx-help">? How PvP works</button>`;
-        const go = document.createElement('button'); go.className = 'btn primary'; go.innerHTML = BB.ICON.swords + ' Create';
-        go.onclick = () => {
-          BB.audio.play('click');
-          if (M.ownedCount() < 3) { BB.ui.toast('Unlock at least 3 balls to play PvP'); return; }
-          M.pick3('Your PvP Squad', 'Round 1 uses your first pick, round 2 your second, round 3 your third. Your rival picks without seeing your squad.', (ids) => M.pvpCreated(ids));
-        };
-        const enter = document.createElement('button'); enter.className = 'btn blue'; enter.innerHTML = BB.ICON.play + ' Enter code';
-        enter.onclick = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); M.enterCode(); };
-        body.querySelector('.pvx-fb').append(go, enter);
+        if (BB.sdk.env === 'crazygames') {
+          const go = document.createElement('button'); go.className = 'btn primary'; go.innerHTML = BB.ICON.swords + ' Create';
+          go.onclick = () => {
+            BB.audio.play('click');
+            if (M.ownedCount() < 3) { BB.ui.toast('Unlock at least 3 balls to play PvP'); return; }
+            M.pick3('Your PvP Squad', 'Round 1 uses your first pick, round 2 your second, round 3 your third. Your rival picks without seeing your squad.', (ids) => M.pvpCreated(ids));
+          };
+          const enter = document.createElement('button'); enter.className = 'btn blue'; enter.innerHTML = BB.ICON.play + ' Enter code';
+          enter.onclick = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); M.enterCode(); };
+          const friendSlot = body.querySelector('.pvx-fb');
+          if (friendSlot) friendSlot.append(go, enter);
+        }
         const away = () => { BB.audio.play('click'); BB.ui.onClose = null; BB.ui.close(); };
         body.querySelector('.pvx-find').onclick = () => { away(); BB.match.start(); };
         body.querySelector('.pvx-change').onclick = () => { away(); BB.match.start(true); };
