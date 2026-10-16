@@ -349,6 +349,20 @@
     } else if (id === 'vampire') {
       ctx.fillStyle = '#ffffff';
       for (const dx of [-0.25, 0.25]) { path(ctx, [dx * r - r * 0.13, -r * 0.1, dx * r + r * 0.13, -r * 0.1, dx * r, r * 0.4]); ctx.fill(); }
+    } else if (id === 'spider') {
+      ctx.lineWidth = r * 0.085;
+      // Eight angular legs around a small spider body.
+      for (const side of [-1, 1]) for (let i = 0; i < 4; i++) {
+        const sy = (i - 1.5) * r * 0.19;
+        ctx.beginPath();
+        ctx.moveTo(side * r * 0.13, sy * 0.55);
+        ctx.lineTo(side * r * 0.39, sy - (i - 1.5) * r * 0.10);
+        ctx.lineTo(side * r * 0.62, sy - (i - 1.5) * r * 0.20);
+        ctx.stroke();
+      }
+      ctx.beginPath(); ctx.ellipse(0, r * 0.12, r * 0.23, r * 0.31, 0, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(0, -r * 0.25, r * 0.19, 0, TAU); ctx.fill();
+      for (const dx of [-0.08, 0.08]) { ctx.beginPath(); ctx.arc(dx * r, -r * 0.28, r * 0.045, 0, TAU); ctx.fillStyle = '#a978d3'; ctx.fill(); }
     } else if (id === 'unarmed') {
       ctx.lineWidth = r * 0.1; ctx.strokeStyle = 'rgba(255,255,255,0.9)';
       for (const dy of [-0.3, 0, 0.3]) { ctx.beginPath(); ctx.moveTo(-r * 0.5, dy * r); ctx.lineTo(-r * 0.05, dy * r); ctx.stroke(); }
@@ -480,6 +494,35 @@
       ctx.fillRect(-hw, -hh, sim.W, sim.H);
       ctx.save(); ctx.beginPath(); ctx.rect(-hw, -hh, sim.W, sim.H); ctx.clip();
       BB.drawFloor(ctx, sim, this.dark, this);
+      ctx.restore();
+
+      // Spider threads sit on the arena floor and remain after their owner is knocked out.
+      ctx.save(); ctx.beginPath(); ctx.rect(-hw, -hh, sim.W, sim.H); ctx.clip();
+      for (const spider of sim.balls) {
+        if (spider.def.id !== 'spider' || !spider.w.webs || !spider.w.webs.length) continue;
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        for (const web of spider.w.webs) {
+          const ax = BB.clamp(web.x, -hw + 4, hw - 4), ay = BB.clamp(web.y, -hh + 4, hh - 4);
+          const ly = BB.clamp(web.leftY, -hh + 8, hh - 8), ry = BB.clamp(web.rightY, -hh + 8, hh - 8);
+          const pts = [[-hw, ly], [ax, ay], [hw, ry]];
+          ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); ctx.lineTo(pts[1][0], pts[1][1]); ctx.lineTo(pts[2][0], pts[2][1]);
+          ctx.strokeStyle = 'rgba(98,64,140,0.70)'; ctx.lineWidth = 5; ctx.shadowColor = 'rgba(183,140,255,0.65)'; ctx.shadowBlur = 5; ctx.stroke();
+          ctx.shadowBlur = 0; ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); ctx.lineTo(pts[1][0], pts[1][1]); ctx.lineTo(pts[2][0], pts[2][1]);
+          ctx.strokeStyle = 'rgba(235,220,255,0.92)'; ctx.lineWidth = 1.5; ctx.stroke();
+          // Small cross-threads make each strand read as spider silk, not a laser.
+          ctx.beginPath();
+          for (let seg = 0; seg < 2; seg++) {
+            const [x1, y1] = pts[seg], [x2, y2] = pts[seg + 1];
+            const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
+            const nx = -dy / len, ny = dx / len, marks = Math.floor(len / 48);
+            for (let k = 1; k < marks; k++) {
+              const t = k / marks, px = x1 + dx * t, py = y1 + dy * t;
+              ctx.moveTo(px - nx * 4.5, py - ny * 4.5); ctx.lineTo(px + nx * 4.5, py + ny * 4.5);
+            }
+          }
+          ctx.strokeStyle = 'rgba(218,195,255,0.52)'; ctx.lineWidth = 1; ctx.stroke();
+        }
+      }
       ctx.restore();
 
       // meteor warnings
