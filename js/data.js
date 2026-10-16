@@ -443,7 +443,7 @@
     { id: 'classic', name: 'Classic', desc: 'The original square.', size: 600 },
     { id: 'large', name: 'Large', desc: 'A much bigger arena.', size: 900 },
     { id: 'bouncy', name: 'Bouncy', desc: 'Gravity is on. Boing!', size: 600, gravity: 650 },
-    { id: 'pillars', name: 'Pillars', desc: 'Four pillars to bounce off.', size: 600 },
+    { id: 'pillars', name: 'Pillars', desc: 'Four smaller pillars to bounce off, opening up more space to move.', size: 600 },
     { id: 'saws', name: 'Saws', desc: 'Spinning saws hurt everyone.', size: 600 },
     { id: 'shrink', name: 'Shrinking', desc: 'The walls close in.', size: 600 },
     { id: 'potato', name: 'Hot Potato', desc: 'Pass the bomb before it blows!', size: 600 },
