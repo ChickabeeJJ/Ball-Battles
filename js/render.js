@@ -496,29 +496,29 @@
       BB.drawFloor(ctx, sim, this.dark, this);
       ctx.restore();
 
-      // Spider threads sit on the arena floor and remain after their owner is knocked out.
+      // Spider webs branch from the Spider itself to wall anchors and travel with the ball.
       ctx.save(); ctx.beginPath(); ctx.rect(-hw, -hh, sim.W, sim.H); ctx.clip();
       for (const spider of sim.balls) {
         if (spider.def.id !== 'spider' || !spider.w.webs || !spider.w.webs.length) continue;
         ctx.lineCap = 'round'; ctx.lineJoin = 'round';
         for (const web of spider.w.webs) {
-          const ax = BB.clamp(web.x, -hw + 4, hw - 4), ay = BB.clamp(web.y, -hh + 4, hh - 4);
-          const ly = BB.clamp(web.leftY, -hh + 8, hh - 8), ry = BB.clamp(web.rightY, -hh + 8, hh - 8);
-          const pts = [[-hw, ly], [ax, ay], [hw, ry]];
-          ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); ctx.lineTo(pts[1][0], pts[1][1]); ctx.lineTo(pts[2][0], pts[2][1]);
-          ctx.strokeStyle = 'rgba(98,64,140,0.70)'; ctx.lineWidth = 5; ctx.shadowColor = 'rgba(183,140,255,0.65)'; ctx.shadowBlur = 5; ctx.stroke();
-          ctx.shadowBlur = 0; ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); ctx.lineTo(pts[1][0], pts[1][1]); ctx.lineTo(pts[2][0], pts[2][1]);
-          ctx.strokeStyle = 'rgba(235,220,255,0.92)'; ctx.lineWidth = 1.5; ctx.stroke();
-          // Small cross-threads make each strand read as spider silk, not a laser.
+          let ax, ay;
+          if (web.edge === 'left') { ax = -hw; ay = BB.clamp(web.offset * hh, -hh + 5, hh - 5); }
+          else if (web.edge === 'right') { ax = hw; ay = BB.clamp(web.offset * hh, -hh + 5, hh - 5); }
+          else if (web.edge === 'top') { ax = BB.clamp(web.offset * hw, -hw + 5, hw - 5); ay = -hh; }
+          else { ax = BB.clamp(web.offset * hw, -hw + 5, hw - 5); ay = hh; }
+          const x1 = spider.x, y1 = spider.y, dx = ax - x1, dy = ay - y1, len = Math.hypot(dx, dy) || 1;
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(ax, ay);
+          ctx.strokeStyle = 'rgba(98,64,140,0.74)'; ctx.lineWidth = 5;
+          ctx.shadowColor = 'rgba(183,140,255,0.7)'; ctx.shadowBlur = 5; ctx.stroke();
+          ctx.shadowBlur = 0; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(ax, ay);
+          ctx.strokeStyle = 'rgba(235,220,255,0.94)'; ctx.lineWidth = 1.5; ctx.stroke();
+          // Fine cross threads give the permanent strand a fibrous web texture.
           ctx.beginPath();
-          for (let seg = 0; seg < 2; seg++) {
-            const [x1, y1] = pts[seg], [x2, y2] = pts[seg + 1];
-            const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
-            const nx = -dy / len, ny = dx / len, marks = Math.floor(len / 48);
-            for (let k = 1; k < marks; k++) {
-              const t = k / marks, px = x1 + dx * t, py = y1 + dy * t;
-              ctx.moveTo(px - nx * 4.5, py - ny * 4.5); ctx.lineTo(px + nx * 4.5, py + ny * 4.5);
-            }
+          const nx = -dy / len, ny = dx / len, marks = Math.floor(len / 48);
+          for (let k = 1; k < marks; k++) {
+            const t = k / marks, px = x1 + dx * t, py = y1 + dy * t;
+            ctx.moveTo(px - nx * 4, py - ny * 4); ctx.lineTo(px + nx * 4, py + ny * 4);
           }
           ctx.strokeStyle = 'rgba(218,195,255,0.52)'; ctx.lineWidth = 1; ctx.stroke();
         }
