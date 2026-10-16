@@ -364,10 +364,14 @@
       ctx.beginPath(); ctx.arc(0, -r * 0.25, r * 0.19, 0, TAU); ctx.fill();
       for (const dx of [-0.08, 0.08]) { ctx.beginPath(); ctx.arc(dx * r, -r * 0.28, r * 0.045, 0, TAU); ctx.fillStyle = '#a978d3'; ctx.fill(); }
     } else if (id === 'verity') {
-      ctx.strokeStyle = '#1d1d22'; ctx.fillStyle = '#1d1d22';
-      ctx.lineWidth = r * 0.13;
-      for (const dx of [-0.27, 0.27]) { ctx.beginPath(); ctx.ellipse(dx * r, -r * 0.16, r * 0.075, r * 0.12, 0, 0, TAU); ctx.fill(); }
-      ctx.beginPath(); ctx.arc(0, -r * 0.03, r * 0.34, 0.18 * Math.PI, 0.82 * Math.PI); ctx.stroke();
+      // Strong, high-contrast happy face for collection tiles and previews.
+      ctx.strokeStyle = '#171717'; ctx.fillStyle = '#171717';
+      ctx.lineWidth = r * 0.14; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      for (const dx of [-0.29, 0.29]) {
+        ctx.beginPath(); ctx.ellipse(dx * r, -r * 0.17, r * 0.082, r * 0.125, 0, 0, TAU); ctx.fill();
+      }
+      ctx.beginPath(); ctx.moveTo(-r * 0.35, r * 0.02);
+      ctx.quadraticCurveTo(0, r * 0.54, r * 0.35, r * 0.02); ctx.stroke();
     } else if (id === 'unarmed') {
       ctx.lineWidth = r * 0.1; ctx.strokeStyle = 'rgba(255,255,255,0.9)';
       for (const dy of [-0.3, 0, 0.3]) { ctx.beginPath(); ctx.moveTo(-r * 0.5, dy * r); ctx.lineTo(-r * 0.05, dy * r); ctx.stroke(); }
