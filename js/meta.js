@@ -969,15 +969,54 @@
         el.querySelectorAll('.mv-card').forEach((c,i)=>{c.onclick=()=>{if(v.done||v.locked)return;v.mine=c.dataset.map;if(s.send)s.send({t:'mapVote',r,id:v.mine,locked:false});M.refreshMapVote(v);};if(BB.app&&BB.app.drawMapPreview)BB.app.drawMapPreview(c.querySelector('canvas'),BB.MAPS[i].id);});
         el.querySelector('#mvLock').onclick=()=>{if(v.done||v.locked)return;if(!v.mine){BB.ui.toast('Choose a map first.');return;}v.locked=true;if(s.send)s.send({t:'mapVote',r,id:v.mine,locked:true});M.refreshMapVote(v);M.checkMapVote(v);}; M.refreshMapVote(v);
       },{width:'600px',onClose:()=>{if(!v.done){v.done=true;M.stopMapVote();}}});
-      M._mvTimer=setInterval(()=>{if(M._mapVoteState!==v||v.done){M.stopMapVote();return;}v.left=Math.max(0,10-(performance.now()-v.at)/1000);if(v.left<=0){clearInterval(M._mvTimer);if(M.mapVoteHost(s))M.resolveMapVote(v);else{const e=v.sheet&&v.sheet.querySelector('#mvStatus');if(e)e.textContent='Waiting for host to resolve…';}}else M.refreshMapVote(v);},100);
+      M._mvTimer=setInterval(()=>{if(M._mapVoteState!==v||v.done){M.stopMapVote();return;}v.left=Math.max(0,10-(performance.now()-v.at)/1000);if(v.left<=0){clearInterval(M._mvTimer);if(!v.locked){if(!v.mine)v.mine=BB.MAPS[Math.floor(Math.random()*BB.MAPS.length)].id;v.locked=true;if(s.send)s.send({t:'mapVote',r,id:v.mine,locked:true});M.refreshMapVote(v);M.checkMapVote(v);}if(!M.mapVoteHost(s)&&!v.done){const e=v.sheet&&v.sheet.querySelector('#mvStatus');if(e)e.textContent='Vote auto-locked · waiting for host…';}}else M.refreshMapVote(v);},100);
       if(s.bot){const rng=BB.RNG(((s.seed|0)^(r*0x45d9f3b))>>>0),id=BB.MAPS[Math.floor(rng()*BB.MAPS.length)].id;M._mvBotTimer=setTimeout(()=>{if(v.done)return;v.foe=id;v.foeLocked=true;s._mapVotePeerInbox[r]={id,locked:true};M.refreshMapVote(v);M.checkMapVote(v);},800);}
     },
     refreshMapVote(v) { if(!v||v.done||!v.sheet||!v.sheet.isConnected)return;v.sheet.querySelectorAll('.mv-card').forEach(c=>{const mine=c.dataset.map===v.mine,foe=c.dataset.map===v.foe;c.classList.toggle('you-vote',mine);c.classList.toggle('foe-vote',foe);c.classList.toggle('both-vote',mine&&foe);c.querySelector('.mv-votes').textContent=mine&&foe?'BOTH':mine?'YOU':foe?(v.foeLocked?'OPPONENT · LOCKED':'OPPONENT'):'';});const t=v.sheet.querySelector('#mvClock');if(t)t.textContent=v.left.toFixed(1)+'s';const st=v.sheet.querySelector('#mvStatus');if(st)st.textContent=v.locked?(v.foeLocked?'Votes locked · resolving…':'Locked · waiting for opponent…'):(v.foe?'Opponent vote visible · choose yours':'Choose a map.');const b=v.sheet.querySelector('#mvLock');if(b){b.disabled=v.locked;b.textContent=v.locked?'VOTE LOCKED':'LOCK VOTE';}},
     mapVotePeer(d) { const s=M.series;if(!s||!s.live||s.spectate||!d||!Number.isInteger(d.r)||d.r<0||d.r>2||!BB.MAP[d.id]||s.mapVoteRound===d.r||s._mapVoteResolvedRound===d.r)return;s._mapVotePeerInbox=s._mapVotePeerInbox||{};s._mapVotePeerInbox[d.r]={id:d.id,locked:!!d.locked};const v=M._mapVoteState;if(v&&v.s===s&&v.r===d.r&&!v.done){v.foe=d.id;v.foeLocked=!!d.locked;M.refreshMapVote(v);M.checkMapVote(v);}},
     checkMapVote(v) { if(v&&!v.done&&v.locked&&v.foeLocked&&M.mapVoteHost(v.s))M.resolveMapVote(v); },
-    resolveMapVote(v) { if(!v||v.done||!M.mapVoteHost(v.s))return;const s=v.s,r=v.r;if(s._mapVoteResolvedRound===r)return;const same=!!(v.mine&&v.foe&&v.mine===v.foe),rng=BB.RNG(((s.seed|0)^(r*0x45d9f3b)^0x6d617056)>>>0),id=same?v.mine:BB.MAPS[Math.floor(rng()*BB.MAPS.length)].id;v.done=true;s._mapVoteResolvedRound=r;M.stopMapVote();const d={t:'mapVoteResult',r,id,rolled:!same};if(s.send)s.send(d);M.applyMapVoteResult(d);},
-    applyMapVoteResult(d) {const s=M.series;if(!s||!s.live||s.spectate||!d||d.r!==s.round||!BB.MAP[d.id])return;clearTimeout(M._auto);M.stopMapVote();s.maps[d.r]=d.id;s.mapVoteRound=d.r;s._mapVoteResolvedRound=d.r;const v=M._mapVoteState;if(v&&v.r===d.r)v.done=true;if(d.rolled)return M.showMapRoll(s,d.id,d.r);M._mapVoteState=null;BB.ui.onClose=null;BB.ui.close();M.vsSplash();},
-    showMapRoll(s,id,r) {const v=M._mapVoteState&&M._mapVoteState.s===s&&M._mapVoteState.r===r?M._mapVoteState:(M._mapVoteState={s,r,done:true,sheet:null});v.done=true;let el=v.sheet;const draw=node=>{el=v.sheet=node;node.classList.add('vs-sheet','mv-sheet');node.innerHTML='<h2 class="mv-title">MAP ROLL · ROUND '+(r+1)+'</h2><p class="mv-sub">No agreement · rolling the arena!</p><div class="mv-roll-grid">'+BB.MAPS.map(m=>'<div class="mv-roll-card" data-map="'+esc(m.id)+'"><canvas class="mv-preview"></canvas><b>'+esc(m.name)+'</b></div>').join('')+'</div><div class="mv-roll-result">Rolling…</div>';node.querySelectorAll('.mv-roll-card').forEach((card,i)=>{if(BB.app&&BB.app.drawMapPreview)BB.app.drawMapPreview(card.querySelector('canvas'),BB.MAPS[i].id);});};if(el&&el.isConnected)draw(el);else BB.ui.open(draw,{width:'600px'});let n=0;M._mvRollIv=setInterval(()=>{if(!el||!el.isConnected)return;const a=Array.from(el.querySelectorAll('.mv-roll-card'));a.forEach((c,i)=>{c.classList.toggle('rolling',i===n%a.length);c.classList.remove('winner');});if(n%2===0)BB.audio.play('click');n++;},100);M._mvRollEnd=setTimeout(()=>{clearInterval(M._mvRollIv);if(!el||!el.isConnected||M.series!==s)return;el.querySelectorAll('.mv-roll-card').forEach(c=>{c.classList.remove('rolling');c.classList.toggle('winner',c.dataset.map===id);});const out=el.querySelector('.mv-roll-result');if(out)out.textContent=BB.MAP[id].name.toUpperCase()+'!';BB.audio.play('unlock');setTimeout(()=>{if(M.series!==s)return;M._mapVoteState=null;BB.ui.onClose=null;BB.ui.close();M.vsSplash();},650);},1900);},
+    resolveMapVote(v) {
+      if(!v||v.done||!M.mapVoteHost(v.s))return;
+      const s=v.s,r=v.r;if(s._mapVoteResolvedRound===r)return;
+      const choices=[v.mine,v.foe].filter((id,i,a)=>!!BB.MAP[id]&&a.indexOf(id)===i);
+      if(!choices.length)choices.push(BB.MAPS[0].id);
+      const rng=BB.RNG(((s.seed|0)^(r*0x45d9f3b)^0x6d617056)>>>0);
+      const id=choices.length===1?choices[0]:choices[Math.floor(rng()*2)];
+      v.done=true;s._mapVoteResolvedRound=r;M.stopMapVote();
+      const d={t:'mapVoteResult',r,id,rolled:choices.length>1,choices};
+      if(s.send)s.send(d);M.applyMapVoteResult(d);
+    },
+    applyMapVoteResult(d) {const s=M.series;if(!s||!s.live||s.spectate||!d||d.r!==s.round||!BB.MAP[d.id])return;clearTimeout(M._auto);M.stopMapVote();s.maps[d.r]=d.id;s.mapVoteRound=d.r;s._mapVoteResolvedRound=d.r;const v=M._mapVoteState;if(v&&v.r===d.r)v.done=true;if(d.rolled)return M.showMapRoll(s,d.id,d.r,d.choices);M._mapVoteState=null;BB.ui.onClose=null;BB.ui.close();M.vsSplash();},
+    showMapRoll(s,id,r,choices) {
+      const state=M._mapVoteState&&M._mapVoteState.s===s&&M._mapVoteState.r===r?M._mapVoteState:null;
+      const candidateIds=[];
+      const addCandidate=(mid)=>{if(BB.MAP[mid]&&!candidateIds.includes(mid)&&candidateIds.length<2)candidateIds.push(mid);};
+      (Array.isArray(choices)?choices:[]).forEach(addCandidate);
+      if(candidateIds.length<2&&state){addCandidate(state.mine);addCandidate(state.foe);}
+      addCandidate(id);
+      const rollMaps=candidateIds.map(mid=>BB.MAP[mid]);
+      const v=state|| (M._mapVoteState={s,r,done:true,sheet:null});
+      v.done=true;let el=v.sheet;
+      const draw=node=>{
+        el=v.sheet=node;node.classList.add('vs-sheet','mv-sheet');
+        node.innerHTML='<h2 class="mv-title">MAP ROLL · ROUND '+(r+1)+'</h2><p class="mv-sub">No agreement · a 50/50 roll between your two choices!</p><div class="mv-roll-grid two-choice">'+rollMaps.map(m=>'<div class="mv-roll-card" data-map="'+esc(m.id)+'"><canvas class="mv-preview"></canvas><b>'+esc(m.name)+'</b></div>').join('')+'</div><div class="mv-roll-result">Rolling…</div>';
+        node.querySelectorAll('.mv-roll-card').forEach((card,i)=>{if(BB.app&&BB.app.drawMapPreview)BB.app.drawMapPreview(card.querySelector('canvas'),rollMaps[i].id);});
+      };
+      if(el&&el.isConnected)draw(el);else BB.ui.open(draw,{width:'600px'});
+      let n=0;M._mvRollIv=setInterval(()=>{
+        if(!el||!el.isConnected)return;
+        const a=Array.from(el.querySelectorAll('.mv-roll-card'));
+        a.forEach((c,i)=>{c.classList.toggle('rolling',i===n%a.length);c.classList.remove('winner');});
+        if(n%2===0)BB.audio.play('click');n++;
+      },100);
+      M._mvRollEnd=setTimeout(()=>{
+        clearInterval(M._mvRollIv);if(!el||!el.isConnected||M.series!==s)return;
+        el.querySelectorAll('.mv-roll-card').forEach(c=>{c.classList.remove('rolling');c.classList.toggle('winner',c.dataset.map===id);});
+        const out=el.querySelector('.mv-roll-result');if(out)out.textContent=BB.MAP[id].name.toUpperCase()+'!';
+        BB.audio.play('unlock');
+        setTimeout(()=>{if(M.series!==s)return;M._mapVoteState=null;BB.ui.onClose=null;BB.ui.close();M.vsSplash();},650);
+      },1900);
+    },
 
     // both squads revealed side by side, round by round
     lineup() {
