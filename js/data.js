@@ -22,7 +22,8 @@
   function awakenDummySkin(sim, b, w, cinematic) {
     if (w.dummyAwakened) return;
     w.dummyAwakened = true; b.dummyAscended = true;
-    b.maxHp = Math.max(320, b.maxHp); b.hp = b.maxHp;
+    const originalMaxHp = b.maxHp;
+    b.maxHp = Math.max(320, originalMaxHp * 2); b.hp = b.maxHp;
     b.dummyInvulnT = 3.2; b.speedMul = 2.45;
     b.r *= 1.16; b.baseR = Math.max(b.baseR, b.r);
     w.damage = 36; w.spin = 760; w.len = 92; w.width = 32; w.gap = 2; w.dmyPulse = 0.35;
@@ -264,7 +265,7 @@
   });
   add({
     id: 'dummy', name: 'Dummy', cat: 'weapon', rarity: 'common', color: '#d9c7a7',
-    desc: 'Does absolutely nothing. Great for testing. Its D.U.M.M.Y. mastery skin reveals its true power at half health.',
+    desc: 'Does absolutely nothing. Great for testing.',
     base: {}, melee: true, blocks: true,
     init(w) { w.dummyAwakened = false; w.dmyPulse = 0; },
     awakenDummy(sim, b, cinematic) { awakenDummySkin(sim, b, b.w, cinematic); },
