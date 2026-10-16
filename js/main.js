@@ -513,6 +513,7 @@
         button.setAttribute('aria-label', hidden ? 'Show UI' : 'Hide UI');
         button.title = hidden ? 'Show UI' : 'Hide UI';
       }
+      requestAnimationFrame(() => App.layout());
     },
 
     pause() {
