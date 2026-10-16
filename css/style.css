@@ -1805,8 +1805,9 @@ body.ui-hidden #btnHideUI.hide-ui-btn { display:none!important; }
 /* Hide UI lives directly under <body>, outside the scaled arena, so it tracks the player's viewport. */
 #btnHideUI.hide-ui-btn {
   position:fixed!important;
-  right:0!important;
-  bottom:0!important;
+  /* Match the screen-edge breathing room used by the regular icon buttons. */
+  right:calc(8px + env(safe-area-inset-right, 0px))!important;
+  bottom:calc(8px + env(safe-area-inset-bottom, 0px))!important;
   left:auto!important; top:auto!important;
   width:40px!important; height:40px!important;
   margin:0!important; transform:none!important;
