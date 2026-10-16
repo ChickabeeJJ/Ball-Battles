@@ -363,6 +363,11 @@
       ctx.beginPath(); ctx.ellipse(0, r * 0.12, r * 0.23, r * 0.31, 0, 0, TAU); ctx.fill();
       ctx.beginPath(); ctx.arc(0, -r * 0.25, r * 0.19, 0, TAU); ctx.fill();
       for (const dx of [-0.08, 0.08]) { ctx.beginPath(); ctx.arc(dx * r, -r * 0.28, r * 0.045, 0, TAU); ctx.fillStyle = '#a978d3'; ctx.fill(); }
+    } else if (id === 'verity') {
+      ctx.strokeStyle = '#1d1d22'; ctx.fillStyle = '#1d1d22';
+      ctx.lineWidth = r * 0.13;
+      for (const dx of [-0.27, 0.27]) { ctx.beginPath(); ctx.ellipse(dx * r, -r * 0.16, r * 0.075, r * 0.12, 0, 0, TAU); ctx.fill(); }
+      ctx.beginPath(); ctx.arc(0, -r * 0.03, r * 0.34, 0.18 * Math.PI, 0.82 * Math.PI); ctx.stroke();
     } else if (id === 'unarmed') {
       ctx.lineWidth = r * 0.1; ctx.strokeStyle = 'rgba(255,255,255,0.9)';
       for (const dy of [-0.3, 0, 0.3]) { ctx.beginPath(); ctx.moveTo(-r * 0.5, dy * r); ctx.lineTo(-r * 0.05, dy * r); ctx.stroke(); }
@@ -718,6 +723,20 @@
 
     drawProj(ctx, p, lw) {
       if (BB.drawProjArt && BB.drawProjArt(ctx, p, lw)) return;
+      if (p.kind === 'trident') {
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle || 0);
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        const shaft = [[-p.r * 1.55, 0], [p.r * 0.85, 0]];
+        ctx.beginPath(); ctx.moveTo(shaft[0][0], shaft[0][1]); ctx.lineTo(shaft[1][0], shaft[1][1]);
+        ctx.strokeStyle = OUT; ctx.lineWidth = Math.max(6, p.r * 0.68); ctx.stroke();
+        ctx.strokeStyle = '#b6fff0'; ctx.lineWidth = Math.max(2.5, p.r * 0.3); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(p.r * 0.05, 0); ctx.lineTo(p.r * 1.35, 0);
+        ctx.moveTo(p.r * 0.15, 0); ctx.lineTo(p.r * 0.85, -p.r * 0.82);
+        ctx.moveTo(p.r * 0.15, 0); ctx.lineTo(p.r * 0.85, p.r * 0.82);
+        ctx.strokeStyle = OUT; ctx.lineWidth = Math.max(6, p.r * 0.56); ctx.stroke();
+        ctx.strokeStyle = '#1abc9c'; ctx.lineWidth = Math.max(2.5, p.r * 0.28); ctx.stroke();
+        ctx.restore(); return;
+      }
       if (p.kind === 'harpoon') {
         ctx.save();
         const pts = [];
