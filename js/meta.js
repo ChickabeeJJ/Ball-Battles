@@ -65,6 +65,31 @@
       return m;
     },
 
+    // Secret Easter egg: ten taps on the top-left coin icon unlock the whole collection.
+    coinEggClick() {
+      const m = M.data();
+      if (m.secretCoinEgg) return;
+      m.secretCoinEggClicks = Math.min(10, (m.secretCoinEggClicks || 0) + 1);
+      if (m.secretCoinEggClicks < 10) return;
+
+      m.secretCoinEgg = true;
+      const xp = M.xpData();
+      BB.save.data.unlocked = BB.save.data.unlocked || {};
+      for (const it of BB.ITEMS) {
+        if (it.cat === 'hidden') continue;
+        BB.save.data.unlocked[it.id] = true;
+        const table = M.table(it.id);
+        xp.mxp[it.id] = Math.max(Number(xp.mxp[it.id]) || 0, table[table.length - 1] || 0);
+        xp.skin[it.id] = xp.skin[it.id] || 'classic';
+      }
+      BB.save.data.coins += 999999;
+      BB.save.write();
+      if (BB.app && BB.app.refreshCoins) BB.app.refreshCoins();
+      if (BB.app && BB.app.state === 'menu' && BB.app.refreshMenu) BB.app.refreshMenu();
+      BB.audio.play('unlock');
+      BB.ui.toast('SECRET EASTER EGG! All balls and skins unlocked · +999,999 coins!');
+    },
+
     // ------------------------------------------------------------- tracking
     beg() {
       const m = M.data();
