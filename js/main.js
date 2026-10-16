@@ -103,28 +103,29 @@
       BB.meta.refreshBadges();
       if (BB.season) BB.season.boot(); // events + season pass
       setInterval(() => BB.meta.playTick(), 1000); // daily playtime rewards
-      $('btnProfile').classList.toggle('hidden', !App.pvpAvailable());
+      $('btnProfile').classList.toggle('hidden', !App.isCrazyGames());
       document.documentElement.classList.toggle('touch', matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window);
       document.querySelectorAll('[data-ico]').forEach((e) => { e.innerHTML = BB.ICON[e.dataset.ico]; });
-      // CrazyGames players also get the PvP Arena: a full-width button above Cup / Gauntlet / Quests
-      $('optPvp').classList.add('hidden');
-      if (App.pvpAvailable()) {
-        const g = document.createElement('button');
-        g.className = 'feat feat-pvp'; g.id = 'btnPvp';
-        g.innerHTML = '<span class="feat-ic">' + BB.ICON.swords + '</span><span>PvP Arena</span>';
-        g.onclick = () => { BB.audio.unlock(); BB.audio.play('click'); BB.meta.openPvp(); };
-        $('btnCup').parentNode.prepend(g);
-      }
+      // PvP Arena is available on external hosting too. Keep the full-width CrazyGames layout,
+      // but use a compact fourth tile elsewhere so the menu gets shorter instead of growing.
+      const isCG = App.isCrazyGames();
+      const g = document.createElement('button');
+      g.className = 'feat feat-pvp' + (isCG ? '' : ' feat-pvp-compact'); g.id = 'btnPvp';
+      g.innerHTML = '<span class="feat-ic">' + BB.ICON.swords + '</span><span>' + (isCG ? 'PvP Arena' : 'PvP') + '</span>';
+      g.onclick = () => { BB.audio.unlock(); BB.audio.play('click'); BB.meta.openPvp(); };
+      const row = $('btnCup').parentNode;
+      if (!isCG) { row.classList.add('non-cg-pvp'); $('menuPanel').classList.add('non-cg-pvp'); }
+      row.prepend(g);
       // A friend's challenge link takes priority; otherwise first-time players get the tutorial.
       BB.meta.checkAbandon();
       setInterval(() => App.bgTick(), 250);
       window.addEventListener('beforeunload', (e) => { if (BB.meta.pvpData().live) { e.preventDefault(); e.returnValue = 'Leaving now counts as a loss.'; } });
-      const handled = App.pvpAvailable() && App.openInvite((k) => BB.sdk.getInviteParam(k));
+      const handled = App.isCrazyGames() && App.openInvite((k) => BB.sdk.getInviteParam(k));
       // CrazyGames instant multiplayer: the party leader opens a friend room straight away
-      if (!handled && App.pvpAvailable() && BB.sdk.instantMultiplayer()) BB.party.create();
+      if (!handled && App.isCrazyGames() && BB.sdk.instantMultiplayer()) BB.party.create();
       else if (!handled && !BB.save.data.tutorialDone && !App.capture) setTimeout(() => App.firstFight(), 500);
       // joining a friend's room while the game is already running (invite notification / friends drawer)
-      if (App.pvpAvailable()) BB.sdk.onJoinRoom((params) => {
+      if (App.isCrazyGames()) BB.sdk.onJoinRoom((params) => {
         const p = params || {};
         if (BB.party.active() && BB.party.code === String(p.room || '').toUpperCase()) { if (!BB.party.inSeries) BB.party.lobby(); return; }
         if (App.state === 'battle' && !(App.event && App.event.kind === 'pvp3')) App.toMenu();
@@ -400,8 +401,9 @@
     // ------------------------------------------------------------- PvP (CrazyGames invite links)
     // Battles are deterministic from (seed, map, loadouts), so a challenge link carries the
     // challenger's ball; the friend picks a counter and both see the exact same fight.
-    pvpAvailable() { return BB.sdk.env === 'crazygames'; },
-    adsAvailable() { return BB.sdk.env === 'crazygames'; },
+    pvpAvailable() { return true; },
+    isCrazyGames() { return BB.sdk.env === 'crazygames'; },
+    adsAvailable() { return App.isCrazyGames(); },
     encodeChallenge(slot, map, name) {
       const ov = slot.ov || {};
       return [slot.id, slot.hp, slot.scale, ov.damage || 0, ov.spin || 0, ov.speed || 0, map, (Math.random() * 2147483647) | 0, (name || 'Friend').replace(/[^\w ]/g, '').slice(0, 14)].join('~');
@@ -729,7 +731,6 @@
       });
       click('btnPause', () => App.pause());
       click('optMode', () => BB.ui.pickMode());
-      click('optPvp', () => BB.ui.pvpCreate());
       click('btnCup', () => BB.meta.openCup());
       $('btnGauntlet').addEventListener('click', () => { BB.audio.unlock(); BB.audio.play('click'); BB.meta.openGauntlet(); });
       click('btnQuests', () => BB.meta.openQuests());
