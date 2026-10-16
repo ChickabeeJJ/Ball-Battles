@@ -1711,3 +1711,17 @@ body.dark #btnGift.ready { background:linear-gradient(145deg,#665020,#3c301b); c
 @media (max-width:430px) { .mv-preview { aspect-ratio:1 / 1; } }
 
 #mvClock { padding:5px 8px; color:#ffd23f; background:#221d2c; border:2px solid #665487; border-radius:7px; font-family:var(--num); font-size:15px; white-space:nowrap; }
+
+/* Non-CrazyGames: PvP shares the existing bottom feature row, so it adds no extra menu height. */
+#menuPanel.non-cg-pvp { gap: 7px; }
+.feat-row.non-cg-pvp { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.feat-row.non-cg-pvp .feat-pvp-compact { grid-column: auto !important; min-width: 0; padding: 0 3px; gap: 3px; font-size: clamp(11px, 2.4vw, 14px); letter-spacing: 0; }
+.feat-row.non-cg-pvp .feat-pvp-compact .feat-ic .ico { width: 16px; height: 16px; }
+.feat-row.non-cg-pvp .feat { min-width: 0; padding-left: 2px; padding-right: 2px; gap: 3px; }
+html.cland .feat-row.non-cg-pvp { gap: 4px; }
+html.cland .feat-row.non-cg-pvp .feat { font-size: 11px; }
+@media (max-width: 360px) {
+  .feat-row.non-cg-pvp { gap: 4px; }
+  .feat-row.non-cg-pvp .feat { font-size: 10px; }
+  .feat-row.non-cg-pvp .feat-ic .ico { width: 14px; height: 14px; }
+}
