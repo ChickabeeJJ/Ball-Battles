@@ -571,7 +571,8 @@
       // Scale the full ring-and-balls graphic against the available viewport.
       // Desktop gets a much larger presentation; short/narrow screens stay inside the viewport.
       const vw = window.innerWidth || 1024, vh = window.innerHeight || 768;
-      const scale = Math.max(0.82, Math.min(1.75, vw / 950, vh / 560));
+      // Larger on desktop, while keeping the orbit, title and subtitle inside short/mobile viewports.
+      const scale = Math.max(0.78, Math.min(2.1, vw / 730, vh / 410));
       f.style.setProperty('--fo-scale', scale.toFixed(3));
       f.style.setProperty('--fo-title-offset', Math.round(150 * scale) + 'px');
       const stars = Array.from({ length: 36 }, () => `<i style="left:${Math.random() * 100}%;top:${Math.random() * 100}%;animation-delay:${(Math.random() * 2).toFixed(2)}s;--s:${(1 + Math.random() * 2).toFixed(1)}px"></i>`).join('');
