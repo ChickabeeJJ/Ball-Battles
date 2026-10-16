@@ -19,6 +19,21 @@
     ITEMS.push(o);
   }
 
+  function awakenDummySkin(sim, b, w, cinematic) {
+    if (w.dummyAwakened) return;
+    w.dummyAwakened = true; b.dummyAscended = true;
+    b.maxHp = Math.max(320, b.maxHp); b.hp = b.maxHp;
+    b.dummyInvulnT = 3.2; b.speedMul = 2.45;
+    b.r *= 1.16; b.baseR = Math.max(b.baseR, b.r);
+    w.damage = 36; w.spin = 760; w.len = 92; w.width = 32; w.gap = 2; w.dmyPulse = 0.35;
+    sim.ring(b.x, b.y, b.r, b.r * 7, '#e8e8ff', 0.7);
+    sim.ring(b.x, b.y, b.r * 0.5, b.r * 5.5, '#ff244d', 0.45);
+    sim.burst(b.x, b.y, 60, ['#ffffff', '#ff244d', '#8b5cf6', '#1d1d22'], 900, 8);
+    sim.fxTag(b.x, b.y - b.r - 26, 'D.U.M.M.Y. AWAKENED', '#ff244d');
+    for (const e of sim.balls) if (e.alive && e.team !== b.team) sim.knock(e, b.x, b.y, 900);
+    if (cinematic !== false) sim.emit({ type: 'dummyAwaken', x: b.x, y: b.y, team: b.team, id: b.id });
+  }
+
   function aimSpread(sim, b, w, n, spreadDeg, speed, extra) {
     for (let i = 0; i < n; i++) {
       const a = w.angle + (i - (n - 1) / 2) * spreadDeg * D2R;
@@ -249,9 +264,32 @@
   });
   add({
     id: 'dummy', name: 'Dummy', cat: 'weapon', rarity: 'common', color: '#d9c7a7',
-    desc: 'Does absolutely nothing. Great for testing.',
-    base: {},
-    stats: () => ['Just vibing'],
+    desc: 'Does absolutely nothing. Great for testing. Its D.U.M.M.Y. mastery skin reveals its true power at half health.',
+    base: {}, melee: true, blocks: true,
+    init(w) { w.dummyAwakened = false; w.dmyPulse = 0; },
+    awakenDummy(sim, b, cinematic) { awakenDummySkin(sim, b, b.w, cinematic); },
+    update(sim, b, w, dt) {
+      if (!b.dummySkin) return;
+      if (!w.dummyAwakened && b.hp <= b.maxHp * 0.5) awakenDummySkin(sim, b, w, true);
+      if (!w.dummyAwakened) return;
+      b.speedMul = Math.max(b.speedMul, 2.45);
+      w.damage = Math.min(150, w.damage + dt * 1.8);
+      w.dmyPulse -= dt;
+      if (w.dmyPulse <= 0) {
+        w.dmyPulse = 1.25;
+        const radius = b.r * 5.8, damage = Math.max(24, w.damage * 0.72);
+        sim.explode(b, b.x, b.y, radius, damage);
+        sim.ring(b.x, b.y, b.r * 1.2, radius, '#ff244d', 0.38);
+        sim.burst(b.x, b.y, 20, ['#ffffff', '#ff244d', '#a259ff'], 420, 4);
+      }
+    },
+    onHit(sim, b, w, t) {
+      if (!b.dummyAscended) return;
+      w.damage = Math.min(180, w.damage + 8);
+      sim.heal(b, 14);
+      if (t && t.alive) sim.ring(t.x, t.y, t.r, t.r * 2.5, '#ff244d', 0.24);
+    },
+    stats: (w, b) => b && b.dummyAscended ? ['D.U.M.M.Y.', 'Damage: ' + fmt(w.damage), 'GODMODE'] : ['Just vibing'],
   });
 
   // ---------------------------------------------------------------- special balls
@@ -300,10 +338,10 @@
     stats: (w) => ['Damage: ' + fmt(w.damage)],
   });
   add({
-    id: 'splodey', name: 'Splodey', cat: 'special', rarity: 'epic', color: '#3a3a44',
+    id: 'splodey', name: 'Splodey', cat: 'special', rarity: 'legendary', color: '#3a3a44',
     desc: 'Leaves a trail of timed mini-bombs behind it as it rolls. Bombs explode after a short fuse or early when an enemy gets close. Every hit increases blast damage and trail density.',
     base: { damage: 3 }, contact: true,
-    init(w) { w.timer = 0.05; w.bombs = []; w.n = 1; w.fuse = 1.35; w.dropEvery = 0.22; },
+    init(w) { w.timer = 0.05; w.bombs = []; w.n = 1; w.fuse = 1.35; w.dropEvery = 0.38; },
     contactDamage: () => 1,
     update(sim, b, w, dt) {
       w.timer -= dt;
@@ -371,10 +409,26 @@
   });
   add({
     id: 'trident', name: 'Trident', cat: 'weapon', rarity: 'epic', color: '#1abc9c',
-    desc: 'Three prongs, 2 damage. Prongs widen and +0.5 damage every hit.',
+    desc: 'Three prongs, 2 damage. Prongs widen and +0.5 damage every hit. Occasionally throws a spectral trident at the nearest enemy.',
     base: { damage: 2, spin: 150, len: 60, width: 14 }, melee: true, blocks: true,
+    init(w) { w.throwTimer = 2.2; },
+    update(sim, b, w, dt) {
+      w.throwTimer -= dt;
+      if (w.throwTimer > 0) return;
+      w.throwTimer = 3.6 + sim.rng() * 1.8;
+      const e = sim.nearestEnemy(b.team, b.x, b.y);
+      if (!e) return;
+      const a = Math.atan2(e.y - b.y, e.x - b.x), speed = 680;
+      const start = b.r + w.gap + 8;
+      sim.spawnProj({
+        owner: b, kind: 'trident', x: b.x + Math.cos(a) * start, y: b.y + Math.sin(a) * start,
+        vx: Math.cos(a) * speed + b.vx * 0.18, vy: Math.sin(a) * speed + b.vy * 0.18,
+        angle: a, r: 8 * b.scale, dmg: w.damage * 1.65, life: 2.25, knock: 300,
+      });
+      sim.emit({ type: 'shoot', x: b.x, y: b.y });
+    },
     onHit(sim, b, w) { w.damage += 0.5; w.width = Math.min(w.width + 1.5 * w.scale, 40 * w.scale); },
-    stats: (w) => ['Damage: ' + fmt(w.damage)],
+    stats: (w) => ['Damage: ' + fmt(w.damage), 'Throw: ' + Math.max(0, Math.ceil(w.throwTimer)) + 's'],
   });
   add({
     id: 'flail', name: 'Flail', cat: 'weapon', rarity: 'epic', color: '#6d4c41',
