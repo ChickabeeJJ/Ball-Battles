@@ -71,6 +71,7 @@
             hp: sc.hp, scale: sc.scale || 1, ov: sc.ov || {}, slot: sc.slot,
             controlled: cfg.controlSlot != null && cfg.controlSlot === sc.slot,
             tenshi: !!sc.tenshi,
+            dummySkin: !!sc.dummySkin,
           });
           b.name = b.def.name;
         });
@@ -92,6 +93,7 @@
       const a = this.rng() * TAU;
       b.vx = Math.cos(a) * b.speed; b.vy = Math.sin(a) * b.speed;
       b.tenshi = !!o.tenshi;
+      b.dummySkin = !!o.dummySkin;
       b.w = makeWeapon(def, ov, scale);
       b.w.angle = this.rng() * TAU;
       b.w.dir = team === 1 && this.settings.reverseB ? -1 : 1;
@@ -566,16 +568,17 @@
     walls(b) {
       const hw = this.W / 2, hh = this.H / 2;
       let hit = false;
-      if (b.x - b.r < -hw) { b.x = -hw + b.r; if (b.vx < 0) { b.vx = -b.vx; hit = true; } }
-      if (b.x + b.r > hw) { b.x = hw - b.r; if (b.vx > 0) { b.vx = -b.vx; hit = true; } }
-      if (b.y - b.r < -hh) { b.y = -hh + b.r; if (b.vy < 0) { b.vy = -b.vy; hit = true; } }
-      if (b.y + b.r > hh) { b.y = hh - b.r; if (b.vy > 0) { b.vy = -b.vy; hit = true; } }
+      const edges = [];
+      if (b.x - b.r < -hw) { b.x = -hw + b.r; if (b.vx < 0) { b.vx = -b.vx; hit = true; edges.push('left'); } }
+      if (b.x + b.r > hw) { b.x = hw - b.r; if (b.vx > 0) { b.vx = -b.vx; hit = true; edges.push('right'); } }
+      if (b.y - b.r < -hh) { b.y = -hh + b.r; if (b.vy < 0) { b.vy = -b.vy; hit = true; edges.push('top'); } }
+      if (b.y + b.r > hh) { b.y = hh - b.r; if (b.vy > 0) { b.vy = -b.vy; hit = true; edges.push('bottom'); } }
       if (hit) {
         const j = (this.rng() - 0.5) * 0.06, c = Math.cos(j), s = Math.sin(j);
         const vx = b.vx * c - b.vy * s; b.vy = b.vx * s + b.vy * c; b.vx = vx;
         this.squash(b, Math.atan2(b.vy, b.vx), 0.9);
-        if (b.def.onWall) b.def.onWall(this, b, b.w);
-        this.emit({ type: 'wall', x: b.x, y: b.y });
+        if (b.def.onWall) b.def.onWall(this, b, b.w, edges);
+        this.emit({ type: 'wall', x: b.x, y: b.y, edges });
       }
     }
 
