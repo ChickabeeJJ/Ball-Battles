@@ -221,6 +221,18 @@
     boomerang(ctx, s, L, W, lw, t) {
       drawBoomerang(ctx, s + L * 0.5, 0, W * 0.75, 0, lw);
     },
+    yoyo(ctx, s, L, W, lw, t, team) {
+      ctx.save();
+      const tip = s + L, whip = Math.sin(t * 9) * W * 0.32, r = Math.max(3.5, W * 0.36);
+      ctx.beginPath(); ctx.moveTo(s, 0); ctx.quadraticCurveTo(s + L * 0.48, whip, tip, 0);
+      ctx.lineCap = 'round'; ctx.strokeStyle = OUT; ctx.lineWidth = lw * 2.6; ctx.stroke();
+      ctx.strokeStyle = '#e8dce9'; ctx.lineWidth = Math.max(1.5, lw * 1.15); ctx.stroke();
+      const g = ctx.createRadialGradient(tip - r * 0.35, -r * 0.4, 1, tip, 0, r * 1.2);
+      g.addColorStop(0, '#ffffff'); g.addColorStop(0.35, team || '#ff6b81'); g.addColorStop(1, '#9e334d');
+      ctx.beginPath(); ctx.arc(tip, 0, r, 0, TAU); ctx.fillStyle = g; ctx.fill(); ctx.lineWidth = lw; ctx.strokeStyle = OUT; ctx.stroke();
+      ctx.beginPath(); ctx.arc(tip - r * 0.28, -r * 0.3, r * 0.22, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,0.78)'; ctx.fill();
+      ctx.restore();
+    },
     grimoire(ctx, s, L, W, lw, t) {
       const cx = s + L * 0.55, bob = Math.sin(t * 5) * W * 0.06;
       ctx.save(); ctx.translate(cx, bob);
@@ -608,7 +620,8 @@
         ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fill();
       }
       if (id === 'splodey') {
-        ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 5, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - w.timer / 3));
+        const dropCycle = w.dropEvery || 0.22;
+        ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 5, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - Math.max(0, Math.min(1, w.timer / dropCycle))));
         ctx.strokeStyle = '#ff6a1f'; ctx.lineWidth = 4; ctx.stroke();
       }
       if (b.burnT > 0) {

@@ -196,8 +196,8 @@
   });
   add({
     id: 'grimoire', name: 'Grimoire', cat: 'weapon', rarity: 'legendary', color: '#8e44ad',
-    desc: 'Casts homing orbs. Every 2 hits adds one more orb.',
-    base: { damage: 1, spin: 140, len: 24, width: 20 }, blocks: true,
+    desc: 'Launches homing magic orbs with 0.5 base damage. Every 2 hits adds another orb, up to 15.',
+    base: { damage: 0.5, spin: 140, len: 24, width: 20 }, blocks: true,
     init(w) { w.timer = 1; w.orbs = 1; },
     update(sim, b, w, dt) {
       w.timer -= dt;
@@ -207,19 +207,19 @@
         sim.emit({ type: 'shoot', x: b.x, y: b.y });
       }
     },
-    onHit(sim, b, w) { w.orbs = Math.min(w.orbs + 0.5, 12); },
+    onHit(sim, b, w) { w.orbs = Math.min(w.orbs + 0.5, 15); },
     stats: (w) => ['Orbs: ' + Math.floor(w.orbs)],
   });
   add({
     id: 'cannon', name: 'Cannon', cat: 'weapon', rarity: 'legendary', color: '#4b4f57',
-    desc: 'Big 5 damage cannonballs that blast enemies back. Reloads 12% faster every hit.',
+    desc: 'Fires oversized 5-damage cannonballs that blast enemies back. Reloads 12% faster every hit.',
     base: { damage: 5, spin: 120, len: 32, width: 16 }, blocks: true,
     init(w) { w.reload = 1.5; w.timer = 0.6; },
     update(sim, b, w, dt) {
       w.timer -= dt;
       if (w.timer <= 0) {
         w.timer = w.reload;
-        aimSpread(sim, b, w, 1, 0, 540, { kind: 'cannonball', r: 10 * w.scale, dmg: w.damage, life: 3, knock: 420 });
+        aimSpread(sim, b, w, 1, 0, 540, { kind: 'cannonball', r: 14 * w.scale, dmg: w.damage, life: 3, knock: 420 });
         sim.emit({ type: 'boom', x: b.x, y: b.y, small: true });
       }
     },
@@ -227,12 +227,25 @@
     stats: (w) => ['Reload: ' + w.reload.toFixed(1) + 's'],
   });
   add({
-    id: 'lance', name: 'Lance', cat: 'weapon', rarity: 'legendary', color: '#b8323b',
-    desc: 'Damage depends on speed. Each hit makes you 6% faster.',
-    base: { damage: 1, spin: 90, len: 78, width: 10 }, melee: true, blocks: true, 
+    id: 'lance', name: 'Lance', cat: 'weapon', rarity: 'epic', color: '#d94141',
+    desc: 'Dashes at high speed with brief damage immunity every few seconds. Faster movement makes lance hits stronger; each hit also boosts your speed.',
+    base: { damage: 1, spin: 90, len: 78, width: 10 }, melee: true, blocks: true,
+    init(w) { w.dashCd = 1.25; w.dashT = 0; w.dashAngle = 0; },
+    update(sim, b, w, dt) {
+      w.dashT = Math.max(0, w.dashT - dt); b.lanceDashT = w.dashT; w.dashCd -= dt;
+      if (w.dashT <= 0 && w.dashCd <= 0) {
+        w.dashT = 0.34; w.dashCd = 2.25;
+        const speed = Math.hypot(b.vx, b.vy);
+        w.dashAngle = speed > 50 ? Math.atan2(b.vy, b.vx) : w.angle;
+        b.lanceDashT = w.dashT;
+        const dashSpeed = b.speed * b.speedMul * 3.5;
+        b.vx = Math.cos(w.dashAngle) * dashSpeed; b.vy = Math.sin(w.dashAngle) * dashSpeed;
+        sim.ring(b.x, b.y, b.r + 3, b.r + 22, '#ffd23f', 0.18);
+      }
+    },
     damageFn(sim, b, w) { return [Math.round((w.damage + Math.hypot(b.vx, b.vy) / 160) * 2) / 2, false]; },
     onHit(sim, b) { b.speedMul = Math.min(b.speedMul + 0.06, 2.6); },
-    stats: (w, b) => ['Damage: ' + fmt(Math.round((w.damage + Math.hypot(b.vx, b.vy) / 160) * 2) / 2), 'Speed: ' + Math.round(b.speedMul * 100) + '%'],
+    stats: (w, b) => ['Damage: ' + fmt(Math.round((w.damage + Math.hypot(b.vx, b.vy) / 160) * 2) / 2), 'Speed: ' + Math.round(b.speedMul * 100) + '%', w.dashT > 0 ? 'Dash: IMMUNE' : 'Dash: ' + Math.max(0, Math.ceil(w.dashCd)) + 's'],
   });
   add({
     id: 'dummy', name: 'Dummy', cat: 'weapon', rarity: 'common', color: '#d9c7a7',
@@ -288,24 +301,28 @@
   });
   add({
     id: 'splodey', name: 'Splodey', cat: 'special', rarity: 'epic', color: '#3a3a44',
-    desc: 'Drops mini bombs as it rolls. They blow up after a short fuse, or right away when an enemy gets close. Every hit adds blast damage and more bombs per drop.',
+    desc: 'Leaves a trail of timed mini-bombs behind it as it rolls. Bombs explode after a short fuse or early when an enemy gets close. Every hit increases blast damage and trail density.',
     base: { damage: 3 }, contact: true,
-    init(w) { w.timer = 0.8; w.bombs = []; w.n = 1; w.fuse = 1.35; },
+    init(w) { w.timer = 0.05; w.bombs = []; w.n = 1; w.fuse = 1.35; w.dropEvery = 0.22; },
     contactDamage: () => 1,
     update(sim, b, w, dt) {
       w.timer -= dt;
-      if (w.timer <= 0) {
-        w.timer = w.fuse;
-        for (let i = 0; i < Math.floor(w.n); i++) {
-          const a = sim.rng() * Math.PI * 2, d = b.r * (0.3 + sim.rng() * 0.9);
-          w.bombs.push({ x: b.x + Math.cos(a) * d, y: b.y + Math.sin(a) * d, t: 1.4, max: 1.4 });
+      const speed = Math.hypot(b.vx, b.vy);
+      if (w.timer <= 0 && speed > 35) {
+        w.timer = w.dropEvery;
+        const bx = -b.vx / speed, by = -b.vy / speed, sx = -by, sy = bx, back = b.r + 8 * b.scale;
+        const n = Math.max(1, Math.floor(w.n));
+        for (let i = 0; i < n; i++) {
+          const lane = (i - (n - 1) / 2) * 14 * b.scale;
+          w.bombs.push({ x: b.x + bx * back + sx * lane, y: b.y + by * back + sy * lane, t: w.fuse, max: w.fuse });
         }
         sim.emit({ type: 'build', x: b.x, y: b.y });
-      }
+      } else if (w.timer <= 0) w.timer = 0.04;
       for (const k of w.bombs) {
         k.t -= dt;
-        // proximity fuse: an enemy rolling over a bomb sets it off almost at once
-        if (k.t > 0.12) for (const e of sim.balls) if (e.alive && e.team !== b.team && (e.x - k.x) ** 2 + (e.y - k.y) ** 2 < (e.r + 14 * b.scale) ** 2) { k.t = 0.12; break; }
+        if (k.t > 0.12) for (const e of sim.balls) {
+          if (e.alive && e.team !== b.team && (e.x - k.x) ** 2 + (e.y - k.y) ** 2 < (e.r + 14 * b.scale) ** 2) { k.t = 0.12; break; }
+        }
         if (k.t <= 0 && !k.done) { k.done = true; sim.explode(b, k.x, k.y, 64 * b.scale, w.damage); }
       }
       if (w.bombs.some((k) => k.done)) w.bombs = w.bombs.filter((k) => !k.done);
@@ -315,10 +332,10 @@
   });
   add({
     id: 'orbital', name: 'Orbital', cat: 'special', rarity: 'epic', color: '#3d8bf2',
-    desc: 'Moons orbit and smack enemies. Every 2 hits adds a moon.',
+    desc: 'Up to 12 moons orbit and smack enemies. Every 2 hits adds another moon.',
     base: { damage: 1, spin: 170 }, moons: true,
     init(w) { w.moons = 2; },
-    onHit(sim, b, w) { w.moons = Math.min(w.moons + 0.5, 10); },
+    onHit(sim, b, w) { w.moons = Math.min(w.moons + 0.5, 12); },
     stats: (w) => ['Moons: ' + Math.floor(w.moons)],
   });
   add({

@@ -247,6 +247,7 @@
       // dodge hook (Kami's Divine Grace); _dg tells the caller to skip knockback and on-hit effects
       target._dg = false;
       if (target.def.dodge && target.def.dodge(this, target, amt, src, info)) { target._dg = true; return 0; }
+      if (target.lanceDashT > 0) { target._dg = true; return 0; }
       if (target.phase > 0 && !(info && info.dot)) { this.fxNum(target.x, target.y - target.r - 4, 'MISS', '#8da2c0'); return 0; }
       // per-ball balance multiplier (tools/balance.js) and painted targets take extra damage
       const pow = src && src.def ? (BB.BALANCE[src.def.id] || 1) : 1;
@@ -407,7 +408,7 @@
         }
         if (b.def.update) b.def.update(this, b, w, dt);
 
-        const tgt = b.speed * b.speedMul * (b.slowT > 0 ? 0.55 : 1);
+        const tgt = b.speed * b.speedMul * (b.slowT > 0 ? 0.55 : 1) * (b.lanceDashT > 0 ? 3.5 : 1);
         // Gentle homing keeps fights busy without losing the bouncy billiard feel.
         if (false) {
           const e = this.nearestEnemy(b.team, b.x, b.y);
@@ -439,7 +440,7 @@
           else { const ns = s + (tgt - s) * Math.min(1, 1.2 * dt); b.vx *= ns / s; b.vy *= ns / s; }
         }
         const sp = Math.hypot(b.vx, b.vy);
-        const vmax = Math.max(1400, b.speed * b.speedMul * 1.1);
+        const vmax = Math.max(1400, b.speed * b.speedMul * (b.lanceDashT > 0 ? 3.7 : 1.1));
         if (sp > vmax) { b.vx *= vmax / sp; b.vy *= vmax / sp; }
         if (b.stunT > 0 || b.hold || b.jail) {
           // stunned (or imprisoned / channelling) balls freeze in place; their momentum resumes when the stun wears off
@@ -797,7 +798,7 @@
             this.emit({ type: 'boom', x: h.x, y: h.y });
             this.ring(h.x, h.y, 10, 90, '#ff6a1f', 0.4);
             this.burst(h.x, h.y, 24, ['#ffb02e', '#ff6a1f', '#3a3a44'], 320, 4);
-            this.damage(h, Math.max(10, Math.ceil(h.maxHp * 0.25)), null, { lag: true });
+            this.damage(h, 10, null, { lag: true });
             p.holder = this.pickPotatoHolder(); p.t = 8; p.passCd = 1;
           }
         }

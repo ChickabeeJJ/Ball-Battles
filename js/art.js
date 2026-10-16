@@ -176,8 +176,8 @@
     }
 
     // knockback launch: speed streaks + dust puffs trailing the flying ball
-    if (b.flyT > 0) {
-      const sp = Math.hypot(b.vx, b.vy) || 1, ux = -b.vx / sp, uy = -b.vy / sp, k = b.flyT / 0.5;
+    if (b.flyT > 0 || b.lanceDashT > 0) {
+      const sp = Math.hypot(b.vx, b.vy) || 1, ux = -b.vx / sp, uy = -b.vy / sp, k = b.flyT > 0 ? b.flyT / 0.5 : b.lanceDashT / 0.34;
       ctx.save(); ctx.lineCap = 'round';
       for (let i = -2; i <= 2; i++) {
         const ox = -uy * i * b.r * 0.38, oy = ux * i * b.r * 0.38, L = b.r * (2.2 + (2 - Math.abs(i)) * 0.8) * k;
