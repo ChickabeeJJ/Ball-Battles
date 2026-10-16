@@ -9,6 +9,72 @@
     const x = x1 + dx * t, y = y1 + dy * t;
     return (px - x) ** 2 + (py - y) ** 2;
   }
+  function drawVerityFace(ctx, x, y, r, stage) {
+    stage = Math.max(0, Math.min(2, stage | 0));
+    const colors = ['#f5f51d', '#e8f32b', '#e6f22a'];
+    ctx.save();
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    const g = ctx.createRadialGradient(x - r * 0.28, y - r * 0.36, r * 0.05, x, y, r * 1.08);
+    g.addColorStop(0, stage === 2 ? '#faff69' : '#ffff35');
+    g.addColorStop(0.55, colors[stage]); g.addColorStop(1, stage === 2 ? '#c4d91c' : '#e2df08');
+    ctx.beginPath(); ctx.arc(x, y, r * 0.98, 0, TAU); ctx.fillStyle = g; ctx.fill();
+    ctx.lineWidth = Math.max(1.8, r * 0.075); ctx.strokeStyle = '#171820'; ctx.stroke();
+
+    if (stage === 0) {
+      // Happy: classic oval eyes and a broad, unmistakable smile.
+      ctx.fillStyle = '#24252c';
+      for (const dx of [-0.29, 0.29]) {
+        ctx.beginPath(); ctx.ellipse(x + dx * r, y - r * 0.17, r * 0.105, r * 0.16, 0, 0, TAU); ctx.fill();
+      }
+      ctx.beginPath(); ctx.moveTo(x - r * 0.62, y + r * 0.02);
+      ctx.quadraticCurveTo(x, y + r * 0.72, x + r * 0.62, y + r * 0.02);
+      ctx.strokeStyle = '#24252c'; ctx.lineWidth = r * 0.095; ctx.stroke();
+      for (const dx of [-0.62, 0.62]) { ctx.beginPath(); ctx.arc(x + dx * r, y + r * 0.02, r * 0.045, 0, TAU); ctx.fill(); }
+    } else if (stage === 1) {
+      // Displeased: thin slanted eyes and a short, downturned mouth.
+      ctx.fillStyle = '#20212a';
+      for (const side of [-1, 1]) {
+        ctx.save(); ctx.translate(x + side * r * 0.29, y - r * 0.16); ctx.rotate(side * -0.14);
+        ctx.beginPath(); ctx.ellipse(0, 0, r * 0.19, r * 0.072, 0, 0, TAU); ctx.fill(); ctx.restore();
+      }
+      ctx.beginPath(); ctx.moveTo(x - r * 0.32, y + r * 0.30);
+      ctx.quadraticCurveTo(x, y + r * 0.16, x + r * 0.32, y + r * 0.30);
+      ctx.strokeStyle = '#20212a'; ctx.lineWidth = r * 0.085; ctx.stroke();
+    } else {
+      // Monster: angry brows, red glares and a broad, jagged toothy grin.
+      ctx.fillStyle = '#171820'; ctx.strokeStyle = '#171820';
+      for (const side of [-1, 1]) {
+        ctx.beginPath(); ctx.moveTo(x + (side * 0.44 - 0.12) * r, y - r * 0.39);
+        ctx.lineTo(x + side * 0.17 * r, y - r * 0.28); ctx.lineTo(x + side * 0.46 * r, y - r * 0.22);
+        ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(x + side * 0.29 * r, y - r * 0.12, r * 0.105, r * 0.14, side * 0.1, 0, TAU);
+        ctx.fillStyle = '#1b1b23'; ctx.fill();
+        ctx.beginPath(); ctx.arc(x + side * 0.29 * r, y - r * 0.12, r * 0.045, 0, TAU); ctx.fillStyle = '#ff264b'; ctx.fill();
+        ctx.fillStyle = '#171820';
+      }
+      ctx.beginPath();
+      ctx.moveTo(x - r * 0.52, y + r * 0.015); ctx.lineTo(x - r * 0.43, y + r * 0.34);
+      ctx.lineTo(x - r * 0.28, y + r * 0.29); ctx.lineTo(x - r * 0.13, y + r * 0.41);
+      ctx.lineTo(x, y + r * 0.31); ctx.lineTo(x + r * 0.14, y + r * 0.41);
+      ctx.lineTo(x + r * 0.29, y + r * 0.29); ctx.lineTo(x + r * 0.43, y + r * 0.34);
+      ctx.lineTo(x + r * 0.52, y + r * 0.015); ctx.quadraticCurveTo(x, y - r * 0.10, x - r * 0.52, y + r * 0.015);
+      ctx.closePath(); ctx.fillStyle = '#171820'; ctx.fill(); ctx.lineWidth = r * 0.04; ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x - r * 0.42, y + r * 0.055); ctx.lineTo(x - r * 0.31, y + r * 0.19);
+      ctx.lineTo(x - r * 0.20, y + r * 0.065); ctx.lineTo(x - r * 0.08, y + r * 0.22);
+      ctx.lineTo(x + r * 0.03, y + r * 0.065); ctx.lineTo(x + r * 0.16, y + r * 0.22);
+      ctx.lineTo(x + r * 0.29, y + r * 0.065); ctx.lineTo(x + r * 0.39, y + r * 0.18);
+      ctx.strokeStyle = '#fffef2'; ctx.lineWidth = r * 0.085; ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x - r * 0.32, y + r * 0.30); ctx.lineTo(x - r * 0.22, y + r * 0.25);
+      ctx.lineTo(x - r * 0.12, y + r * 0.34); ctx.lineTo(x, y + r * 0.26);
+      ctx.lineTo(x + r * 0.12, y + r * 0.34); ctx.lineTo(x + r * 0.22, y + r * 0.25);
+      ctx.lineTo(x + r * 0.32, y + r * 0.30);
+      ctx.strokeStyle = '#fffef2'; ctx.lineWidth = r * 0.075; ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   function add(o) {
     o.base = Object.assign({ damage: 1, spin: 0, len: 0, width: 6, gap: 2 }, o.base || {});
     o.price = o.price != null ? o.price : BB.RARITY[o.rarity].price;
@@ -146,6 +212,10 @@
   // menu icon: a white ball with a rainbow rim and a cluster of four little balls ("every ball")
   const baseIcon = BB.drawIcon;
   BB.drawIcon = function (ctx, id, x, y, size, opts) {
+    if (id === 'verity') {
+      drawVerityFace(ctx, x, y, size * 0.39, 0);
+      return;
+    }
     baseIcon(ctx, id, x, y, size, opts);
     if (id === 'nova') {
       // a bright star core with four flare points
@@ -296,6 +366,17 @@
   // in battle: a slowly turning rainbow rim on BALL; its summons wear a thin rainbow halo
   const baseBall = BB.drawBallArt;
   BB.drawBallArt = function (ctx, sim, b, lw, R) {
+    // Dedicated Verity rendering: return immediately so no generic ball art can obscure its face.
+    if (b.def.id === 'verity') {
+      const stage = Math.min(2, b.w.stage || 0);
+      if (stage > 0) {
+        ctx.save(); ctx.beginPath(); ctx.arc(b.x, b.y, b.r * (1.15 + 0.08 * Math.sin(sim.t * 12)), 0, TAU);
+        ctx.strokeStyle = stage === 2 ? 'rgba(255,35,62,0.85)' : 'rgba(255,170,35,0.68)';
+        ctx.lineWidth = Math.max(2, b.r * 0.09); ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = b.r * 0.45; ctx.stroke(); ctx.restore();
+      }
+      drawVerityFace(ctx, b.x, b.y, b.r, stage);
+      return;
+    }
     // Spider's legs are drawn behind its body so the ball remains the visual focal point.
     if (b.def.id === 'spider' && b.alive) {
       ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
