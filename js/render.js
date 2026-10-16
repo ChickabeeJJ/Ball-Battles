@@ -624,6 +624,28 @@
         ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 5, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - Math.max(0, Math.min(1, w.timer / dropCycle))));
         ctx.strokeStyle = '#ff6a1f'; ctx.lineWidth = 4; ctx.stroke();
       }
+      if (id === 'splodey' && w.bombs) {
+        for (const bomb of w.bombs) {
+          if (bomb.done) continue;
+          const r0 = 6 * b.scale, fuse = Math.max(0, Math.min(1, bomb.t / (bomb.max || 1)));
+          ctx.save(); ctx.translate(bomb.x, bomb.y);
+          ctx.beginPath(); ctx.ellipse(1, r0 * 0.92, r0 * 0.95, r0 * 0.27, 0, 0, TAU);
+          ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fill();
+          const g = ctx.createRadialGradient(-r0 * 0.35, -r0 * 0.4, 1, 0, 0, r0 * 1.2);
+          g.addColorStop(0, '#7c858f'); g.addColorStop(0.45, '#343840'); g.addColorStop(1, '#17191e');
+          ctx.beginPath(); ctx.arc(0, 0, r0, 0, TAU); ctx.fillStyle = g; ctx.fill();
+          ctx.lineWidth = 1.8; ctx.strokeStyle = OUT; ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(r0 * 0.2, -r0 * 0.8); ctx.quadraticCurveTo(r0 * 0.6, -r0 * 1.25, r0 * 0.85, -r0 * 1.45);
+          ctx.strokeStyle = OUT; ctx.lineWidth = 3; ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(r0 * 0.2, -r0 * 0.8); ctx.quadraticCurveTo(r0 * 0.6, -r0 * 1.25, r0 * 0.85, -r0 * 1.45);
+          ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 1.5; ctx.stroke();
+          ctx.beginPath(); ctx.arc(r0 * 0.9, -r0 * 1.48, 2.4 + (1 - fuse) * 1.3, 0, TAU);
+          ctx.fillStyle = fuse < 0.35 ? '#ff5b32' : '#ffd23f'; ctx.fill();
+          ctx.beginPath(); ctx.arc(0, 0, r0 + 3, -Math.PI / 2, -Math.PI / 2 + TAU * (1 - fuse));
+          ctx.strokeStyle = fuse < 0.35 ? '#ff5b32' : '#ffd23f'; ctx.lineWidth = 2.2; ctx.stroke();
+          ctx.restore();
+        }
+      }
       if (b.burnT > 0) {
         ctx.beginPath(); ctx.arc(b.x, b.y, b.r + 2, 0, TAU); ctx.strokeStyle = 'rgba(255,122,26,0.8)'; ctx.lineWidth = 3; ctx.stroke();
       }
