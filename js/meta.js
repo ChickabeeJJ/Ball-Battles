@@ -955,6 +955,27 @@
       }, { width: '560px' });
     },
 
+    mapVoteHost(s) { return !!(s && (s.bot || !s.flip)); },
+    stopMapVote() { clearInterval(M._mvTimer); clearTimeout(M._mvBotTimer); clearInterval(M._mvRollIv); clearTimeout(M._mvRollEnd); },
+    mapVote() {
+      const s=M.series; if(!s||!s.live||s.spectate||s.mapVoteRound===s.round)return M.vsSplash();
+      M.stopMapVote(); const r=s.round; s._mapVotePeerInbox=s._mapVotePeerInbox||{}; const old=s._mapVotePeerInbox[r]||{};
+      const v=M._mapVoteState={s,r,mine:null,locked:false,foe:old.id||null,foeLocked:!!old.locked,left:10,at:performance.now(),done:false,sheet:null};
+      BB.ui.open(el=>{ v.sheet=el;el.classList.add('vs-sheet','mv-sheet');
+        el.innerHTML='<h2 class="mv-title">MAP VOTE · ROUND '+(r+1)+'</h2><p class="mv-sub">Lock your choice · 10-second timer</p><div class="mv-grid">'+BB.MAPS.map(m=>'<button class="mv-card" data-map="'+esc(m.id)+'">'+esc(m.name)+'<small class="mv-votes"></small></button>').join('')+'</div><div class="mv-footer"><span id="mvStatus">Choose a map.</span><button class="btn primary" id="mvLock">LOCK VOTE</button><b id="mvClock">10.0s</b></div>';
+        el.querySelectorAll('.mv-card').forEach(c=>{c.onclick=()=>{if(v.done||v.locked)return;v.mine=c.dataset.map;if(s.send)s.send({t:'mapVote',r,id:v.mine,locked:false});M.refreshMapVote(v);};});
+        el.querySelector('#mvLock').onclick=()=>{if(v.done||v.locked)return;if(!v.mine){BB.ui.toast('Choose a map first.');return;}v.locked=true;if(s.send)s.send({t:'mapVote',r,id:v.mine,locked:true});M.refreshMapVote(v);M.checkMapVote(v);}; M.refreshMapVote(v);
+      },{width:'600px',onClose:()=>{if(!v.done){v.done=true;M.stopMapVote();}}});
+      M._mvTimer=setInterval(()=>{if(M._mapVoteState!==v||v.done){M.stopMapVote();return;}v.left=Math.max(0,10-(performance.now()-v.at)/1000);if(v.left<=0){clearInterval(M._mvTimer);if(M.mapVoteHost(s))M.resolveMapVote(v);else{const e=v.sheet&&v.sheet.querySelector('#mvStatus');if(e)e.textContent='Waiting for host to resolve…';}}else M.refreshMapVote(v);},100);
+      if(s.bot){const rng=BB.RNG(((s.seed|0)^(r*0x45d9f3b))>>>0),id=BB.MAPS[Math.floor(rng()*BB.MAPS.length)].id;M._mvBotTimer=setTimeout(()=>{if(v.done)return;v.foe=id;v.foeLocked=true;s._mapVotePeerInbox[r]={id,locked:true};M.refreshMapVote(v);M.checkMapVote(v);},800);}
+    },
+    refreshMapVote(v) { if(!v||v.done||!v.sheet||!v.sheet.isConnected)return;v.sheet.querySelectorAll('.mv-card').forEach(c=>{const mine=c.dataset.map===v.mine,foe=c.dataset.map===v.foe;c.classList.toggle('you-vote',mine);c.classList.toggle('foe-vote',foe);c.classList.toggle('both-vote',mine&&foe);c.querySelector('.mv-votes').textContent=mine&&foe?'BOTH':mine?'YOU':foe?(v.foeLocked?'OPPONENT · LOCKED':'OPPONENT'):'';});const t=v.sheet.querySelector('#mvClock');if(t)t.textContent=v.left.toFixed(1)+'s';const st=v.sheet.querySelector('#mvStatus');if(st)st.textContent=v.locked?(v.foeLocked?'Votes locked · resolving…':'Locked · waiting for opponent…'):(v.foe?'Opponent vote visible · choose yours':'Choose a map.');const b=v.sheet.querySelector('#mvLock');if(b){b.disabled=v.locked;b.textContent=v.locked?'VOTE LOCKED':'LOCK VOTE';}},
+    mapVotePeer(d) { const s=M.series;if(!s||!s.live||s.spectate||!d||!Number.isInteger(d.r)||d.r<0||d.r>2||!BB.MAP[d.id]||s.mapVoteRound===d.r||s._mapVoteResolvedRound===d.r)return;s._mapVotePeerInbox=s._mapVotePeerInbox||{};s._mapVotePeerInbox[d.r]={id:d.id,locked:!!d.locked};const v=M._mapVoteState;if(v&&v.s===s&&v.r===d.r&&!v.done){v.foe=d.id;v.foeLocked=!!d.locked;M.refreshMapVote(v);M.checkMapVote(v);}},
+    checkMapVote(v) { if(v&&!v.done&&v.locked&&v.foeLocked&&M.mapVoteHost(v.s))M.resolveMapVote(v); },
+    resolveMapVote(v) { if(!v||v.done||!M.mapVoteHost(v.s))return;const s=v.s,r=v.r;if(s._mapVoteResolvedRound===r)return;const same=!!(v.mine&&v.foe&&v.mine===v.foe),rng=BB.RNG(((s.seed|0)^(r*0x45d9f3b)^0x6d617056)>>>0),id=same?v.mine:BB.MAPS[Math.floor(rng()*BB.MAPS.length)].id;v.done=true;s._mapVoteResolvedRound=r;M.stopMapVote();const d={t:'mapVoteResult',r,id,rolled:!same};if(s.send)s.send(d);M.applyMapVoteResult(d);},
+    applyMapVoteResult(d) {const s=M.series;if(!s||!s.live||s.spectate||!d||d.r!==s.round||!BB.MAP[d.id])return;clearTimeout(M._auto);M.stopMapVote();s.maps[d.r]=d.id;s.mapVoteRound=d.r;s._mapVoteResolvedRound=d.r;const v=M._mapVoteState;if(v&&v.r===d.r)v.done=true;if(d.rolled)return M.showMapRoll(s,d.id,d.r);M._mapVoteState=null;BB.ui.onClose=null;BB.ui.close();M.vsSplash();},
+    showMapRoll(s,id,r) {const v=M._mapVoteState||(M._mapVoteState={s,r,done:true,sheet:null});v.done=true;let el=v.sheet;const draw=node=>{el=v.sheet=node;node.classList.add('vs-sheet','mv-sheet');node.innerHTML='<h2 class="mv-title">MAP ROLL · ROUND '+(r+1)+'</h2><p class="mv-sub">No agreement · rolling the arena!</p><div class="mv-roll-grid">'+BB.MAPS.map(m=>'<div class="mv-roll-card" data-map="'+esc(m.id)+'">'+esc(m.name)+'</div>').join('')+'</div><div class="mv-roll-result">Rolling…</div>';};if(el&&el.isConnected)draw(el);else BB.ui.open(draw,{width:'600px'});let n=0;M._mvRollIv=setInterval(()=>{if(!el||!el.isConnected)return;const a=Array.from(el.querySelectorAll('.mv-roll-card'));a.forEach((c,i)=>{c.classList.toggle('rolling',i===n%a.length);c.classList.remove('winner');});if(n%2===0)BB.audio.play('click');n++;},100);M._mvRollEnd=setTimeout(()=>{clearInterval(M._mvRollIv);if(!el||!el.isConnected||M.series!==s)return;el.querySelectorAll('.mv-roll-card').forEach(c=>{c.classList.remove('rolling');c.classList.toggle('winner',c.dataset.map===id);});const out=el.querySelector('.mv-roll-result');if(out)out.textContent=BB.MAP[id].name.toUpperCase()+'!';BB.audio.play('unlock');setTimeout(()=>{if(M.series!==s)return;M._mapVoteState=null;BB.ui.onClose=null;BB.ui.close();M.vsSplash();},650);},1900);},
+
     // both squads revealed side by side, round by round
     lineup() {
       const sr = M.series;
@@ -964,7 +985,7 @@
           <div class="lu-head"><span>${sr.spectate ? esc(sr.meName) : 'YOU'}</span><span></span><span>${esc(sr.foeName)}</span></div>
           <div class="lineup">${[0, 1, 2].map((k) => `<div class="lu-row" style="animation-delay:${k * 0.18}s">
             <div class="lu-b me"><img src="${BB.icon(sr.mine[k])}" alt=""><b style="color:${BB.itemColor(sr.mine[k])}">${esc(BB.ITEM[sr.mine[k]].name)}</b></div>
-            <div class="lu-mid"><em>R${k + 1}</em><small>${esc(BB.MAP[sr.maps[k]].name)}</small></div>
+            <div class="lu-mid"><em>R${k + 1}</em><small>${sr.live && !sr.spectate ? 'MAP VOTE' : esc(BB.MAP[sr.maps[k]].name)}</small></div>
             <div class="lu-b foe"><b style="color:${BB.itemColor(sr.theirs[k])}">${esc(BB.ITEM[sr.theirs[k]].name)}</b><img src="${BB.icon(sr.theirs[k])}" alt=""></div></div>`).join('')}</div>`;
         const next = () => { clearTimeout(M._auto); if (M.series !== sr) return; BB.ui.onClose = null; BB.ui.close(); M.vsSplash(); };
         if (sr.live) { M._auto = setTimeout(next, 2600); sheet.insertAdjacentHTML('beforeend', '<div class="vs-auto"><i></i></div>'); return; } // live: no clicks
@@ -980,6 +1001,7 @@
 
     vsSplash() {
       const sr = M.series, k = sr.round;
+      if (sr.live && !sr.spectate && sr.mapVoteRound !== sr.round) { M.mapVote(); return; }
       const a = sr.mine[k], b = sr.theirs[k], last = sr.results[k - 1];
       BB.ui.open((sheet) => {
         sheet.classList.add('vs-sheet');
