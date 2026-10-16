@@ -131,18 +131,18 @@
     // weapon does before picking or buying it. Opens over the current sheet; tap outside / X closes.
     preview(id, opts) {
       UI.closePreview();
-      const it = BB.ITEM[id], tenshi = !!(opts && opts.tenshi), dummyAsc = !!(opts && opts.dummyAsc);
+      const it = BB.ITEM[id], tenshi = !!(opts && opts.tenshi);
       const wrap = el('div', 'pv-wrap');
-      wrap.innerHTML = `<div class="pv-box"><div class="pv-h"><img src="${BB.icon(id)}" alt=""><b>${esc(it.name)}${tenshi ? ' <span class="pv-tag">Tenshi</span>' : dummyAsc ? ' <span class="pv-tag pv-tag-dmy">D.U.M.M.Y.</span>' : ''}</b><button class="x-btn pv-x" aria-label="Close">×</button></div>
+      wrap.innerHTML = `<div class="pv-box"><div class="pv-h"><img src="${BB.icon(id)}" alt=""><b>${esc(it.name)}${tenshi ? ' <span class="pv-tag">Tenshi</span>' : ''}</b><button class="x-btn pv-x" aria-label="Close">×</button></div>
         <canvas class="pv-c"></canvas><div class="pv-d">${esc(it.desc)}</div></div>`;
       document.body.appendChild(wrap);
       const cv = wrap.querySelector('.pv-c'), R = new BB.Renderer(cv);
       R.dark = !!BB.save.data.settings.dark;
       const px = Math.min(360, window.innerWidth - 56, window.innerHeight - 220);
       R.resize(Math.max(200, px));
-      let sim = null, t0 = 0, last = performance.now(), acc = 0, seed = 1, imp = null, kfin = null, awoke = false, dummyAwoke = false, cine = false;
+      let sim = null, t0 = 0, last = performance.now(), acc = 0, seed = 1, imp = null, kfin = null, awoke = false, cine = false;
       const fresh = () => {
-        sim = new BB.Sim({ seed: seed++, map: 'classic', teams: [[{ id, hp: 100, slot: 0, dummySkin: dummyAsc }], [{ id: 'dummy', hp: 100, slot: 1 }]],
+        sim = new BB.Sim({ seed: seed++, map: 'classic', teams: [[{ id, hp: 100, slot: 0 }], [{ id: 'dummy', hp: 100, slot: 1 }]],
           settings: { dmgNumbers: true, callouts: true, hitlag: false, parrylag: false, impact: false, finisher: false, overtime: false } });
         t0 = 0; kfin = null;
         if (tenshi && !awoke) sim.balls[0].tenshi = true; // first run: base Kami falls, then the awakening plays
@@ -150,7 +150,6 @@
           const k = sim.balls[0];
           k.tenshi = true; k.ascended = true; k.w.regenMul = 1.3; k.w.touch = {}; k.w.servCd = 1.5; k.w.cool = { beam: 1.2, gate: 4.5, rain: 2.6 };
         }
-        if (dummyAsc && dummyAwoke) sim.balls[0].def.awakenDummy(sim, sim.balls[0], false);
       };
       fresh();
       const loop = (now) => {
@@ -163,13 +162,11 @@
         if (cine) acc = 0; // the awakening cutscene holds the clip
         // Transformation previews force the base form through its awakening threshold once.
         if (tenshi && !awoke && !cine && t0 >= 2.2) { const k = sim.balls[0]; if (!k.ascended) { sim.burst(k.x, k.y, 30, ['#ffffff', '#e8473f', '#111'], 420, 4); sim.kill(k, sim.balls[1]); } }
-        if (dummyAsc && !dummyAwoke && !cine && t0 >= 2.2) { const d = sim.balls[0]; d.hp = Math.min(d.hp, d.maxHp * 0.49); }
         const awaken = () => { if (!awoke && sim.events.some((e) => e.type === 'kami' && e.k === 'awaken')) { awoke = true; cine = true; sim.events.length = 0; BB.audio.play('death'); BB.kamiAwaken(() => { cine = false; last = performance.now(); }); } };
-        const awakenDummy = () => { if (!dummyAwoke && sim.events.some((e) => e.type === 'dummyAwaken')) { dummyAwoke = true; cine = true; sim.events.length = 0; BB.audio.play('death'); BB.dummyAwaken(() => { cine = false; last = performance.now(); }); } };
-        awaken(); awakenDummy();
+        awaken();
         while (!imp && !cine && acc >= 1 / 120) {
           sim.step(1 / 120); acc -= 1 / 120; t0 += 1 / 120;
-          awaken(); awakenDummy(); if (cine) break;
+          awaken(); if (cine) break;
           for (const e of sim.events) if (e.type === 'death' && e.main && (e.kami || e.ballKill)) kfin = { asc: !!e.asc, ball: !!e.ballKill && !e.kami, done: false };
           // Kami's (or BALL's) knockout plays its finisher before the clip restarts
           if (sim.over && kfin && !kfin.done && BB.save.data.settings.finisher !== false) {
