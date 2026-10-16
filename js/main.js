@@ -222,8 +222,9 @@
       const inBattle = App.state === 'battle';
       document.documentElement.classList.toggle('idlecmp', !inBattle && !land);
       if (inBattle) {
-        // nothing to show beside the arena mid-fight: give it the whole screen
-        const t2 = cland ? 0 : top;
+        // Hide UI mode reclaims the top-bar space, while preserving room for the matchup and HP bars.
+        const uiHidden = $('app').classList.contains('ui-hidden');
+        const t2 = (cland || uiHidden) ? 0 : top;
         S = Math.min(vh - t2 - header - stats - 16, vw - 24);
       } else if (cland) {
         S = Math.min(vh - header - stats - 14, vw * 0.52);
