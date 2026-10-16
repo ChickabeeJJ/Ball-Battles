@@ -490,10 +490,12 @@
 
     toggleUI() {
       const hidden = $('app').classList.toggle('ui-hidden');
+      // Mirror state on body because the Hide UI control lives outside transformed #app.
+      document.body.classList.toggle('ui-hidden', hidden);
       const button = $('btnHideUI');
       if (button) {
-        button.setAttribute('aria-label', hidden ? 'Show UI' : 'Hide UI');
-        button.title = hidden ? 'Show UI' : 'Hide UI';
+        button.setAttribute('aria-label', hidden ? 'Show UI (press H)' : 'Hide UI');
+        button.title = hidden ? 'Show UI (press H)' : 'Hide UI';
       }
       requestAnimationFrame(() => App.layout());
     },
@@ -816,6 +818,12 @@
         const typing = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA');
         if (blockKeys.has(e.code) && !typing) e.preventDefault();
         if (typing) return;
+        // Since Hide UI hides its own button, H is the keyboard restore/toggle shortcut.
+        if (e.code === 'KeyH' && App.state === 'battle' && !App.cine && !App.resultsShown) {
+          e.preventDefault();
+          App.toggleUI();
+          return;
+        }
         App.keys[e.code] = true;
         if (BB.shoot.active && /^(ArrowLeft|ArrowRight|KeyA|KeyD|Space|Enter)$/.test(e.code)) BB.shoot.key(e.code);
         if ((e.code === 'Escape' || e.code === 'KeyP') && App.state === 'battle' && !App.resultsShown && !App.isPvpBattle()) {
