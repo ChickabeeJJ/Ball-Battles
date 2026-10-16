@@ -1828,8 +1828,8 @@ body.ui-hidden #btnHideUI.hide-ui-btn svg { opacity:0!important; }
 /* The actual Dummy icon anchors the awakening message. */
 .dmy-message .dmy-icon {
   display:block;
-  width:clamp(76px, 15vw, 144px);
-  height:clamp(76px, 15vw, 144px);
+  width:clamp(88px, 16vw, 176px);
+  height:clamp(88px, 16vw, 176px);
   margin:clamp(10px, 2.2vh, 20px) auto clamp(12px, 2.6vh, 24px);
   object-fit:contain;
   filter:drop-shadow(0 0 14px rgba(255,36,77,.55)) drop-shadow(0 0 24px rgba(139,92,246,.38));
