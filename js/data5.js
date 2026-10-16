@@ -627,7 +627,7 @@
   BB.dummyAwaken = function (done) {
     const el = document.createElement('div');
     el.className = 'dmy-awake';
-    el.innerHTML = '<div class="dmy-scan"></div><div class="dmy-shards"></div><div class="dmy-frame"></div><div class="dmy-warning">SYSTEM FAILURE // DUMMY LIMITER REMOVED</div><div class="dmy-message"><small>YOU LAUGHED. YOU POINTED. YOU PUSHED.</small><canvas class="dmy-icon" width="144" height="144" aria-hidden="true"></canvas><h1>I WILL BE BULLIED NO MORE</h1><b>NO MORE LIMITS.</b></div><div class="dmy-stamp">D.U.M.M.Y.</div><div class="dmy-flash"></div>';
+    el.innerHTML = '<div class="dmy-scan"></div><div class="dmy-shards"></div><div class="dmy-frame"></div><div class="dmy-warning">SYSTEM FAILURE // DUMMY LIMITER REMOVED</div><div class="dmy-message"><canvas class="dmy-icon" width="144" height="144" aria-hidden="true"></canvas><h1>I WILL BE BULLIED NO MORE</h1><b>NO MORE LIMITS.</b></div><div class="dmy-stamp">D.U.M.M.Y.</div><div class="dmy-flash"></div>';
     document.body.appendChild(el);
     // Draw the actual Dummy collection icon directly above its awakening declaration.
     const iconCanvas = el.querySelector('.dmy-icon');
