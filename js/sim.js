@@ -104,7 +104,7 @@
     initMap() {
       const S = this.size, id = this.map.id;
       if (id === 'pillars') {
-        for (const [px, py] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) this.obstacles.push({ x: px * 0.2 * S, y: py * 0.2 * S, r: 0.065 * S, kind: 'pillar' });
+        for (const [px, py] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) this.obstacles.push({ x: px * 0.2 * S, y: py * 0.2 * S, r: 0.05 * S, kind: 'pillar' });
       }
       if (id === 'saws') {
         for (let i = 0; i < 2; i++) this.obstacles.push({ x: 0, y: 0, r: 44, kind: 'saw', idx: i, dmg: 2 });
@@ -665,6 +665,23 @@
       const hw = () => this.W / 2, hh = () => this.H / 2;
       for (const p of this.proj) {
         if (p.dead) continue;
+        if (p.kind === 'harpoon' && p.hookedTarget) {
+          const owner = p.owner, target = p.hookedTarget;
+          if (!owner || !owner.alive || !target || !target.alive) { p.dead = true; continue; }
+          p.t += dt; p.life -= dt; p.hookT -= dt; p.damageTick -= dt;
+          const dx = owner.x - target.x, dy = owner.y - target.y, dist = Math.hypot(dx, dy) || 1;
+          target.vx += (dx / dist) * 1550 * dt; target.vy += (dy / dist) * 1550 * dt;
+          const speed = Math.hypot(target.vx, target.vy);
+          if (speed > 1050) { target.vx *= 1050 / speed; target.vy *= 1050 / speed; }
+          p.x = target.x + (dx / dist) * target.r * 0.72; p.y = target.y + (dy / dist) * target.r * 0.72;
+          p.angle = Math.atan2(dy, dx);
+          while (p.damageTick <= 0 && p.hookT > 0 && target.alive) {
+            this.damage(target, p.hookDmg || 0.16, owner, { x: p.x, y: p.y, dot: true, color: '#7fd3ff' });
+            p.damageTick += 0.1;
+          }
+          if (p.hookT <= 0 || p.life <= 0 || !target.alive) p.dead = true;
+          continue;
+        }
         p.t += dt; p.life -= dt;
         if (p.life <= 0) { p.dead = true; continue; }
         if (p.homing) {
@@ -697,7 +714,14 @@
         if (p.y - p.r < -hh()) { out = true; p.y = -hh() + p.r; p.vy = Math.abs(p.vy); }
         if (p.y + p.r > hh()) { out = true; p.y = hh() - p.r; p.vy = -Math.abs(p.vy); }
         if (out && p.kind !== 'boomerang') {
-          if (p.bounces > 0) p.bounces--;
+          if (p.kind === 'harpoon' && !p.hookedTarget) {
+            p.rope = p.rope || [];
+            const last = p.rope[p.rope.length - 1];
+            if (!last || Math.hypot(p.x - last.x, p.y - last.y) > 8) {
+              p.rope.push({ x: p.x, y: p.y });
+              if (p.rope.length > 20) p.rope.splice(1, 1);
+            }
+          } else if (p.bounces > 0) p.bounces--;
           else { p.dead = true; this.burst(p.x, p.y, 4, ['#cfd6dc', '#ffffff'], 120, 2); continue; }
         }
         for (const o of this.obstacles) {
@@ -734,6 +758,7 @@
           if ((e.x - p.x) ** 2 + (e.y - p.y) ** 2 < (e.r + p.r) ** 2) {
             p.hit.add(e.id);
             if (e.def.mirrorBody) {
+              this.damage(e, p.dmg * 0.1, p.owner, { x: p.x, y: p.y, lag: p.kind === 'cannonball' });
               const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy) || 1, sp = Math.hypot(p.vx, p.vy);
               p.vx = (dx / d) * sp; p.vy = (dy / d) * sp; p.team = e.team; p.owner = e; p.hit.clear(); p.homing = 0;
               this.burst(p.x, p.y, 6, ['#ffffff', '#bfe9ff'], 200, 2.5); this.emit({ type: 'parry', x: p.x, y: p.y, small: true });
@@ -744,7 +769,7 @@
             if (p.burn) { e.burnLvl = Math.max(e.burnLvl, p.burn); e.burnT = 3; e.burnPow = BB.BALANCE[p.owner.def.id] || 1; }
             if (p.slow) e.slowT = Math.max(e.slowT, p.slow);
             if (p.onHit) p.onHit(this, p, e); // per-projectile gimmicks (harpoon pull, ...)
-            this.knock(e, p.x - p.vx, p.y - p.vy, p.knock || 90);
+            this.knock(e, p.x - p.vx, p.y - p.vy, p.knock == null ? 90 : p.knock);
             if ((p.knock || 0) >= 250) this.launch(e, p.x, p.y);
             this.onHit(p.owner, e, dealt);
             if (!p.pierce) { p.dead = true; break; }

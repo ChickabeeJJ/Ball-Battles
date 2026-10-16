@@ -653,6 +653,27 @@
 
     drawProj(ctx, p, lw) {
       if (BB.drawProjArt && BB.drawProjArt(ctx, p, lw)) return;
+      if (p.kind === 'harpoon') {
+        ctx.save();
+        const pts = [];
+        if (p.owner) pts.push({ x: p.owner.x, y: p.owner.y });
+        for (const q of (p.rope || []).slice(1)) pts.push(q);
+        pts.push({ x: p.x, y: p.y });
+        if (pts.length > 1) {
+          ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
+          for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+          ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = OUT; ctx.lineWidth = 7; ctx.stroke();
+          ctx.strokeStyle = '#7fd3ff'; ctx.lineWidth = 3; ctx.stroke();
+        }
+        ctx.translate(p.x, p.y); ctx.rotate(p.angle || 0);
+        ctx.beginPath(); ctx.moveTo(-p.r * 1.4, 0); ctx.lineTo(p.r * 0.35, 0);
+        ctx.lineTo(p.r * 1.15, p.r * 0.65);
+        ctx.quadraticCurveTo(p.r * 1.75, p.r * 1.7, p.r * 0.45, p.r * 1.52);
+        ctx.strokeStyle = OUT; ctx.lineWidth = Math.max(3, p.r * 0.5); ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
+        ctx.strokeStyle = '#e4f8ff'; ctx.lineWidth = Math.max(1.5, p.r * 0.22); ctx.stroke();
+        ctx.restore();
+        return;
+      }
       const tm = BB.TEAMS[p.team];
       ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle || 0);
       if (p.kind === 'arrow') {
