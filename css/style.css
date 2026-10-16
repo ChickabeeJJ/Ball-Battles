@@ -1742,10 +1742,11 @@ html.cland .feat-row.non-cg-pvp .feat { font-size: 11px; }
 .feat-row.non-cg-pvp #btnGauntlet { gap:2px; font-size:clamp(9px, 2.7vw, 12px)!important; padding-left:2px; padding-right:2px; }
 .feat-row.non-cg-pvp #btnGauntlet .feat-ic .ico { width:14px; height:14px; }
 
-/* In-match Hide UI toggle: fixed to the viewport, independent of arena size/layout. */
-.hide-ui-btn { zoom:var(--ui); position:fixed; right:max(10px,env(safe-area-inset-right)); bottom:max(10px,env(safe-area-inset-bottom)); width:40px; height:40px; opacity:.9; z-index:100520; display:none; }
-.is-battle .hide-ui-btn { display:grid; }
+/* In-match Hide UI toggle: direct body child, fixed to the player's viewport, never the arena. */
+#btnHideUI.hide-ui-btn { zoom:var(--ui); position:fixed; right:calc(8px + env(safe-area-inset-right, 0px)); bottom:calc(8px + env(safe-area-inset-bottom, 0px)); width:40px; height:40px; opacity:.9; z-index:100520; display:none; }
+#app.is-battle ~ #btnHideUI.hide-ui-btn { display:grid; }
 .hide-ui-btn .eye-hide { display:none; }
+body.ui-hidden #btnHideUI.hide-ui-btn { display:none!important; }
 #app.ui-hidden #topbar,
 #app.ui-hidden #panel,
 #app.ui-hidden .pause-btn,
@@ -1754,9 +1755,17 @@ html.cland .feat-row.non-cg-pvp .feat { font-size: 11px; }
 #app.ui-hidden #arenaCol { flex:0 0 auto; margin:auto 0; }
 #app.ui-hidden #matchup,
 #app.ui-hidden #statRow { flex-shrink:0; }
-#app.ui-hidden .hide-ui-btn { display:grid!important; }
-#app.ui-hidden .hide-ui-btn .eye-show { display:none; }
-#app.ui-hidden .hide-ui-btn .eye-hide { display:block; }
+
+/* First-battle YOUR TURN squad reveal: scale the ring group from the available viewport. */
+.fo { --fo-scale:1; --fo-title-offset:150px; }
+.fo-core { transform:scale(var(--fo-scale)); transform-origin:top left; }
+.fo-txt { top:calc(42% + var(--fo-title-offset)); }
+.fo-t { font-size:clamp(52px, 4.25vw, 88px); }
+.fo-s { font-size:clamp(16px, 1.35vw, 24px); }
+@media (max-width:700px) {
+  .fo-t { font-size:clamp(40px, 7.5vw, 58px); }
+  .fo-s { font-size:clamp(13px, 3.4vw, 17px); }
+}
 
 /* D.U.M.M.Y. awakening: high-contrast glitch cutscene with its own visual identity. */
 .dmy-awake { position:fixed; inset:0; z-index:100500; overflow:hidden; display:grid; place-items:center; background:#050407; color:#fff; font-family:"Arial Black",Impact,sans-serif; isolation:isolate; opacity:0; }
