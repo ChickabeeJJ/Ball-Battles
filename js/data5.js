@@ -480,7 +480,6 @@
       ctx.font = '1000 ' + U * 0.105 + 'px "Arial Black",Impact,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.lineWidth = 8; ctx.strokeStyle = '#08060c'; ctx.strokeText('D.U.M.M.Y.', cx, cy + U * 0.29);
       ctx.fillStyle = '#fff'; ctx.fillText('D.U.M.M.Y.', cx, cy + U * 0.29);
-      ctx.font = '900 ' + U * 0.026 + 'px monospace'; ctx.fillStyle = '#ff4a70'; ctx.fillText('YOU LAUGHED. YOU POINTED. YOU PUSHED.', cx, cy + U * 0.37);
     } else {
       const k = Math.max(0, Math.min(1, (T - 1.25) / 0.48));
       for (let i = 0; i < 34; i++) {
@@ -628,8 +627,14 @@
   BB.dummyAwaken = function (done) {
     const el = document.createElement('div');
     el.className = 'dmy-awake';
-    el.innerHTML = '<div class="dmy-scan"></div><div class="dmy-shards"></div><div class="dmy-frame"></div><div class="dmy-warning">SYSTEM FAILURE // DUMMY LIMITER REMOVED</div><div class="dmy-message"><small>YOU LAUGHED. YOU POINTED. YOU PUSHED.</small><h1>I WILL BE BULLIED NO MORE</h1><b>NO MORE LIMITS.</b></div><div class="dmy-stamp">D.U.M.M.Y.</div><div class="dmy-flash"></div>';
+    el.innerHTML = '<div class="dmy-scan"></div><div class="dmy-shards"></div><div class="dmy-frame"></div><div class="dmy-warning">SYSTEM FAILURE // DUMMY LIMITER REMOVED</div><div class="dmy-message"><small>YOU LAUGHED. YOU POINTED. YOU PUSHED.</small><canvas class="dmy-icon" width="144" height="144" aria-hidden="true"></canvas><h1>I WILL BE BULLIED NO MORE</h1><b>NO MORE LIMITS.</b></div><div class="dmy-stamp">D.U.M.M.Y.</div><div class="dmy-flash"></div>';
     document.body.appendChild(el);
+    // Draw the actual Dummy collection icon directly above its awakening declaration.
+    const iconCanvas = el.querySelector('.dmy-icon');
+    if (iconCanvas && BB.drawIcon) {
+      const iconCtx = iconCanvas.getContext('2d');
+      if (iconCtx) BB.drawIcon(iconCtx, 'dummy', 72, 72, 128);
+    }
     const later = (ms, fn) => setTimeout(fn, ms);
     const finish = () => {
       if (done) done();
