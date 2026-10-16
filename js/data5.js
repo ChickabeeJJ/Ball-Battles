@@ -120,6 +120,25 @@
     stats: (w) => ['Webs: ' + w.webs.length],
   });
 
+  // ---------------------------------------------------------------- Verity (three expressions; each hit can trigger a transformation)
+  add({
+    id: 'verity', name: 'Verity', cat: 'special', rarity: 'legendary', color: '#ffd43b',
+    desc: 'Every hit has a 10% chance to transform Verity. Its face darkens with each stage, and its contact damage rises from 5 to 10 to 40.',
+    base: { damage: 5 }, contact: true,
+    init(w) { w.stage = 0; },
+    contactDamage(w) { return [5, 10, 40][Math.min(2, w.stage || 0)]; },
+    onDamaged(sim, b, w) {
+      if (w.stage >= 2 || sim.rng() >= 0.1) return;
+      w.stage++;
+      const colors = ['#ffd43b', '#ffb52e', '#ff4a35'];
+      sim.ring(b.x, b.y, b.r * 0.7, b.r * (w.stage === 1 ? 3.5 : 5), colors[w.stage], 0.55);
+      sim.burst(b.x, b.y, w.stage === 1 ? 24 : 46, ['#fff3a1', colors[w.stage], '#ffffff', '#1d1d22'], w.stage === 1 ? 350 : 720, 5);
+      sim.fxTag(b.x, b.y - b.r - 26, w.stage === 1 ? 'VERITY · DISPLEASED' : 'VERITY · MONSTER', colors[w.stage]);
+      sim.emit({ type: 'verity', x: b.x, y: b.y, stage: w.stage, id: b.id, team: b.team });
+    },
+    stats: (w) => ['Form: ' + ['Happy', 'Displeased', 'Monster'][Math.min(2, w.stage || 0)], 'Contact: ' + [5, 10, 40][Math.min(2, w.stage || 0)]],
+  });
+
   if (typeof document === 'undefined') return;
   // ================================================================ art
   const OUT = '#1d1d22', RAINBOW = ['#ff5e7e', '#ffd23f', '#35d047', '#3d8bf2', '#a259ff'];
