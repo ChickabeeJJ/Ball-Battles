@@ -16,7 +16,7 @@
       S.reset();
       S.sr = sr; S.conn = conn; S.peer = peer;
       sr.send = (d) => { try { if (conn.open) conn.send(d); } catch (e) { /* closed */ } };
-      conn.on('data', (d) => { if (d && d.t === 'aim') S.onPeer(d); });
+      conn.on('data', (d) => { if (!d) return; if (d.t === 'aim') S.onPeer(d); else if (d.t === 'mapVote') BB.meta.mapVotePeer(d); else if (d.t === 'mapVoteResult') BB.meta.applyMapVoteResult(d); });
       conn.on('close', () => S.peerGone());
     },
     reset() { S.inbox = {}; S.gone = false; S.st = null; S.active = false; S.pill(false); },
