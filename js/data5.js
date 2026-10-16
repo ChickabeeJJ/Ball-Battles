@@ -3,6 +3,12 @@
 (function () {
   const BB = window.BB;
   const fmt = BB.fmt, TAU = Math.PI * 2;
+  function segmentDistanceSq(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1, dy = y2 - y1, lenSq = dx * dx + dy * dy;
+    const t = lenSq ? BB.clamp(((px - x1) * dx + (py - y1) * dy) / lenSq, 0, 1) : 0;
+    const x = x1 + dx * t, y = y1 + dy * t;
+    return (px - x) ** 2 + (py - y) ** 2;
+  }
   function add(o) {
     o.base = Object.assign({ damage: 1, spin: 0, len: 0, width: 6, gap: 2 }, o.base || {});
     o.price = o.price != null ? o.price : BB.RARITY[o.rarity].price;
@@ -69,6 +75,53 @@
     },
     onHit(sim, b, w) { w.damage += 0.5; },
     stats: (w) => ['Damage: ' + fmt(w.damage), 'Core: ' + fmt(Math.max(6, w.charge || 0))],
+  });
+
+
+  // ---------------------------------------------------------------- Spider (permanent side-wall webs)
+  add({
+    id: 'spider', name: 'Spider', cat: 'special', rarity: 'legendary', color: '#a978d3',
+    desc: 'Every 2.8s spins a permanent web from its position to both arena side walls. Enemies take damage when they cross a strand. Webs last for the whole battle.',
+    base: { damage: 1.5 }, contact: true,
+    init(w) { w.webTimer = 0.8; w.webs = []; },
+    update(sim, b, w, dt) {
+      w.webTimer -= dt;
+      if (w.webTimer <= 0) {
+        w.webTimer = 2.8;
+        const spread = 55 + sim.rng() * 135, tilt = sim.rng() < 0.5 ? -1 : 1;
+        const yMax = Math.max(8, sim.H / 2 - 12);
+        w.webs.push({
+          x: b.x, y: b.y,
+          leftY: BB.clamp(b.y - tilt * spread, -yMax, yMax),
+          rightY: BB.clamp(b.y + tilt * spread, -yMax, yMax),
+          near: {},
+        });
+        sim.burst(b.x, b.y, 8, ['#b78cff', '#e8d5ff', '#ffffff'], 180, 2);
+        sim.emit({ type: 'build', x: b.x, y: b.y });
+      }
+
+      const halfW = sim.W / 2, halfH = sim.H / 2;
+      for (const web of w.webs) {
+        // The wall anchors follow the arena edges, including on the shrinking map.
+        const ax = BB.clamp(web.x, -halfW + 4, halfW - 4);
+        const ay = BB.clamp(web.y, -halfH + 4, halfH - 4);
+        const ly = BB.clamp(web.leftY, -halfH + 8, halfH - 8);
+        const ry = BB.clamp(web.rightY, -halfH + 8, halfH - 8);
+        for (const e of sim.balls) {
+          if (!e.alive || e.team === b.team) { web.near[e.id] = false; continue; }
+          const reach = e.r + 4 * b.scale, reachSq = reach * reach;
+          const dL = segmentDistanceSq(e.x, e.y, -halfW, ly, ax, ay);
+          const dR = segmentDistanceSq(e.x, e.y, ax, ay, halfW, ry);
+          const touching = Math.min(dL, dR) <= reachSq;
+          if (touching && !web.near[e.id]) {
+            const dealt = sim.damage(e, w.damage * 0.7, b, { x: e.x, y: e.y, dot: true, color: '#b78cff' });
+            if (dealt > 0) sim.burst(e.x, e.y, 5, ['#b78cff', '#e8d5ff', '#ffffff'], 150, 2);
+          }
+          web.near[e.id] = touching;
+        }
+      }
+    },
+    stats: (w) => ['Webs: ' + w.webs.length, 'Next web: ' + Math.max(0, w.webTimer).toFixed(1) + 's'],
   });
 
   if (typeof document === 'undefined') return;
