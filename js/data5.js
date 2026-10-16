@@ -78,50 +78,46 @@
   });
 
 
-  // ---------------------------------------------------------------- Spider (permanent side-wall webs)
+  // ---------------------------------------------------------------- Spider (wall-hit web strands that follow their owner)
   add({
     id: 'spider', name: 'Spider', cat: 'special', rarity: 'legendary', color: '#a978d3',
-    desc: 'Every 2.8s spins a permanent web from its position to both arena side walls. Enemies take damage when they cross a strand. Webs last for the whole battle.',
+    desc: 'Every wall hit anchors a permanent web strand from Spider to that wall. The strands follow Spider as it moves and damage enemies that cross them.',
     base: { damage: 1.5 }, contact: true,
-    init(w) { w.webTimer = 0.8; w.webs = []; },
-    update(sim, b, w, dt) {
-      w.webTimer -= dt;
-      if (w.webTimer <= 0) {
-        w.webTimer = 2.8;
-        const spread = 55 + sim.rng() * 135, tilt = sim.rng() < 0.5 ? -1 : 1;
-        const yMax = Math.max(8, sim.H / 2 - 12);
-        w.webs.push({
-          x: b.x, y: b.y,
-          leftY: BB.clamp(b.y - tilt * spread, -yMax, yMax),
-          rightY: BB.clamp(b.y + tilt * spread, -yMax, yMax),
-          near: {},
-        });
-        sim.burst(b.x, b.y, 8, ['#b78cff', '#e8d5ff', '#ffffff'], 180, 2);
+    init(w) { w.webs = []; },
+    onWall(sim, b, w, edges) {
+      for (const edge of edges || []) {
+        // Store a normalized point along the edge so the anchor stays on the wall
+        // even when the Shrinking arena moves its boundaries.
+        const vertical = edge === 'left' || edge === 'right';
+        const offset = vertical ? b.y / Math.max(1, sim.H / 2) : b.x / Math.max(1, sim.W / 2);
+        w.webs.push({ edge, offset: BB.clamp(offset, -0.94, 0.94), near: {} });
+        sim.burst(b.x, b.y, 7, ['#b78cff', '#e8d5ff', '#ffffff'], 170, 2);
         sim.emit({ type: 'build', x: b.x, y: b.y });
       }
-
+    },
+    update(sim, b, w, dt) {
       const halfW = sim.W / 2, halfH = sim.H / 2;
       for (const web of w.webs) {
-        // The wall anchors follow the arena edges, including on the shrinking map.
-        const ax = BB.clamp(web.x, -halfW + 4, halfW - 4);
-        const ay = BB.clamp(web.y, -halfH + 4, halfH - 4);
-        const ly = BB.clamp(web.leftY, -halfH + 8, halfH - 8);
-        const ry = BB.clamp(web.rightY, -halfH + 8, halfH - 8);
+        let ax, ay;
+        if (web.edge === 'left') { ax = -halfW; ay = BB.clamp(web.offset * halfH, -halfH + 5, halfH - 5); }
+        else if (web.edge === 'right') { ax = halfW; ay = BB.clamp(web.offset * halfH, -halfH + 5, halfH - 5); }
+        else if (web.edge === 'top') { ax = BB.clamp(web.offset * halfW, -halfW + 5, halfW - 5); ay = -halfH; }
+        else { ax = BB.clamp(web.offset * halfW, -halfW + 5, halfW - 5); ay = halfH; }
+
+        // A web's moving endpoint is always the Spider itself; the far endpoint is fixed to its wall.
         for (const e of sim.balls) {
           if (!e.alive || e.team === b.team) { web.near[e.id] = false; continue; }
-          const reach = e.r + 4 * b.scale, reachSq = reach * reach;
-          const dL = segmentDistanceSq(e.x, e.y, -halfW, ly, ax, ay);
-          const dR = segmentDistanceSq(e.x, e.y, ax, ay, halfW, ry);
-          const touching = Math.min(dL, dR) <= reachSq;
+          const reach = e.r + 4 * b.scale;
+          const touching = segmentDistanceSq(e.x, e.y, b.x, b.y, ax, ay) <= reach * reach;
           if (touching && !web.near[e.id]) {
-            const dealt = sim.damage(e, w.damage * 0.7, b, { x: e.x, y: e.y, dot: true, color: '#b78cff' });
+            const dealt = sim.damage(e, w.damage * 0.75, b, { x: e.x, y: e.y, dot: true, color: '#b78cff' });
             if (dealt > 0) sim.burst(e.x, e.y, 5, ['#b78cff', '#e8d5ff', '#ffffff'], 150, 2);
           }
           web.near[e.id] = touching;
         }
       }
     },
-    stats: (w) => ['Webs: ' + w.webs.length, 'Next web: ' + Math.max(0, w.webTimer).toFixed(1) + 's'],
+    stats: (w) => ['Webs: ' + w.webs.length],
   });
 
   if (typeof document === 'undefined') return;
