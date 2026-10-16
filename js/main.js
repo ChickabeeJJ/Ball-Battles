@@ -724,6 +724,11 @@
     // ------------------------------------------------------------- binding
     bindUI() {
       const click = (id, fn) => $(id).addEventListener('click', () => { BB.audio.unlock(); BB.audio.play('click'); fn(); });
+      const coinIcon = $('coins').querySelector('.coin-ic');
+      if (coinIcon) coinIcon.addEventListener('click', () => {
+        BB.audio.unlock(); BB.audio.play('click');
+        if (BB.meta && BB.meta.coinEggClick) BB.meta.coinEggClick();
+      });
       click('btnStart', () => App.startBattle());
       click('btnSettings', () => {
         if (App.state === 'battle' && !App.resultsShown) { if (!App.paused) { App.paused = true; BB.sdk.gameplayStop(); } BB.ui.onClose = null; BB.ui.settings(); }
