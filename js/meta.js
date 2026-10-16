@@ -169,10 +169,16 @@
     MXP_KAMI: [0, 60, 150, 280, 450, 670, 950, 1300, 1720, 2200, 3500, 5500, 8000, 11500, 16000, 22000, 30000, 40000, 52000, 66000],
     table(id) { return id === 'kami' ? M.MXP_KAMI : M.MXP; },
     maxL(id) { return M.table(id).length; },
-    skinsFor(id) { return M.SKINS.filter((s) => !s.only || s.only === id); },
+    skinsFor(id) {
+      // Ball-specific skins replace the generic skin at their mastery level.
+      const special = M.SKINS.filter((s) => s.only === id);
+      const replacedLevels = new Set(special.map((s) => s.lvl));
+      return M.SKINS.filter((s) => !s.only && !replacedLevels.has(s.lvl)).concat(special).sort((a, b) => a.lvl - b.lvl);
+    },
     SKINS: [
       { id: 'classic', name: 'Classic', lvl: 1 },
       { id: 'shadow', name: 'Shadow', lvl: 4 },
+      { id: 'dummy_ascended', name: 'D.U.M.M.Y.', lvl: 4, only: 'dummy' },
       { id: 'neon', name: 'Neon', lvl: 6 },
       { id: 'gold', name: 'Gold', lvl: 10 },
       { id: 'tenshi', name: 'Tenshi', lvl: 20, only: 'kami' },
