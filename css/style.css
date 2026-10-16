@@ -1786,3 +1786,41 @@ html.cland .feat-row.non-cg-pvp .feat { font-size: 11px; }
 @keyframes dmy-glitch { 0% { transform:translate(0); } 25% { transform:translate(3px,-1px); } 50% { transform:translate(-2px,1px); } 75% { transform:translate(1px,2px); } 100% { transform:translate(0); } }
 @keyframes dmy-flash { 0% { opacity:.95; } 100% { opacity:0; } }
 @keyframes dmy-particle { 0% { opacity:0; transform:translate(0,0) rotate(45deg) scale(.6); } 20% { opacity:.95; } 100% { opacity:0; transform:translate(var(--dx,20px),var(--dy,-90px)) rotate(280deg) scale(0); } }
+
+
+/* Final Hide UI behavior: button stays as an invisible bottom-right restore hotspot. */
+#btnHideUI.hide-ui-btn {
+  position:fixed!important;
+  right:max(4px, env(safe-area-inset-right))!important;
+  bottom:max(4px, env(safe-area-inset-bottom))!important;
+  left:auto!important; top:auto!important;
+  width:40px!important; height:40px!important;
+  margin:0!important; transform:none!important;
+  z-index:100520!important;
+}
+#app.ui-hidden #btnHideUI.hide-ui-btn {
+  display:grid!important;
+  opacity:0!important;
+  pointer-events:auto!important;
+  background:transparent!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+  color:transparent!important;
+}
+#app.ui-hidden #btnHideUI.hide-ui-btn svg { opacity:0!important; }
+
+/* The actual Dummy icon anchors the awakening message. */
+.dmy-message .dmy-icon {
+  display:block;
+  width:clamp(76px, 15vw, 144px);
+  height:clamp(76px, 15vw, 144px);
+  margin:clamp(10px, 2.2vh, 20px) auto clamp(12px, 2.6vh, 24px);
+  object-fit:contain;
+  filter:drop-shadow(0 0 14px rgba(255,36,77,.55)) drop-shadow(0 0 24px rgba(139,92,246,.38));
+  animation:dmyIconFloat 1.15s ease-in-out infinite alternate;
+}
+@keyframes dmyIconFloat {
+  from { transform:translateY(0) scale(.98); }
+  to { transform:translateY(-5px) scale(1.035); }
+}
+
