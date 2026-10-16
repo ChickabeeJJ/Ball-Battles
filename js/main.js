@@ -451,7 +451,7 @@
       document.querySelectorAll('.tut.ps').forEach((x) => x.remove()); $('btnStart').classList.remove('ps-hl');
       const firstFight = BB.save.data.firstFight === 'ready' && !App.pvp && !App.event;
       if (firstFight) { BB.save.data.firstFight = 'playing'; BB.save.write(); }
-      App.slowmo = 0; App.shake = 0; App.impact = null; App.lastKO = null; App.cine = false; App.cineQ = 0;
+      App.slowmo = 0; App.shake = 0; App.impact = null; App.lastKO = null; App.cine = false; App.cineQ = 0; App.dummyKill = false;
       BB.audio.unlock();
       const setup = BB.save.data.setup;
       const mode = App.mode();
@@ -579,13 +579,15 @@
           case 'shoot': BB.audio.play('shoot', e); break;
           case 'boom': BB.audio.play('boom', e); App.vibrate(30); break;
           case 'nova': BB.audio.play('kamiSlam'); App.shake = 18; App.vibrate(60); break; // Nova's supernova
-          case 'death': BB.audio.play('death'); if (e.main) App.vibrate(60); if (e.main && e.kami) { App.kamiKill = true; App.kamiAsc = !!e.asc; } if (e.main && e.ballKill) App.ballKill = true; break;
+          case 'death': BB.audio.play('death'); if (e.main) App.vibrate(60); if (e.main && e.kami) { App.kamiKill = true; App.kamiAsc = !!e.asc; } if (e.main && e.ballKill) App.ballKill = true; if (e.main && e.dummyKill) App.dummyKill = true; break;
           case 'dummyAwaken': {
             // D.U.M.M.Y. gets its own full-screen transformation cutscene, freezing combat like Tenshi.
             App.impact = null;
             App.cineQ = (App.cineQ || 0) + 1;
             const go = () => {
               App.cine = true;
+              // Native browser warning; App.cine is already set so combat remains paused.
+              window.alert('dummy? D.U.M.M.Y.????????????????????????????????????????????????????');
               BB.dummyAwaken(() => {
                 App.cine = false; App.last = performance.now(); App.shake = 18;
                 if (--App.cineQ > 0) go();
@@ -640,6 +642,13 @@
               App.impact = { t: 0, slow, dur: App.kamiAsc ? 3.0 : 2.8, kamiFin: true, asc: !!App.kamiAsc, x: 0, y: 0, seed: (Math.random() * 1e6) | 0, foe: foe ? BB.itemColor(foe.def.id) : '#e8473f' };
               BB.audio.play('kamiFinisher');
               if (slow === 1) setTimeout(() => BB.ui.banner('K.O.!', 900), App.kamiAsc ? 2900 : 2700);
+            } else if (App.dummyKill && e.winner >= 0 && App.st().finisher && BB.dummyFinisher) {
+              // D.U.M.M.Y.'s finisher overrides the ordinary knockout splash.
+              const foe = sim.balls.find((b) => b.main && !b.alive && b.team !== e.winner);
+              App.impact = { t: 0, dur: 3.8, dummyFin: true, x: 0, y: 0, seed: (Math.random() * 1e6) | 0, foe: foe ? BB.itemColor(foe.def.id) : '#e8473f' };
+              BB.audio.play('kamiFinisher');
+              setTimeout(() => BB.audio.play('boom'), 1250);
+              setTimeout(() => BB.ui.banner('D.U.M.M.Y.?', 1000), 3600);
             } else if (App.ballKill && e.winner >= 0 && App.st().finisher && BB.ballFinisher) {
               // BALL (or one of its summons) lands the final blow: its rainbow finisher
               const foe = sim.balls.find((b) => b.main && !b.alive && b.team !== e.winner);
@@ -657,7 +666,7 @@
         }
       }
       sim.events.length = 0;
-      App.kamiKill = false; App.kamiAsc = false; App.ballKill = false;
+      App.kamiKill = false; App.kamiAsc = false; App.ballKill = false; App.dummyKill = false;
     },
 
     // ------------------------------------------------------------- loop
