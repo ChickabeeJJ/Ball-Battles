@@ -25,24 +25,11 @@
   });
   add({
     id: 'drill', name: 'Drill', cat: 'weapon', rarity: 'epic', color: '#95a5a6',
-    desc: 'Bores into enemies briefly on hit, staying connected for up to 0.8 seconds. Rapid follow-ups within 0.6s add +25% damage (up to triple). +0.1 damage every hit.',
+    desc: 'Drills rapidly through its orbit without sticking to enemies. Rapid follow-ups within 0.6s add +25% damage (up to triple). +0.1 damage every hit.',
     base: { damage: 1.2, spin: 240, len: 44, width: 13 }, melee: true, blocks: true, hitCd: 0.15,
-    init(w) { w.combo = 1; w.lastHit = -9; w.len0 = w.len; w.embedTarget = null; w.embedT = 0; },
-    update(sim, b, w, dt) {
-      if (w.embedT > 0) {
-        w.embedT = Math.max(0, w.embedT - dt);
-        const target = w.embedTarget;
-        if (target && target.alive && w.embedT > 0) {
-          const dx = target.x - b.x, dy = target.y - b.y, dist = Math.hypot(dx, dy);
-          w.angle = Math.atan2(dy, dx);
-          w.len = Math.max(5, dist - b.r - w.gap + target.r * 0.35);
-          return;
-        }
-      }
-      w.embedTarget = null; w.len = w.len0;
-    },
+    init(w) { w.combo = 1; w.lastHit = -9; w.len0 = w.len; },
     damageFn(sim, b, w) { w.combo = sim.t - w.lastHit < 0.6 ? Math.min(3, w.combo + 0.25) : 1; w.lastHit = sim.t; return [w.damage * w.combo, w.combo >= 2]; },
-    onHit(sim, b, w, t) { w.damage += 0.1; if (t && t.alive) { w.embedTarget = t; w.embedT = 0.8; } if (w.combo >= 2 && t && sim.frng() < 0.5) sim.burst(t.x, t.y, 5, ['#dfe6e9', '#ffd23f'], 260, 2); },
+    onHit(sim, b, w, t) { w.damage += 0.1; if (w.combo >= 2 && t && sim.frng() < 0.5) sim.burst(t.x, t.y, 5, ['#dfe6e9', '#ffd23f'], 260, 2); },
     stats: (w) => ['Damage: ' + fmt(w.damage), 'Drill: x' + w.combo.toFixed(2)],
   });
   add({
