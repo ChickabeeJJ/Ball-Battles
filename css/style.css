@@ -1797,17 +1797,19 @@ body.ui-hidden #btnHideUI.hide-ui-btn { display:none!important; }
 @keyframes dmy-particle { 0% { opacity:0; transform:translate(0,0) rotate(45deg) scale(.6); } 20% { opacity:.95; } 100% { opacity:0; transform:translate(var(--dx,20px),var(--dy,-90px)) rotate(280deg) scale(0); } }
 
 
-/* Final Hide UI behavior: button stays as an invisible bottom-right restore hotspot. */
+/* Hide UI lives directly under <body>, outside the scaled arena, so it tracks the player's viewport. */
 #btnHideUI.hide-ui-btn {
   position:fixed!important;
-  right:max(4px, env(safe-area-inset-right))!important;
-  bottom:max(4px, env(safe-area-inset-bottom))!important;
+  right:0!important;
+  bottom:0!important;
   left:auto!important; top:auto!important;
   width:40px!important; height:40px!important;
   margin:0!important; transform:none!important;
   z-index:100520!important;
+  touch-action:manipulation;
 }
-#app.ui-hidden #btnHideUI.hide-ui-btn {
+body.game-battle-active #btnHideUI.hide-ui-btn { display:grid!important; }
+body.ui-hidden #btnHideUI.hide-ui-btn {
   display:grid!important;
   opacity:0!important;
   pointer-events:auto!important;
@@ -1816,7 +1818,7 @@ body.ui-hidden #btnHideUI.hide-ui-btn { display:none!important; }
   box-shadow:none!important;
   color:transparent!important;
 }
-#app.ui-hidden #btnHideUI.hide-ui-btn svg { opacity:0!important; }
+body.ui-hidden #btnHideUI.hide-ui-btn svg { opacity:0!important; }
 
 /* The actual Dummy icon anchors the awakening message. */
 .dmy-message .dmy-icon {
