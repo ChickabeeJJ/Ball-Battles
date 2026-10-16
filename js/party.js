@@ -13,7 +13,7 @@
   const P = (BB.party = {
     code: null, host: false, peer: null, conn: null, me: null, foe: null, myReady: null, foeReady: null, inSeries: false, token: 0,
 
-    available() { return !!(BB.app && BB.app.pvpAvailable()); },
+    available() { return !!(BB.app && BB.app.isCrazyGames()); },
     active() { return !!P.code; },
     validCode(c) { return typeof c === 'string' && /^[A-Z0-9]{5}$/.test(c); },
     room() { return 'p' + P.code; },
