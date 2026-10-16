@@ -387,6 +387,7 @@
       App.paused = false;
       BB.sdk.gameplayStop();
       $('app').className = 'is-menu';
+      document.body.classList.remove('game-battle-active', 'ui-hidden');
       App.refreshMenu();
     },
 
@@ -474,6 +475,8 @@
       App.acc = 0;
       App.resultsShown = false;
       $('app').className = 'is-battle';
+      document.body.classList.add('game-battle-active');
+      document.body.classList.remove('ui-hidden');
       $('app').classList.toggle('no-pause', !!(App.event && App.event.kind === 'pvp3'));
       $('btnSpeed').classList.toggle('hidden', App.isPvpBattle()); // PvP is locked at 1x
       BB.sdk.hideInvite();
@@ -764,6 +767,12 @@
 
     // ------------------------------------------------------------- binding
     bindUI() {
+      // Move Hide UI out of #app: #app has screen-fit transforms that can make fixed children
+      // anchor to the arena instead of the player's viewport.
+      const hideButton = $('btnHideUI');
+      if (hideButton && hideButton.parentElement !== document.body) document.body.appendChild(hideButton);
+      document.body.classList.toggle('game-battle-active', App.state === 'battle');
+      document.body.classList.toggle('ui-hidden', $('app').classList.contains('ui-hidden'));
       const click = (id, fn) => $(id).addEventListener('click', () => { BB.audio.unlock(); BB.audio.play('click'); fn(); });
       const coinIcon = $('coins').querySelector('.coin-ic');
       if (coinIcon) coinIcon.addEventListener('click', () => {
