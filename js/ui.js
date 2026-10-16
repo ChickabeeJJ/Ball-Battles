@@ -131,18 +131,18 @@
     // weapon does before picking or buying it. Opens over the current sheet; tap outside / X closes.
     preview(id, opts) {
       UI.closePreview();
-      const it = BB.ITEM[id], tenshi = !!(opts && opts.tenshi);
+      const it = BB.ITEM[id], tenshi = !!(opts && opts.tenshi), dummyAsc = !!(opts && opts.dummyAsc);
       const wrap = el('div', 'pv-wrap');
-      wrap.innerHTML = `<div class="pv-box"><div class="pv-h"><img src="${BB.icon(id)}" alt=""><b>${esc(it.name)}${tenshi ? ' <span class="pv-tag">Tenshi</span>' : ''}</b><button class="x-btn pv-x" aria-label="Close">×</button></div>
+      wrap.innerHTML = `<div class="pv-box"><div class="pv-h"><img src="${BB.icon(id)}" alt=""><b>${esc(it.name)}${tenshi ? ' <span class="pv-tag">Tenshi</span>' : dummyAsc ? ' <span class="pv-tag pv-tag-dmy">D.U.M.M.Y.</span>' : ''}</b><button class="x-btn pv-x" aria-label="Close">×</button></div>
         <canvas class="pv-c"></canvas><div class="pv-d">${esc(it.desc)}</div></div>`;
       document.body.appendChild(wrap);
       const cv = wrap.querySelector('.pv-c'), R = new BB.Renderer(cv);
       R.dark = !!BB.save.data.settings.dark;
       const px = Math.min(360, window.innerWidth - 56, window.innerHeight - 220);
       R.resize(Math.max(200, px));
-      let sim = null, t0 = 0, last = performance.now(), acc = 0, seed = 1, imp = null, kfin = null, awoke = false, cine = false;
+      let sim = null, t0 = 0, last = performance.now(), acc = 0, seed = 1, imp = null, kfin = null, awoke = false, dummyAwoke = false, cine = false;
       const fresh = () => {
-        sim = new BB.Sim({ seed: seed++, map: 'classic', teams: [[{ id, hp: 100, slot: 0 }], [{ id: 'dummy', hp: 100, slot: 1 }]],
+        sim = new BB.Sim({ seed: seed++, map: 'classic', teams: [[{ id, hp: 100, slot: 0, dummySkin: dummyAsc }], [{ id: 'dummy', hp: 100, slot: 1 }]],
           settings: { dmgNumbers: true, callouts: true, hitlag: false, parrylag: false, impact: false, finisher: false, overtime: false } });
         t0 = 0; kfin = null;
         if (tenshi && !awoke) sim.balls[0].tenshi = true; // first run: base Kami falls, then the awakening plays
@@ -150,6 +150,7 @@
           const k = sim.balls[0];
           k.tenshi = true; k.ascended = true; k.w.regenMul = 1.3; k.w.touch = {}; k.w.servCd = 1.5; k.w.cool = { beam: 1.2, gate: 4.5, rain: 2.6 };
         }
+        if (dummyAsc && dummyAwoke) sim.balls[0].def.awakenDummy(sim, sim.balls[0], false);
       };
       fresh();
       const loop = (now) => {
@@ -160,13 +161,15 @@
           if (imp.t >= imp.dur) imp = null;
         }
         if (cine) acc = 0; // the awakening cutscene holds the clip
-        // Tenshi preview: after a moment the base form is struck down, which triggers the revival
+        // Transformation previews force the base form through its awakening threshold once.
         if (tenshi && !awoke && !cine && t0 >= 2.2) { const k = sim.balls[0]; if (!k.ascended) { sim.burst(k.x, k.y, 30, ['#ffffff', '#e8473f', '#111'], 420, 4); sim.kill(k, sim.balls[1]); } }
+        if (dummyAsc && !dummyAwoke && !cine && t0 >= 2.2) { const d = sim.balls[0]; d.hp = Math.min(d.hp, d.maxHp * 0.49); }
         const awaken = () => { if (!awoke && sim.events.some((e) => e.type === 'kami' && e.k === 'awaken')) { awoke = true; cine = true; sim.events.length = 0; BB.audio.play('death'); BB.kamiAwaken(() => { cine = false; last = performance.now(); }); } };
-        awaken();
+        const awakenDummy = () => { if (!dummyAwoke && sim.events.some((e) => e.type === 'dummyAwaken')) { dummyAwoke = true; cine = true; sim.events.length = 0; BB.audio.play('death'); BB.dummyAwaken(() => { cine = false; last = performance.now(); }); } };
+        awaken(); awakenDummy();
         while (!imp && !cine && acc >= 1 / 120) {
           sim.step(1 / 120); acc -= 1 / 120; t0 += 1 / 120;
-          awaken(); if (cine) break;
+          awaken(); awakenDummy(); if (cine) break;
           for (const e of sim.events) if (e.type === 'death' && e.main && (e.kami || e.ballKill)) kfin = { asc: !!e.asc, ball: !!e.ballKill && !e.kami, done: false };
           // Kami's (or BALL's) knockout plays its finisher before the clip restarts
           if (sim.over && kfin && !kfin.done && BB.save.data.settings.finisher !== false) {
@@ -277,6 +280,12 @@
             const tb = el('button', 'd-prev d-prev2', BB.ICON.play + '<span>Tenshi</span>');
             tb.onclick = () => { BB.audio.play('click'); UI.preview(sel, { tenshi: true }); };
             detail.querySelector('.d-acts').appendChild(tb);
+          }
+          if (it.id === 'dummy') {
+            const db = el('button', 'd-prev d-prev2 d-prev-dmy', BB.ICON.play + '<span>D.U.M.M.Y.</span>');
+            db.onclick = () => { BB.audio.play('click'); UI.preview(sel, { dummyAsc: true }); };
+            detail.querySelector('.d-acts').appendChild(db);
+            detail.insertAdjacentHTML('beforeend', '<div class="k-abil"><b>D.U.M.M.Y. · Mastery Lv4</b><p>At half health the limiter breaks: a cinematic awakening, a full heal, temporary invulnerability, extreme damage, and repeated reality-shattering pulses.</p></div>');
           }
           if (it.kami) detail.insertAdjacentHTML('beforeend', '<div class="k-abil">' + [['Divine Grace', 'Teleports away from any attack while charged. Refills slower as it drains and only trickles back at 20% or below. HP locked at 1.'], ['Seraph Beam', 'Angel wings unfurl, then a beam of light pierces the arena. 20 dmg · ' + BB.KAMI.AB.beam.cd + 's'], ['Golden Gates', 'Imprisons a foe in a golden cage, then slams it shut. 18 dmg · ' + BB.KAMI.AB.gate.cd + 's'], ['Heaven\'s Arsenal', 'Portals open and rain ' + BB.KAMI.AB.rain.swords + ' holy swords. 3 dmg each · ' + BB.KAMI.AB.rain.cd + 's'], ['Tenshi (Mastery Lv20 skin)', 'Refuses its first death and ascends: crimson arts that hit harder, Angelic Touch (brush-spear hits on foes restore Grace), faster Grace recharge above 60% (very fast above 90%) and Heavenly Servants. Not used in PvP.']].map(([n, d]) => `<div><b>${n}</b><span>${d}</span></div>`).join('') + '</div>');
           if (app.isOwned(sel)) { detail.insertAdjacentHTML('beforeend', '<div class="m-inline">' + BB.meta.masteryBlock(sel) + '</div>'); BB.meta.bindSkins(detail, sel, () => app.refreshMenu()); }
