@@ -586,6 +586,23 @@
       const order = sim.balls.filter((b) => b.alive).sort((a, b) => (a.main === b.main ? 0 : a.main ? 1 : -1));
       for (const b of order) this.drawBall(ctx, sim, b, lw);
 
+      // The D.U.M.M.Y. warning text hangs over the arena while its awakened form is alive.
+      if (sim.balls.some((b) => b.alive && b.def.id === 'dummy' && b.dummyAscended)) {
+        ctx.save();
+        ctx.globalAlpha = 0.2 + 0.04 * Math.sin(sim.t * 7);
+        ctx.translate(0, -sim.H * 0.06);
+        ctx.rotate(-0.035);
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = '1000 ' + Math.max(70, S * 0.105) + 'px "Arial Black",Impact,sans-serif';
+        ctx.lineWidth = Math.max(8, S * 0.012); ctx.strokeStyle = '#111018';
+        ctx.shadowColor = '#a8a8b8'; ctx.shadowBlur = 18;
+        ctx.strokeText('D.U.M.M.Y.??????', 0, 0);
+        ctx.fillStyle = '#d6d6df'; ctx.fillText('D.U.M.M.Y.??????', 0, 0);
+        ctx.shadowBlur = 0; ctx.font = '900 ' + Math.max(22, S * 0.034) + 'px monospace';
+        ctx.fillStyle = '#ff244d'; ctx.fillText('I WILL BE BULLIED NO MORE', 0, S * 0.075);
+        ctx.restore();
+      }
+
       // projectiles
       for (const p of sim.proj) this.drawProj(ctx, p, lw);
 
