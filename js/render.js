@@ -599,7 +599,6 @@
         ctx.strokeText('D.U.M.M.Y.??????', 0, 0);
         ctx.fillStyle = '#d6d6df'; ctx.fillText('D.U.M.M.Y.??????', 0, 0);
         ctx.shadowBlur = 0; ctx.font = '900 ' + Math.max(22, S * 0.034) + 'px monospace';
-        ctx.fillStyle = '#ff244d'; ctx.fillText('I WILL BE BULLIED NO MORE', 0, S * 0.075);
         ctx.restore();
       }
 
