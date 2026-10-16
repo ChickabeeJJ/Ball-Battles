@@ -786,7 +786,12 @@
           go.disabled = sel.length !== N;
           go.textContent = sel.length === N ? (N === 3 ? 'Confirm squad' : 'Start the cup') : 'Pick ' + (N - sel.length) + ' more';
         };
-        for (const it of BB.ITEMS.filter((i) => i.cat !== 'hidden' && BB.app.isOwned(i.id))) {
+        const roster = BB.ITEMS.filter((i) => i.cat !== 'hidden' && BB.app.isOwned(i.id));
+        if (opts.pvp) {
+          const rarityOrder = { common: 0, rare: 1, epic: 2, legendary: 3 };
+          roster.sort((a, b) => (rarityOrder[a.rarity] ?? 99) - (rarityOrder[b.rarity] ?? 99) || BB.ITEMS.indexOf(a) - BB.ITEMS.indexOf(b));
+        }
+        for (const it of roster) {
           const t = document.createElement('button');
           t.className = 'tile'; t.dataset.id = it.id;
           t.innerHTML = `<img src="${BB.icon(it.id)}" alt=""><span class="t-n">${esc(it.name)}</span>${M.starHtml(it.id)}<span class="rar" style="background:${BB.RARITY[it.rarity].color}"></span>`;
