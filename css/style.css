@@ -1697,6 +1697,7 @@ html.idlecmp .stat-row { min-height: 0; }
 .mv-footer button { flex:0 0 auto; min-width:125px; }
 .mv-roll-sub { margin:5px 0 14px; color:#d9d4ea; text-align:center; font-family:system-ui,sans-serif; font-size:13px; }
 .mv-roll-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+.mv-roll-grid.two-choice { grid-template-columns:repeat(2,minmax(0,1fr)); width:100%; max-width:320px; margin-left:auto; margin-right:auto; }
 .mv-roll-card { min-width:0; padding:12px 5px; border:2px solid #514663; border-radius:9px; background:#292633; color:#fff; text-align:center; font-family:var(--display); font-size:13px; opacity:.72; transform:scale(.96); transition:transform .08s,border-color .08s,opacity .08s,box-shadow .08s; }
 .mv-roll-card.rolling { opacity:1; border-color:#ffd23f; transform:scale(1.04); box-shadow:0 0 14px rgba(255,210,63,.46); }
 .mv-roll-card.winner { opacity:1; border-color:#35d047; background:#24412b; transform:scale(1.05); box-shadow:0 0 0 2px #35d047,0 0 18px rgba(53,208,71,.42); }
