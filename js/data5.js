@@ -318,55 +318,6 @@
     if (b.def.id === 'nova' && b.w.nova > 0) drawNova(ctx, sim, b.w);
     baseBall(ctx, sim, b, lw, R);
 
-    // Verity's three familiar faces: happy, displeased, then the monstrous final form.
-    if (b.def.id === 'verity') {
-      const stage = Math.min(2, b.w.stage || 0), r = b.r;
-      const palette = [['#fff4a8', '#ffd43b'], ['#ffe07b', '#ffad23'], ['#ffba4d', '#e64c2e']][stage];
-      ctx.save();
-      const g = ctx.createRadialGradient(b.x - r * 0.3, b.y - r * 0.42, r * 0.04, b.x, b.y, r * 1.2);
-      g.addColorStop(0, '#fffbe0'); g.addColorStop(0.38, palette[0]); g.addColorStop(1, palette[1]);
-      ctx.beginPath(); ctx.arc(b.x, b.y, r * 0.98, 0, TAU); ctx.fillStyle = g; ctx.fill();
-      ctx.lineWidth = Math.max(2, r * 0.1); ctx.strokeStyle = OUT; ctx.stroke();
-      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      if (stage === 0) {
-        for (const dx of [-0.28, 0.28]) {
-          ctx.beginPath(); ctx.ellipse(b.x + dx * r, b.y - r * 0.18, r * 0.085, r * 0.13, 0, 0, TAU);
-          ctx.fillStyle = '#1d1d22'; ctx.fill();
-        }
-        ctx.beginPath(); ctx.arc(b.x, b.y - r * 0.02, r * 0.34, 0.18 * Math.PI, 0.82 * Math.PI);
-        ctx.strokeStyle = '#1d1d22'; ctx.lineWidth = r * 0.09; ctx.stroke();
-      } else if (stage === 1) {
-        for (const dx of [-0.28, 0.28]) {
-          ctx.beginPath(); ctx.moveTo(b.x + (dx - 0.11) * r, b.y - r * 0.42); ctx.lineTo(b.x + (dx + 0.10) * r, b.y - r * 0.31);
-          ctx.strokeStyle = '#1d1d22'; ctx.lineWidth = r * 0.075; ctx.stroke();
-          ctx.beginPath(); ctx.ellipse(b.x + dx * r, b.y - r * 0.17, r * 0.07, r * 0.11, 0, 0, TAU); ctx.fillStyle = '#1d1d22'; ctx.fill();
-        }
-        ctx.beginPath(); ctx.moveTo(b.x - r * 0.28, b.y + r * 0.24); ctx.quadraticCurveTo(b.x, b.y + r * 0.02, b.x + r * 0.28, b.y + r * 0.24);
-        ctx.strokeStyle = '#1d1d22'; ctx.lineWidth = r * 0.095; ctx.stroke();
-      } else {
-        // Enlarged red eyes and a jagged, tooth-filled maw.
-        for (const dx of [-0.29, 0.29]) {
-          ctx.beginPath(); ctx.moveTo(b.x + (dx - 0.12) * r, b.y - r * 0.45); ctx.lineTo(b.x + (dx + 0.10) * r, b.y - r * 0.31);
-          ctx.strokeStyle = '#1d1d22'; ctx.lineWidth = r * 0.10; ctx.stroke();
-          ctx.beginPath(); ctx.ellipse(b.x + dx * r, b.y - r * 0.17, r * 0.105, r * 0.15, dx, 0, TAU);
-          ctx.fillStyle = '#f3f3f3'; ctx.fill(); ctx.lineWidth = r * 0.045; ctx.strokeStyle = OUT; ctx.stroke();
-          ctx.beginPath(); ctx.arc(b.x + dx * r, b.y - r * 0.17, r * 0.055, 0, TAU); ctx.fillStyle = '#f32045'; ctx.fill();
-        }
-        ctx.beginPath(); ctx.moveTo(b.x - r * 0.39, b.y + r * 0.02);
-        ctx.lineTo(b.x - r * 0.29, b.y + r * 0.37); ctx.lineTo(b.x - r * 0.13, b.y + r * 0.29);
-        ctx.lineTo(b.x, b.y + r * 0.43); ctx.lineTo(b.x + r * 0.14, b.y + r * 0.29);
-        ctx.lineTo(b.x + r * 0.29, b.y + r * 0.37); ctx.lineTo(b.x + r * 0.39, b.y + r * 0.02);
-        ctx.closePath(); ctx.fillStyle = '#1d1d22'; ctx.fill(); ctx.lineWidth = r * 0.055; ctx.strokeStyle = OUT; ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(b.x - r * 0.28, b.y + r * 0.10); ctx.lineTo(b.x - r * 0.19, b.y + r * 0.24);
-        ctx.lineTo(b.x - r * 0.08, b.y + r * 0.10); ctx.lineTo(b.x + r * 0.02, b.y + r * 0.26);
-        ctx.lineTo(b.x + r * 0.14, b.y + r * 0.10); ctx.lineTo(b.x + r * 0.26, b.y + r * 0.23);
-        ctx.strokeStyle = '#fff0be'; ctx.lineWidth = r * 0.09; ctx.stroke();
-        ctx.shadowColor = '#ff3327'; ctx.shadowBlur = r * (0.2 + 0.1 * Math.sin(sim.t * 9));
-        ctx.beginPath(); ctx.arc(b.x, b.y, r * 1.02, 0, TAU); ctx.strokeStyle = 'rgba(255,55,35,0.7)'; ctx.lineWidth = r * 0.07; ctx.stroke();
-      }
-      ctx.restore();
-    }
-
     // D.U.M.M.Y. becomes a glitching, overcharged boss after its mastery transformation.
     if (b.def.id === 'dummy' && b.dummyAscended) {
       const r = b.r, pulse = 0.5 + 0.5 * Math.sin(sim.t * 15);
