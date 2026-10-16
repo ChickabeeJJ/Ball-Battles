@@ -253,11 +253,16 @@
       const setup = BB.save.data.setup;
       return App.withTenshi(App.mode().teams.map((t) => t.map((i) => Object.assign({}, setup.slots[i], { ov: Object.assign({}, setup.slots[i].ov), slot: i }))));
     },
-    // The Tenshi skin (Kami mastery 20) has a battle effect, so it is passed to the sim. Never in PvP:
-    // the other player's game can't know your skin, and both screens must play the same fights.
+    // Mastery skins with battle effects are passed through the local simulation only, never live PvP.
     withTenshi(teams, pvp) {
       const on = !pvp && BB.meta && BB.meta.skinOf('kami') === 'tenshi';
-      return teams.map((t) => t.map((sc) => (sc.id === 'kami' ? Object.assign({}, sc, { tenshi: on }) : sc)));
+      const dummyOn = !pvp && BB.meta && BB.meta.skinOf('dummy') === 'dummy_ascended';
+      return teams.map((t) => t.map((sc) => {
+        let next = sc;
+        if (sc.id === 'kami' && on) next = Object.assign({}, next, { tenshi: true });
+        if (sc.id === 'dummy' && dummyOn) next = Object.assign({}, next, { dummySkin: true });
+        return next;
+      }));
     },
 
     refreshMenu() {
@@ -575,6 +580,20 @@
           case 'boom': BB.audio.play('boom', e); App.vibrate(30); break;
           case 'nova': BB.audio.play('kamiSlam'); App.shake = 18; App.vibrate(60); break; // Nova's supernova
           case 'death': BB.audio.play('death'); if (e.main) App.vibrate(60); if (e.main && e.kami) { App.kamiKill = true; App.kamiAsc = !!e.asc; } if (e.main && e.ballKill) App.ballKill = true; break;
+          case 'dummyAwaken': {
+            // D.U.M.M.Y. gets its own full-screen transformation cutscene, freezing combat like Tenshi.
+            App.impact = null;
+            App.cineQ = (App.cineQ || 0) + 1;
+            const go = () => {
+              App.cine = true;
+              BB.dummyAwaken(() => {
+                App.cine = false; App.last = performance.now(); App.shake = 18;
+                if (--App.cineQ > 0) go();
+              });
+            };
+            if (App.cineQ === 1) go();
+            break;
+          }
           case 'kami': {
             const cine = App.st().kamiCine !== false;
             if (e.k === 'dodge') { BB.audio.play('kamiDodge'); BB.meta.track('kamidodge', 1); break; }
