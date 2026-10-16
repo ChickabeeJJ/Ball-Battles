@@ -359,8 +359,70 @@
     ctx.restore();
   }
   BB.ballFinisher = ballFinisher;
+
+  // D.U.M.M.Y. finisher: the limiter text crashes through a glitch void, then the enemy shatters.
+  function dummyFinisher(R, imp) {
+    const ctx = R.ctx, W = R.c.width, H = R.c.height, T = imp.t, D = imp.dur || 3.8;
+    const cx = W / 2, cy = H / 2, U = Math.min(W, H);
+    const p = Math.max(0, Math.min(1, T / D)), hit = T >= 1.25, pop = hit ? Math.min(1, (T - 1.25) / 0.34) : 0;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = hit && T < 1.34 ? '#fff' : '#07050b'; ctx.fillRect(0, 0, W, H);
+    const g = ctx.createRadialGradient(cx, cy, U * 0.02, cx, cy, U * 0.78);
+    g.addColorStop(0, 'rgba(150,30,255,' + (0.12 + pop * 0.15) + ')');
+    g.addColorStop(0.52, 'rgba(255,20,65,' + (0.13 + pop * 0.19) + ')'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    // Scanlines and angular warning fragments
+    ctx.globalAlpha = 0.18;
+    for (let y = (T * 90) % 8; y < H; y += 8) { ctx.fillStyle = '#ff244d'; ctx.fillRect(0, y, W, 1); }
+    ctx.globalAlpha = 1;
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate((T * 0.04) % 0.09);
+    for (let i = 0; i < 30; i++) {
+      const a = i * TAU / 30 + T * 0.18, inner = U * (hit ? 0.12 + pop * 0.1 : 0.34), outer = U * (0.48 + 0.12 * Math.sin(i * 4.1 + T * 5));
+      ctx.beginPath(); ctx.moveTo(Math.cos(a) * inner, Math.sin(a) * inner);
+      ctx.lineTo(Math.cos(a + 0.035) * outer, Math.sin(a + 0.035) * outer);
+      ctx.strokeStyle = i % 2 ? 'rgba(255,36,77,0.7)' : 'rgba(162,89,255,0.8)';
+      ctx.lineWidth = i % 4 === 0 ? 4 : 1.4; ctx.stroke();
+    }
+    ctx.restore();
+    if (!hit) {
+      // A tiny target silhouette waits in the centre while D.U.M.M.Y. charges in.
+      ctx.beginPath(); ctx.arc(cx, cy, U * 0.09, 0, TAU); ctx.fillStyle = imp.foe || '#e8473f'; ctx.fill();
+      ctx.lineWidth = U * 0.012; ctx.strokeStyle = '#fff'; ctx.stroke();
+      const k = Math.min(1, T / 1.25), bx = cx - U * (0.75 - 0.68 * k), by = cy - U * (0.4 - 0.4 * k), br = U * (0.04 + 0.14 * k);
+      ctx.beginPath(); ctx.arc(bx, by, br, 0, TAU); ctx.fillStyle = '#ccc'; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = '#ff244d'; ctx.stroke();
+      ctx.font = '1000 ' + U * 0.105 + 'px "Arial Black",Impact,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.lineWidth = 8; ctx.strokeStyle = '#08060c'; ctx.strokeText('D.U.M.M.Y.', cx, cy + U * 0.29);
+      ctx.fillStyle = '#fff'; ctx.fillText('D.U.M.M.Y.', cx, cy + U * 0.29);
+      ctx.font = '900 ' + U * 0.026 + 'px monospace'; ctx.fillStyle = '#ff4a70'; ctx.fillText('YOU LAUGHED. YOU POINTED. YOU PUSHED.', cx, cy + U * 0.37);
+    } else {
+      const k = Math.max(0, Math.min(1, (T - 1.25) / 0.48));
+      for (let i = 0; i < 34; i++) {
+        const a = i * TAU / 34 + 0.13, d = U * (0.08 + k * (0.18 + (i % 5) * 0.12)), r = U * (0.014 + (i % 3) * 0.008);
+        ctx.save(); ctx.translate(cx + Math.cos(a) * d, cy + Math.sin(a) * d); ctx.rotate(a + T * 2);
+        ctx.beginPath(); ctx.moveTo(-r, -r * 0.5); ctx.lineTo(r * 1.6, 0); ctx.lineTo(-r * 0.2, r * 1.4); ctx.closePath();
+        ctx.fillStyle = ['#ff244d','#a259ff','#ffffff','#e4e4e7'][i % 4]; ctx.fill(); ctx.strokeStyle = '#050407'; ctx.lineWidth = 2; ctx.stroke(); ctx.restore();
+      }
+      const scale = 0.85 + (1 - Math.exp(-T * 2)) * 0.23;
+      ctx.save(); ctx.translate(cx, cy - U * 0.045); ctx.scale(scale, scale);
+      ctx.font = '1000 ' + U * 0.16 + 'px "Arial Black",Impact,sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.lineWidth = U * 0.026; ctx.strokeStyle = '#09070d'; ctx.strokeText('DUMMY?', 0, 0);
+      ctx.fillStyle = '#fff'; ctx.fillText('DUMMY?', 0, 0);
+      ctx.lineWidth = 2; ctx.strokeStyle = '#ff244d'; ctx.strokeText('DUMMY?', 4, -3);
+      ctx.restore();
+      ctx.font = '900 ' + U * 0.045 + 'px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.lineWidth = 6; ctx.strokeStyle = '#08060c'; ctx.strokeText('D.U.M.M.Y.????????????????????', cx, cy + U * 0.22);
+      ctx.fillStyle = '#ff5578'; ctx.fillText('D.U.M.M.Y.????????????????????', cx, cy + U * 0.22);
+      if (T < 1.9 && T > 1.3) { ctx.fillStyle = 'rgba(255,255,255,' + (1 - (T - 1.3) / 0.6) + ')'; ctx.fillRect(0, 0, W, H); }
+    }
+    const fade = T > D - 0.35 ? (T - (D - 0.35)) / 0.35 : 0;
+    if (fade > 0) { ctx.fillStyle = 'rgba(0,0,0,' + fade + ')'; ctx.fillRect(0, 0, W, H); }
+    ctx.restore();
+  }
+  BB.dummyFinisher = dummyFinisher;
+
   const baseImpact = BB.impactFrame;
   BB.impactFrame = function (R, imp, scale, sx, sy) {
+    if (imp.dummyFin) return dummyFinisher(R, imp);
     if (imp.ballFin) return ballFinisher(R, imp);
     return baseImpact(R, imp, scale, sx, sy);
   };
@@ -395,6 +457,18 @@
         ctx.lineTo(b.x + side * b.r * 1.27, b.y + sy - (i - 1.5) * b.r * 0.3);
         ctx.strokeStyle = '#d8b7ff'; ctx.lineWidth = Math.max(1.4, b.r * 0.055); ctx.stroke();
       }
+      ctx.restore();
+    }
+    // D.U.M.M.Y. has a small, cool grey halo even before awakening.
+    if (b.def.id === 'dummy' && b.dummySkin) {
+      ctx.save();
+      const glow = ctx.createRadialGradient(b.x, b.y, b.r * 0.65, b.x, b.y, b.r * 1.8);
+      glow.addColorStop(0, 'rgba(215,218,225,0.16)');
+      glow.addColorStop(0.62, 'rgba(170,176,190,0.11)');
+      glow.addColorStop(1, 'rgba(160,165,180,0)');
+      ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 1.8, 0, TAU); ctx.fill();
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 1.14, 0, TAU);
+      ctx.strokeStyle = 'rgba(195,200,210,0.3)'; ctx.lineWidth = Math.max(1.5, b.r * 0.045); ctx.stroke();
       ctx.restore();
     }
     // the supernova sits under the ball (drawn from where it went off, even if Nova has moved since)
