@@ -1704,3 +1704,8 @@ body.dark #btnGift.ready { background:linear-gradient(145deg,#665020,#3c301b); c
 .mv-roll-result { margin-top:12px; color:#ffd23f; font-family:var(--display); font-size:24px; text-align:center; letter-spacing:.08em; text-shadow:0 3px 0 #111; }
 @media (max-width:430px) { .mv-grid,.mv-roll-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; } .mv-footer { align-items:stretch; flex-direction:column; } .mv-footer button { width:100%; } }
 @media (prefers-reduced-motion:reduce) { #btnGift.ready,#btnQuests.ready,#btnPass.hot,#bpStrip.hot,.feat.ready { animation:none; } }
+
+.mv-preview { display:block; width:100%; aspect-ratio:1.35; height:auto; object-fit:cover; border-radius:5px; background:#191820; border:1px solid rgba(255,255,255,.08); }
+.mv-card b,.mv-roll-card b { display:block; margin-top:4px; font-family:var(--display); font-size:clamp(12px,2.4vw,16px); line-height:1.05; }
+.mv-roll-card { display:flex; flex-direction:column; }
+@media (max-width:430px) { .mv-preview { aspect-ratio:1.5; } }
