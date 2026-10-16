@@ -157,6 +157,7 @@
         ctx.fillStyle=i%4===0?'#9d0a26':'#160911'; ctx.fill();
       }
       ctx.restore();
+    }
 
     ctx.restore();
   }
