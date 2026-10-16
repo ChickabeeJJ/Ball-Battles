@@ -1760,8 +1760,13 @@ body.ui-hidden #btnHideUI.hide-ui-btn { display:none!important; }
 .fo { --fo-scale:1; --fo-title-offset:150px; }
 .fo-core { transform:scale(var(--fo-scale)); transform-origin:top left; }
 .fo-txt { top:calc(42% + var(--fo-title-offset)); }
-.fo-t { font-size:clamp(52px, 4.25vw, 88px); }
-.fo-s { font-size:clamp(16px, 1.35vw, 24px); }
+.fo-t { font-size:clamp(56px, 5.2vw, 104px); }
+.fo-s { font-size:clamp(18px, 1.65vw, 28px); line-height:1.25; }
+@media (min-width:1200px) {
+  .fo-txt { padding-left:clamp(28px, 4vw, 80px); padding-right:clamp(28px, 4vw, 80px); }
+  .fo-ring { border-width:4px; }
+  .fo-balls img { width:52px; height:52px; left:-26px; top:-26px; }
+}
 @media (max-width:700px) {
   .fo-t { font-size:clamp(40px, 7.5vw, 58px); }
   .fo-s { font-size:clamp(13px, 3.4vw, 17px); }
