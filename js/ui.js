@@ -573,7 +573,9 @@
       const vw = window.innerWidth || 1024, vh = window.innerHeight || 768;
       // Make the ring and ball orbit substantially larger on desktop, and fit to the
       // limiting viewport dimension so the title remains visible on short/mobile screens.
-      const scale = Math.max(0.68, Math.min(3, vw / 540, vh / 390));
+      // Scale to both width and height. On desktop this makes the ring reveal about twice
+      // as large as the original, while short screens keep enough room for the title below it.
+      const scale = Math.max(0.64, Math.min(2.8, vw / 480, vh / 420));
       f.style.setProperty('--fo-scale', scale.toFixed(3));
       f.style.setProperty('--fo-title-offset', Math.round(150 * scale) + 'px');
       const stars = Array.from({ length: 36 }, () => `<i style="left:${Math.random() * 100}%;top:${Math.random() * 100}%;animation-delay:${(Math.random() * 2).toFixed(2)}s;--s:${(1 + Math.random() * 2).toFixed(1)}px"></i>`).join('');
