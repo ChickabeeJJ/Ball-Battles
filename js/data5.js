@@ -11,14 +11,16 @@
   }
   function drawVerityFace(ctx, x, y, r, stage) {
     stage = Math.max(0, Math.min(2, stage | 0));
-    const colors = ['#f5f51d', '#e8f32b', '#e6f22a'];
+    const colors = ['#f5f51d', '#e8f32b', '#78866b'];
     ctx.save();
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     const g = ctx.createRadialGradient(x - r * 0.28, y - r * 0.36, r * 0.05, x, y, r * 1.08);
-    g.addColorStop(0, stage === 2 ? '#faff69' : '#ffff35');
-    g.addColorStop(0.55, colors[stage]); g.addColorStop(1, stage === 2 ? '#c4d91c' : '#e2df08');
-    ctx.beginPath(); ctx.arc(x, y, r * 0.98, 0, TAU); ctx.fillStyle = g; ctx.fill();
-    ctx.lineWidth = Math.max(1.8, r * 0.075); ctx.strokeStyle = '#171820'; ctx.stroke();
+    g.addColorStop(0, stage === 2 ? '#d0d9b0' : '#ffff35');
+    g.addColorStop(0.55, colors[stage]); g.addColorStop(1, stage === 2 ? '#202a20' : '#e2df08');
+    ctx.beginPath(); ctx.arc(x, y, r * 0.98, 0, TAU);
+    if (stage === 2) { ctx.shadowColor = 'rgba(105,0,18,.7)'; ctx.shadowBlur = r * (.18 + .06 * (0.5 + 0.5 * Math.sin(Date.now() * .003))); }
+    ctx.fillStyle = g; ctx.fill(); ctx.shadowBlur = 0;
+    ctx.lineWidth = Math.max(1.8, r * 0.075); ctx.strokeStyle = stage === 2 ? '#07090a' : '#171820'; ctx.stroke();
 
     if (stage === 0) {
       // Happy: classic oval eyes and a broad, unmistakable smile.
@@ -125,48 +127,110 @@
       ctx.beginPath(); ctx.ellipse(x,y-r*.415,r*.018,r*.055,0,0,TAU);
       ctx.fillStyle='#ff193d'; ctx.shadowColor='#ff0035'; ctx.shadowBlur=r*.12; ctx.fill(); ctx.shadowBlur=0;
 
-      // The mouth is a split, blood-dark cavity with multiple rows of long, uneven teeth.
+      // The jaw is torn far beyond a normal smile: a vertical, irregular wound full of teeth.
       ctx.beginPath();
-      ctx.moveTo(x-r*.54,y+r*.015);
-      ctx.lineTo(x-r*.48,y+r*.20); ctx.lineTo(x-r*.40,y+r*.29);
-      ctx.lineTo(x-r*.29,y+r*.25); ctx.lineTo(x-r*.17,y+r*.40);
-      ctx.lineTo(x-r*.06,y+r*.34); ctx.lineTo(x+r*.05,y+r*.44);
-      ctx.lineTo(x+r*.16,y+r*.31); ctx.lineTo(x+r*.29,y+r*.35);
-      ctx.lineTo(x+r*.40,y+r*.24); ctx.lineTo(x+r*.49,y+r*.19);
-      ctx.lineTo(x+r*.54,y+r*.015);
-      ctx.quadraticCurveTo(x,y-r*.075,x-r*.54,y+r*.015);
+      ctx.moveTo(x-r*.57,y+r*.015);
+      ctx.lineTo(x-r*.51,y+r*.15); ctx.lineTo(x-r*.43,y+r*.22);
+      ctx.lineTo(x-r*.34,y+r*.17); ctx.lineTo(x-r*.25,y+r*.31);
+      ctx.lineTo(x-r*.15,y+r*.43); ctx.lineTo(x-r*.055,y+r*.38);
+      ctx.lineTo(x+r*.035,y+r*.49); ctx.lineTo(x+r*.13,y+r*.35);
+      ctx.lineTo(x+r*.24,y+r*.42); ctx.lineTo(x+r*.33,y+r*.26);
+      ctx.lineTo(x+r*.44,y+r*.23); ctx.lineTo(x+r*.52,y+r*.13);
+      ctx.lineTo(x+r*.57,y+r*.015);
+      ctx.quadraticCurveTo(x+r*.28,y-r*.10,x+r*.10,y+r*.025);
+      ctx.quadraticCurveTo(x-r*.10,y-r*.10,x-r*.57,y+r*.015);
       ctx.closePath();
-      ctx.fillStyle='#080308'; ctx.fill(); ctx.lineWidth=r*.05; ctx.strokeStyle='#32040e'; ctx.stroke();
+      ctx.fillStyle='#030205'; ctx.fill();
+      ctx.lineWidth=r*.055; ctx.strokeStyle='#21030b'; ctx.stroke();
 
-      // Uneven upper fangs and broken lower teeth.
-      for (let i=0;i<9;i++) {
-        const tx=x-r*.43+i*r*.107, top=y+r*(.055+((i%3===0)?-.012:0));
-        const tw=r*(i%3===0?.083:.062), th=r*(i%4===1?.17:.115);
-        ctx.beginPath(); ctx.moveTo(tx-tw*.5,top); ctx.lineTo(tx+tw*.5,top+r*.025);
-        ctx.lineTo(tx+tw*.04,top+th); ctx.closePath();
-        ctx.fillStyle=i%3===0?'#d9d4cf':'#f1e7d5'; ctx.fill();
-        ctx.strokeStyle='#5c3c42'; ctx.lineWidth=r*.009; ctx.stroke();
+      // Torn, bruised gums and a wet bloodline around the wound.
+      ctx.beginPath(); ctx.moveTo(x-r*.49,y+r*.115);
+      ctx.quadraticCurveTo(x-r*.20,y+r*.055,x-r*.03,y+r*.14);
+      ctx.quadraticCurveTo(x+r*.20,y+r*.04,x+r*.49,y+r*.11);
+      ctx.strokeStyle='#870018'; ctx.lineWidth=r*.075; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x-r*.38,y+r*.205);
+      ctx.quadraticCurveTo(x,y+r*.31,x+r*.37,y+r*.22);
+      ctx.strokeStyle='#d0062b'; ctx.lineWidth=r*.022; ctx.stroke();
+
+      // Long, needle-like fangs with damaged, blackened gaps between them.
+      for (let i=0;i<11;i++) {
+        const tx=x-r*.46+i*r*.091;
+        const top=y+r*(.095+((i%4===0)?-.055:(i%3===0?.018:0)));
+        const tw=r*(i%3===0?.078:.060), th=r*(i%4===0?.205:(i%3===1?.14:.105));
+        ctx.beginPath(); ctx.moveTo(tx-tw*.55,top); ctx.lineTo(tx+tw*.5,top+r*.025);
+        ctx.lineTo(tx+tw*(i%2?.03:-.13),top+th); ctx.closePath();
+        ctx.fillStyle=i%4===0?'#c5c0b4':'#eee4d3'; ctx.fill();
+        ctx.strokeStyle='#362126'; ctx.lineWidth=r*.012; ctx.stroke();
+        if (i%3===0) {
+          ctx.beginPath(); ctx.moveTo(tx,top+th*.35); ctx.lineTo(tx+tw*.12,top+th*.6);
+          ctx.strokeStyle='#8b0821'; ctx.lineWidth=r*.012; ctx.stroke();
+        }
       }
-      for (let i=0;i<7;i++) {
-        const tx=x-r*.37+i*r*.122, baseY=y+r*.315;
-        const tw=r*(i%2===0?.08:.055), th=r*(i%3===0?.13:.085);
-        ctx.beginPath(); ctx.moveTo(tx-tw*.5,baseY); ctx.lineTo(tx+tw*.5,baseY-r*.015);
-        ctx.lineTo(tx-tw*.04,baseY-th); ctx.closePath();
-        ctx.fillStyle='#c6bdb7'; ctx.fill(); ctx.strokeStyle='#5c3c42'; ctx.lineWidth=r*.009; ctx.stroke();
+      for (let i=0;i<8;i++) {
+        const tx=x-r*.39+i*r*.112, baseY=y+r*.34;
+        const tw=r*(i%2===0?.075:.052), th=r*(i%3===0?.15:.09);
+        ctx.beginPath(); ctx.moveTo(tx-tw*.52,baseY); ctx.lineTo(tx+tw*.5,baseY-r*.022);
+        ctx.lineTo(tx+tw*.02,baseY-th); ctx.closePath();
+        ctx.fillStyle='#b9b7af'; ctx.fill(); ctx.strokeStyle='#3b2028'; ctx.lineWidth=r*.011; ctx.stroke();
       }
 
-      // A torn, twitching tongue hangs through the teeth; black drool threads split away.
-      ctx.beginPath(); ctx.moveTo(x-r*.10,y+r*.31);
-      ctx.quadraticCurveTo(x-r*.01,y+r*.48,x+r*.035,y+r*.59);
-      ctx.lineTo(x+r*.12,y+r*.65); ctx.lineTo(x+r*.105,y+r*.48);
-      ctx.quadraticCurveTo(x+r*.07,y+r*.36,x+r*.10,y+r*.30);
-      ctx.closePath(); ctx.fillStyle='#6e001b'; ctx.fill();
-      ctx.strokeStyle='#d40b31'; ctx.lineWidth=r*.018; ctx.stroke();
+      // A split tongue and black saliva hang from the wound; each strand ends in a heavy drop.
+      ctx.beginPath(); ctx.moveTo(x-r*.08,y+r*.34);
+      ctx.bezierCurveTo(x-r*.13,y+r*.45,x-r*.045,y+r*.54,x-r*.015,y+r*.66);
+      ctx.lineTo(x+r*.075,y+r*.72); ctx.lineTo(x+r*.095,y+r*.53);
+      ctx.quadraticCurveTo(x+r*.12,y+r*.41,x+r*.12,y+r*.32);
+      ctx.closePath(); ctx.fillStyle='#690018'; ctx.fill();
+      ctx.strokeStyle='#e00832'; ctx.lineWidth=r*.016; ctx.stroke();
+      for (const strand of [
+        [x-r*.40,y+r*.25,x-r*.47,y+r*.42,x-r*.43,y+r*.55],
+        [x+r*.42,y+r*.25,x+r*.48,y+r*.39,x+r*.45,y+r*.58],
+        [x+r*.22,y+r*.38,x+r*.28,y+r*.49,x+r*.26,y+r*.62]
+      ]) {
+        ctx.beginPath(); ctx.moveTo(strand[0],strand[1]);
+        ctx.quadraticCurveTo(strand[2],strand[3],strand[4],strand[5]);
+        ctx.strokeStyle='#09050a'; ctx.lineWidth=r*.034; ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(strand[4],strand[5]+r*.025,r*.022,r*.042,.1,0,TAU);
+        ctx.fillStyle='#120208'; ctx.fill();
+      }
+
+      // Split, surgical-looking cuts across the brow and cheeks, with wet crimson edges.
+      const gashes=[
+        [-.06,-.82,-.01,-.68,.07,-.57],
+        [-.52,-.38,-.41,-.31,-.43,-.17],
+        [.52,-.39,.40,-.30,.42,-.15],
+        [-.66,.02,-.52,.06,-.47,.14],
+        [.66,.02,.52,.08,.47,.15],
+        [-.30,.48,-.22,.57,-.25,.67],
+        [.31,.49,.23,.60,.28,.68]
+      ];
+      for (let i=0;i<gashes.length;i++) {
+        const q=gashes[i];
+        ctx.beginPath(); ctx.moveTo(x+q[0]*r,y+q[1]*r);
+        ctx.quadraticCurveTo(x+q[2]*r,y+q[3]*r,x+q[4]*r,y+q[5]*r);
+        ctx.strokeStyle='#09060a'; ctx.lineWidth=r*(i===0?.075:.052); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x+q[0]*r,y+q[1]*r);
+        ctx.quadraticCurveTo(x+q[2]*r,y+q[3]*r,x+q[4]*r,y+q[5]*r);
+        ctx.strokeStyle='rgba(176,0,34,.85)'; ctx.lineWidth=r*.014; ctx.stroke();
+      }
+
+      // Tiny extra eyes at the temples make the face look biologically wrong.
       for (const side of [-1,1]) {
-        ctx.beginPath(); ctx.moveTo(x+side*r*.39,y+r*.24);
-        ctx.quadraticCurveTo(x+side*r*.46,y+r*.43,x+side*r*(.43+.02*pulse),y+r*.52);
-        ctx.strokeStyle='#080308'; ctx.lineWidth=r*.022; ctx.stroke();
-        ctx.beginPath(); ctx.arc(x+side*r*.43,y+r*.525,r*.022,0,TAU); ctx.fillStyle='#090308'; ctx.fill();
+        const ex=x+side*r*.48, ey=y-r*.015;
+        ctx.save(); ctx.translate(ex,ey); ctx.rotate(side*.2);
+        ctx.beginPath(); ctx.ellipse(0,0,r*.075,r*.045,0,0,TAU);
+        ctx.fillStyle='#030205'; ctx.fill();
+        ctx.beginPath(); ctx.ellipse(side*r*.008,0,r*.020,r*.034,0,0,TAU);
+        ctx.fillStyle='#ff1037'; ctx.shadowColor='#ff0038'; ctx.shadowBlur=r*.055; ctx.fill(); ctx.shadowBlur=0;
+        ctx.restore();
+      }
+
+      // Diseased skin pocks: fixed, irregular clusters so each frame stays coherent.
+      for (let i=0;i<37;i++) {
+        const a=i*2.39996, rr=r*(.48+((i*17)%31)/100);
+        const px=x+Math.cos(a)*rr, py=y+Math.sin(a)*rr;
+        const pr=r*(.007+((i*13)%5)*.003);
+        ctx.beginPath(); ctx.arc(px,py,pr,0,TAU);
+        ctx.fillStyle=i%5===0?'rgba(211,0,41,.8)':'rgba(5,4,9,.7)'; ctx.fill();
       }
 
       // Fine cracks and dark pinholes make the whole smiling face feel wrong.
