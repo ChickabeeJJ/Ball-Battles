@@ -539,10 +539,41 @@
     // Dedicated Verity rendering: return immediately so no generic ball art can obscure its face.
     if (b.def.id === 'verity') {
       const stage = Math.min(2, b.w.stage || 0);
-      if (stage > 0) {
-        ctx.save(); ctx.beginPath(); ctx.arc(b.x, b.y, b.r * (1.15 + 0.08 * Math.sin(sim.t * 12)), 0, TAU);
-        ctx.strokeStyle = stage === 2 ? 'rgba(255,35,62,0.85)' : 'rgba(255,170,35,0.68)';
-        ctx.lineWidth = Math.max(2, b.r * 0.09); ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = b.r * 0.45; ctx.stroke(); ctx.restore();
+      if (stage === 2) {
+        // The final form distorts the space around itself: a bruised shadow, jagged black spines and a pulse of warning-red light.
+        ctx.save();
+        const pulse = 0.5 + 0.5 * Math.sin(sim.t * 8);
+        const haze = ctx.createRadialGradient(b.x, b.y, b.r * .68, b.x, b.y, b.r * 2.05);
+        haze.addColorStop(0, 'rgba(20,0,9,.12)');
+        haze.addColorStop(.42, 'rgba(73,0,20,' + (.22 + pulse*.12) + ')');
+        haze.addColorStop(.72, 'rgba(15,0,10,.22)');
+        haze.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = haze; ctx.beginPath(); ctx.arc(b.x,b.y,b.r*2.05,0,TAU); ctx.fill();
+        ctx.translate(b.x,b.y);
+        for(let i=0;i<19;i++){
+          const a = i*TAU/19 + Math.sin(sim.t*2.3+i*1.7)*.065;
+          const inner = b.r*(.94 + .035*Math.sin(i*3.1));
+          const tip = b.r*(1.27 + .17*Math.sin(sim.t*5+i*2.2));
+          const side = b.r*(1.02 + .07*Math.cos(sim.t*4+i));
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(a-.095)*inner,Math.sin(a-.095)*inner);
+          ctx.lineTo(Math.cos(a)*tip,Math.sin(a)*tip);
+          ctx.lineTo(Math.cos(a+.09)*side,Math.sin(a+.09)*side);
+          ctx.closePath();
+          ctx.fillStyle = i%3===0 ? '#18030d' : '#08060b'; ctx.fill();
+          ctx.lineWidth = Math.max(1,b.r*.025);
+          ctx.strokeStyle = i%2===0 ? 'rgba(179,0,35,.85)' : 'rgba(15,0,9,.95)';
+          ctx.stroke();
+        }
+        ctx.setTransform(1,0,0,1,0,0);
+        ctx.beginPath(); ctx.arc(b.x,b.y,b.r*(1.12+.06*pulse),0,TAU);
+        ctx.strokeStyle='rgba(255,16,54,'+(.42+.4*pulse)+')';
+        ctx.lineWidth=Math.max(2,b.r*.055); ctx.shadowColor='#ff0035'; ctx.shadowBlur=b.r*(.32+.24*pulse); ctx.stroke();
+        ctx.restore();
+      } else if (stage === 1) {
+        ctx.save(); ctx.beginPath(); ctx.arc(b.x,b.y,b.r*(1.15+.08*Math.sin(sim.t*12)),0,TAU);
+        ctx.strokeStyle='rgba(255,170,35,.68)'; ctx.lineWidth=Math.max(2,b.r*.09);
+        ctx.shadowColor=ctx.strokeStyle; ctx.shadowBlur=b.r*.45; ctx.stroke(); ctx.restore();
       }
       drawVerityFace(ctx, b.x, b.y, b.r, stage);
       return;
