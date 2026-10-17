@@ -70,32 +70,52 @@
         ctx.strokeStyle = 'rgba(111,10,27,0.72)'; ctx.lineWidth = r*.014; ctx.stroke();
       }
 
-      // Hollow, unequal eye sockets — the red light is deep inside, not a cute pupil.
+      // Asymmetric sockets: one cavernous, one almost sewn shut. The mismatch is more unsettling than a tidy monster face.
       for (const side of [-1,1]) {
-        const ex=x+side*r*.29, ey=y-r*.17;
-        ctx.save(); ctx.translate(ex,ey); ctx.rotate(side*.12);
-        ctx.shadowColor='#d00028'; ctx.shadowBlur=r*(.12+.08*pulse);
+        const ex = x + side * r * (side < 0 ? .285 : .315);
+        const ey = y - r * (side < 0 ? .155 : .18);
+        ctx.save();
+        ctx.translate(ex, ey);
+        ctx.rotate(side < 0 ? -.24 : .19);
+        ctx.shadowColor = '#f0002e'; ctx.shadowBlur = r * (.2 + .15 * pulse);
         ctx.beginPath();
-        ctx.moveTo(-r*.19,-r*.11); ctx.lineTo(-r*.12,-r*.20); ctx.lineTo(r*.06,-r*.22);
-        ctx.lineTo(r*.20,-r*.08); ctx.lineTo(r*.16,r*.12); ctx.lineTo(r*.01,r*.17);
-        ctx.lineTo(-r*.17,r*.09); ctx.closePath();
-        ctx.fillStyle='#030205'; ctx.fill(); ctx.shadowBlur=0;
-        ctx.beginPath(); ctx.ellipse(side*r*.008,r*.005,r*.034,r*(.105+.018*pulse),side*.16,0,TAU);
-        ctx.fillStyle='#9c001b'; ctx.fill();
-        ctx.beginPath(); ctx.ellipse(side*r*.008,r*.005,r*.013,r*.073,side*.16,0,TAU);
-        ctx.fillStyle='#ff173e'; ctx.fill();
-        ctx.beginPath(); ctx.arc(-side*r*.026,-r*.052,r*.014,0,TAU); ctx.fillStyle='#fff0ea'; ctx.fill();
+        if (side < 0) {
+          ctx.moveTo(-r*.255,-r*.10); ctx.lineTo(-r*.18,-r*.225); ctx.lineTo(-r*.015,-r*.255);
+          ctx.lineTo(r*.19,-r*.19); ctx.lineTo(r*.245,-r*.015); ctx.lineTo(r*.155,r*.17);
+          ctx.lineTo(-r*.035,r*.205); ctx.lineTo(-r*.22,r*.115);
+        } else {
+          ctx.moveTo(-r*.18,-r*.045); ctx.lineTo(-r*.04,-r*.13); ctx.lineTo(r*.18,-r*.075);
+          ctx.lineTo(r*.145,r*.03); ctx.lineTo(r*.015,r*.095); ctx.lineTo(-r*.16,r*.045);
+        }
+        ctx.closePath(); ctx.fillStyle = '#010105'; ctx.fill(); ctx.shadowBlur = 0;
+
+        // The large socket has a vertical, fever-red pupil that jitters slightly; the small socket barely opens.
+        if (side < 0) {
+          ctx.beginPath(); ctx.ellipse(r*.015, r*.015, r*(.052+.012*pulse), r*(.145+.018*pulse), -.08, 0, TAU);
+          ctx.fillStyle = '#820016'; ctx.fill();
+          ctx.beginPath(); ctx.ellipse(r*.012, r*.01, r*.019, r*(.114+.012*pulse), -.08, 0, TAU);
+          ctx.fillStyle = '#ff103b'; ctx.fill();
+          ctx.beginPath(); ctx.arc(-r*.02, -r*.07, r*.018, 0, TAU); ctx.fillStyle = '#fff3e8'; ctx.fill();
+        } else {
+          ctx.beginPath(); ctx.ellipse(r*.015, r*.008, r*.019, r*.057, -.12, 0, TAU);
+          ctx.fillStyle = '#ff163b'; ctx.fill();
+          ctx.beginPath(); ctx.arc(-r*.018, -r*.025, r*.009, 0, TAU); ctx.fillStyle = '#fff3e8'; ctx.fill();
+        }
         ctx.restore();
 
-        // Wet dark-red trails fall from each socket and end in irregular drops.
-        ctx.beginPath(); ctx.moveTo(ex+side*r*.065,ey+r*.11);
-        ctx.bezierCurveTo(ex+side*r*.10,ey+r*.23,ex+side*r*.04,ey+r*.31,ex+side*r*.095,ey+r*.41);
-        ctx.strokeStyle='#470410'; ctx.lineWidth=r*.075; ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(ex+side*r*.065,ey+r*.12);
-        ctx.quadraticCurveTo(ex+side*r*.055,ey+r*.27,ex+side*r*.095,ey+r*.39);
-        ctx.strokeStyle='#b00024'; ctx.lineWidth=r*.026; ctx.stroke();
-        ctx.beginPath(); ctx.ellipse(ex+side*r*.095,ey+r*.425,r*.032,r*.06,side*.12,0,TAU);
-        ctx.fillStyle='#790015'; ctx.fill();
+        // Long red-black tears with branching veins growing out of each eye.
+        const tearX = ex + side * r * (side < 0 ? .08 : .045);
+        ctx.beginPath(); ctx.moveTo(tearX, ey + r*.09);
+        ctx.bezierCurveTo(tearX+side*r*.08, ey+r*.20, tearX-side*r*.025, ey+r*.32, tearX+side*r*.055, ey+r*(.46+.025*pulse));
+        ctx.strokeStyle = '#160208'; ctx.lineWidth = r*.10; ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(tearX, ey + r*.11);
+        ctx.bezierCurveTo(tearX+side*r*.04, ey+r*.23, tearX-side*r*.015, ey+r*.32, tearX+side*r*.055, ey+r*.445);
+        ctx.strokeStyle = '#b9002a'; ctx.lineWidth = r*.025; ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(tearX+side*r*.025, ey+r*.24);
+        ctx.lineTo(tearX+side*r*.105, ey+r*.30); ctx.lineTo(tearX+side*r*.12, ey+r*.365);
+        ctx.strokeStyle = '#2a050f'; ctx.lineWidth = r*.022; ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(tearX+side*r*.055, ey+r*.47, r*.035, r*.065, side*.25, 0, TAU);
+        ctx.fillStyle = '#790015'; ctx.fill();
       }
 
       // A third slit-eye, almost hidden in the cracked forehead.
