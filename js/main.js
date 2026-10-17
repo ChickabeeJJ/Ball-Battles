@@ -843,7 +843,21 @@
       window.addEventListener('keyup', (e) => { App.keys[e.code] = false; });
       window.addEventListener('blur', () => { App.keys = {}; });
       window.addEventListener('contextmenu', (e) => e.preventDefault());
-      window.addEventListener('pointerdown', () => BB.audio.unlock(), { capture: true });
+      // On touch screens the Hide UI button disappears completely; tapping its old
+      // viewport-corner position restores the HUD. H remains the desktop shortcut.
+      window.addEventListener('pointerdown', (e) => {
+        if (document.body.classList.contains('ui-hidden') &&
+            App.state === 'battle' && !App.cine && !App.resultsShown &&
+            e.clientX >= window.innerWidth - 52 &&
+            e.clientY >= window.innerHeight - 52) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          BB.audio.unlock();
+          App.toggleUI();
+          return;
+        }
+        BB.audio.unlock();
+      }, { capture: true });
       document.addEventListener('visibilitychange', () => {
         // no auto-pause: switching tabs just mutes, and the battle resumes where it was
         App.applyAudio();
