@@ -1802,29 +1802,34 @@ body.ui-hidden #btnHideUI.hide-ui-btn { display:none!important; }
 @keyframes dmy-particle { 0% { opacity:0; transform:translate(0,0) rotate(45deg) scale(.6); } 20% { opacity:.95; } 100% { opacity:0; transform:translate(var(--dx,20px),var(--dy,-90px)) rotate(280deg) scale(0); } }
 
 
-/* Hide UI lives directly under <body>, outside the scaled arena, so it tracks the player's viewport. */
+/* Hide UI is a direct body child and fixed to the player's actual viewport, never the arena. */
 #btnHideUI.hide-ui-btn {
   position:fixed!important;
-  /* Match the screen-edge breathing room used by the regular icon buttons. */
-  right:calc(8px + env(safe-area-inset-right, 0px))!important;
-  bottom:calc(8px + env(safe-area-inset-bottom, 0px))!important;
+  right:0!important; bottom:0!important;
   left:auto!important; top:auto!important;
   width:40px!important; height:40px!important;
-  margin:0!important; transform:none!important;
+  margin:0!important; padding:0!important;
+  transform:none!important; zoom:1!important;
   z-index:100520!important;
   touch-action:manipulation;
 }
 body.game-battle-active #btnHideUI.hide-ui-btn { display:grid!important; }
-body.ui-hidden #btnHideUI.hide-ui-btn {
-  display:grid!important;
-  opacity:0!important;
-  pointer-events:auto!important;
-  background:transparent!important;
-  border-color:transparent!important;
-  box-shadow:none!important;
-  color:transparent!important;
+/* Fully remove the icon when hidden; H or tapping the same screen corner restores the HUD. */
+body.ui-hidden #btnHideUI.hide-ui-btn { display:none!important; }
+
+/* First-battle YOUR TURN reveal: make the whole orbit larger on desktop, while remaining responsive. */
+.fo-core { transform:scale(var(--fo-scale)); transform-origin:top left; }
+.fo-ring { border-width:clamp(3px, .24vw, 5px); }
+.fo-ring.r2 { border-width:clamp(2px, .18vw, 4px); }
+.fo-balls img { width:34px; height:34px; left:-17px; top:-17px; }
+.fo-txt { top:calc(42% + var(--fo-title-offset)); }
+.fo-t { font-size:clamp(42px, 5.4vw, 104px); }
+.fo-s { font-size:clamp(15px, 1.7vw, 26px); margin-top:clamp(8px, 1.1vw, 16px); }
+@media (max-width:700px) {
+  .fo-t { font-size:clamp(40px, 7.5vw, 58px); }
+  .fo-s { font-size:clamp(13px, 3.4vw, 17px); }
+  .fo-balls img { width:32px; height:32px; left:-16px; top:-16px; }
 }
-body.ui-hidden #btnHideUI.hide-ui-btn svg { opacity:0!important; }
 
 /* The actual Dummy icon anchors the awakening message. */
 .dmy-message .dmy-icon {
