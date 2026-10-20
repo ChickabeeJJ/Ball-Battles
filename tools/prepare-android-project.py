@@ -54,7 +54,7 @@ if args.enable_release_signing:
     open_brace = gradle.find("{", block_start)
     depth, end = 1, open_brace + 1
     while end < len(gradle) and depth:
-        if gradle[end] == "{':
+        if gradle[end] == "{":
             depth += 1
         elif gradle[end] == "}":
             depth -= 1
