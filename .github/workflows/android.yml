@@ -112,7 +112,7 @@ jobs:
           PLAY_KEYSTORE_PATH: ${{ runner.temp }}/throwaway-ci-key.jks
           PLAY_KEYSTORE_PASSWORD: temporary-ci-store-97241
           PLAY_KEY_ALIAS: temporary-ci-key
-          PLAY_KEY_PASSWORD: temporary-ci-key-97241
+          PLAY_KEY_PASSWORD: temporary-ci-store-97241
         run: |
           set -euo pipefail
           keytool -genkeypair -noprompt \
