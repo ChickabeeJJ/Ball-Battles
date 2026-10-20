@@ -31,7 +31,7 @@ The workflow builds a signed release `.aab` only after all four GitHub Actions r
 - `PLAY_KEY_ALIAS`: key alias.
 - `PLAY_KEY_PASSWORD`: key password.
 
-For a **new app**, create an upload key on a trusted local machine and keep the original keystore and passwords safe. Never commit the keystore, upload it as a public artifact, or paste it into chat. Example command:
+For a **new app**, create an upload key on a trusted local machine and keep the original keystore and passwords safe. Never commit the keystore, upload it as a public artifact, or paste it into chat. For the simplest setup, use the **same password** for the keystore and key (this is recommended with Java's default PKCS#12 keystore format). Put that same password in both the `PLAY_KEYSTORE_PASSWORD` and `PLAY_KEY_PASSWORD` secrets. Example command:
 
 ```sh
 keytool -genkeypair -v -keystore upload-keystore.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000
