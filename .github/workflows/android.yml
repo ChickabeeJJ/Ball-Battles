@@ -106,6 +106,26 @@ jobs:
           echo "$PLAY_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/play-upload-key.jks"
           echo "configured=true" >> "$GITHUB_OUTPUT"
 
+      - name: Verify release bundle build with a disposable key
+        if: steps.signing.outputs.configured != 'true'
+        env:
+          PLAY_KEYSTORE_PATH: ${{ runner.temp }}/throwaway-ci-key.jks
+          PLAY_KEYSTORE_PASSWORD: temporary-ci-store-97241
+          PLAY_KEY_ALIAS: temporary-ci-key
+          PLAY_KEY_PASSWORD: temporary-ci-key-97241
+        run: |
+          set -euo pipefail
+          keytool -genkeypair -noprompt \
+            -keystore "$PLAY_KEYSTORE_PATH" \
+            -storepass "$PLAY_KEYSTORE_PASSWORD" \
+            -keypass "$PLAY_KEY_PASSWORD" \
+            -alias "$PLAY_KEY_ALIAS" \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Temporary CI Verification, OU=QA, O=Ball Battles, L=Singapore, ST=Singapore, C=SG"
+          python3 tools/prepare-android-project.py --enable-release-signing
+          cd android
+          ./gradlew --no-daemon --stacktrace bundleRelease
+
       - name: Build signed Google Play App Bundle
         if: steps.signing.outputs.configured == 'true'
         env:
