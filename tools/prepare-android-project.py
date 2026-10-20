@@ -57,7 +57,7 @@ if args.enable_release_signing:
         end += 1
     if depth:
         sys.exit(f"Unbalanced release build type braces in {app_gradle}.")
-    block = gradle[match.start():end]
+    block = gradle[match_start:end]
     if re.search(r"signingConfig\s+signingConfigs\.debug", block):
         block = re.sub(r"signingConfig\s+signingConfigs\.debug",
                        "signingConfig signingConfigs.release", block, count=1)
@@ -66,6 +66,6 @@ if args.enable_release_signing:
     else:
         block = re.sub(r"(release\s*\{)", r"\1\n            signingConfig signingConfigs.release",
                        block, count=1)
-    gradle = gradle[:match.start()] + block + gradle[end:]
+    gradle = gradle[:match_start] + block + gradle[end:]
     app_gradle.write_text(gradle, encoding="utf-8")
     print("Configured release signing using PLAY_KEYSTORE_* environment variables.")
