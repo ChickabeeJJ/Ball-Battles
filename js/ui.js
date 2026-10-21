@@ -445,7 +445,8 @@
         const tut = el('button', 'btn', 'Show Tutorial');
         tut.onclick = () => { BB.audio.play('click'); UI.onClose = null; UI.close(); app.onSettingsClosed(); if (app.state === 'menu') UI.tutorial(); else UI.toast('Finish the battle to see the tutorial'); };
         const privacyPolicy = el('a', 'btn', 'Privacy Policy');
-        const hostedOnCrazyGames = /(^|\\.)crazygames\\.com$/i.test(window.location.hostname);
+        const host = window.location.hostname.toLowerCase();
+        const hostedOnCrazyGames = host === 'crazygames.com' || host.endsWith('.crazygames.com');
         privacyPolicy.href = hostedOnCrazyGames ? 'https://ball-battles-phi.vercel.app/privacy-policy' : 'privacy-policy.html';
         if (hostedOnCrazyGames) { privacyPolicy.target = '_blank'; privacyPolicy.rel = 'noopener noreferrer'; }
         privacyPolicy.setAttribute('aria-label', 'Read the Ball Battles Privacy Policy');
