@@ -40,7 +40,7 @@ async function newGame(label) {
       BB.save.write();
     }
   });
-  await page.addStyleTag({ content: '#banner{display:none!important} .tut{display:none!important} *{-webkit-tap-highlight-color:transparent!important}' });
+  await page.addStyleTag({ content: '#banner{display:none!important} .tut{display:none!important} #btnStart.ps-hl{position:static!important;z-index:auto!important;animation:none!important;transform:none!important} *{-webkit-tap-highlight-color:transparent!important}' });
   await page.waitForTimeout(500);
   return { context, page };
 }
@@ -74,9 +74,9 @@ async function closeGame(g) { await g.context.close(); }
 // 2. A real rendered 1v1 battle, advanced at a deterministic simulation seed.
 {
   const g = await newGame('battle-classic');
-  await configure(g.page, '1v1', 'classic', ['phoenix', 'chainsaw', 'sword', 'dagger', 'axe', 'unarmed'], 150);
-  await g.page.evaluate(seed => { BBCapture.start(seed); BB.app.impact = null; }, 43);
-  await g.page.evaluate(([frames, fps]) => BBCapture.advance(frames, fps, true), [48, FPS]);
+  await configure(g.page, '1v1', 'classic', ['claymore', 'chainsaw', 'sword', 'dagger', 'axe', 'unarmed'], 100);
+  await g.page.evaluate(seed => { BBCapture.start(seed); BB.app.impact = null; }, 3);
+  await g.page.evaluate(([frames, fps]) => BBCapture.advance(frames, fps, true), [60, FPS]);
   await snap(g.page, '02-live-battle.png');
   await closeGame(g);
 }
@@ -84,9 +84,9 @@ async function closeGame(g) { await g.context.close(); }
 // 3. A six-ball free-for-all on a hazard map to show the game's variety.
 {
   const g = await newGame('battle-ffa');
-  await configure(g.page, 'ffa', 'saws', ['bow', 'wrench', 'grimoire', 'spiky', 'axe', 'unarmed'], 180);
-  await g.page.evaluate(seed => { BBCapture.start(seed); BB.app.impact = null; }, 7);
-  await g.page.evaluate(([frames, fps]) => BBCapture.advance(frames, fps, true), [60, FPS]);
+  await configure(g.page, 'ffa', 'saws', ['firestaff', 'thunderrod', 'guitar', 'kunai', 'axe', 'unarmed'], 100);
+  await g.page.evaluate(seed => { BBCapture.start(seed); BB.app.impact = null; }, 8);
+  await g.page.evaluate(([frames, fps]) => BBCapture.advance(frames, fps, true), [93, FPS]);
   await snap(g.page, '03-free-for-all.png');
   await closeGame(g);
 }
