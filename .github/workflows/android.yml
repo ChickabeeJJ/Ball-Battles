@@ -1,0 +1,148 @@
+name: Android build
+
+on:
+  push:
+    branches:
+      - android/capacitor-play-store
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-android:
+    name: Build Ball Battles for Android
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools"
+
+      - name: Install Android API 36
+        run: |
+          yes | sdkmanager --licenses >/dev/null
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+
+      - name: Install Node dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Prepare the self-contained game bundle
+        run: npm run build:android-web
+
+      - name: Generate Capacitor Android project
+        run: npx cap add android
+
+      - name: Sync and configure Android project
+        run: |
+          npx cap sync android
+          python3 tools/prepare-android-project.py
+
+      - name: Build debug APK
+        run: |
+          cd android
+          ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Verify APK package ID and target API
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          BADGING="$RUNNER_TEMP/ball-battles-apk-badging.txt"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" > "$BADGING"
+          APP_ID="$(sed -n "s/^package: name='\\([^']*\\)'.*/\\1/p" "$BADGING" | head -n1)"
+          TARGET_API="$(sed -n "s/.*targetSdkVersion:'\\([^']*\\)'.*/\\1/p" "$BADGING" | head -n1)"
+          echo "APK package ID: $APP_ID"
+          echo "APK target API: $TARGET_API"
+          test "$APP_ID" = "com.chickabeejj.ballbattles"
+          test "$TARGET_API" -ge 36
+
+      - name: Publish debug APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ball-battles-android-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Prepare optional Google Play release signing
+        id: signing
+        env:
+          PLAY_KEYSTORE_BASE64: ${{ secrets.PLAY_KEYSTORE_BASE64 }}
+          PLAY_KEYSTORE_PASSWORD: ${{ secrets.PLAY_KEYSTORE_PASSWORD }}
+          PLAY_KEY_ALIAS: ${{ secrets.PLAY_KEY_ALIAS }}
+          PLAY_KEY_PASSWORD: ${{ secrets.PLAY_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$PLAY_KEYSTORE_BASE64" && -z "$PLAY_KEYSTORE_PASSWORD" && -z "$PLAY_KEY_ALIAS" && -z "$PLAY_KEY_PASSWORD" ]]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "No release keystore secrets configured; skipping signed AAB."
+            exit 0
+          fi
+          if [[ -z "$PLAY_KEYSTORE_BASE64" || -z "$PLAY_KEYSTORE_PASSWORD" || -z "$PLAY_KEY_ALIAS" || -z "$PLAY_KEY_PASSWORD" ]]; then
+            echo "All four PLAY_KEYSTORE_* secrets must be configured together." >&2
+            exit 1
+          fi
+          echo "$PLAY_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/play-upload-key.jks"
+          echo "configured=true" >> "$GITHUB_OUTPUT"
+
+      - name: Verify release bundle build with a disposable key
+        if: steps.signing.outputs.configured != 'true'
+        env:
+          PLAY_KEYSTORE_PATH: ${{ runner.temp }}/throwaway-ci-key.jks
+          PLAY_KEYSTORE_PASSWORD: temporary-ci-store-97241
+          PLAY_KEY_ALIAS: temporary-ci-key
+          PLAY_KEY_PASSWORD: temporary-ci-store-97241
+        run: |
+          set -euo pipefail
+          keytool -genkeypair -noprompt \
+            -keystore "$PLAY_KEYSTORE_PATH" \
+            -storepass "$PLAY_KEYSTORE_PASSWORD" \
+            -keypass "$PLAY_KEY_PASSWORD" \
+            -alias "$PLAY_KEY_ALIAS" \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Temporary CI Verification, OU=QA, O=Ball Battles, L=Singapore, ST=Singapore, C=SG"
+          python3 tools/prepare-android-project.py --enable-release-signing
+          cd android
+          ./gradlew --no-daemon --stacktrace bundleRelease
+
+      - name: Build signed Google Play App Bundle
+        if: steps.signing.outputs.configured == 'true'
+        env:
+          PLAY_KEYSTORE_PATH: ${{ runner.temp }}/play-upload-key.jks
+          PLAY_KEYSTORE_PASSWORD: ${{ secrets.PLAY_KEYSTORE_PASSWORD }}
+          PLAY_KEY_ALIAS: ${{ secrets.PLAY_KEY_ALIAS }}
+          PLAY_KEY_PASSWORD: ${{ secrets.PLAY_KEY_PASSWORD }}
+        run: |
+          python3 tools/prepare-android-project.py --enable-release-signing
+          cd android
+          ./gradlew --no-daemon --stacktrace bundleRelease
+
+      - name: Publish Google Play App Bundle artifact
+        if: steps.signing.outputs.configured == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ball-battles-google-play-aab
+          path: android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+          retention-days: 14
