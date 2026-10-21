@@ -447,7 +447,7 @@
         const privacyPolicy = el('a', 'btn', 'Privacy Policy');
         const host = window.location.hostname.toLowerCase();
         const hostedOnCrazyGames = host === 'crazygames.com' || host.endsWith('.crazygames.com');
-        privacyPolicy.href = hostedOnCrazyGames ? 'https://ball-battles-phi.vercel.app/privacy-policy' : 'privacy-policy.html';
+        privacyPolicy.href = hostedOnCrazyGames ? 'https://ballvsball.vercel.app/privacy/' : 'privacy-policy.html';
         if (hostedOnCrazyGames) { privacyPolicy.target = '_blank'; privacyPolicy.rel = 'noopener noreferrer'; }
         privacyPolicy.setAttribute('aria-label', 'Read the Ball Battles Privacy Policy');
         privacyPolicy.style.display = 'block';
