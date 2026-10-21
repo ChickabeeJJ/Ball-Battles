@@ -33,6 +33,7 @@ async function newGame(label) {
   await page.waitForFunction(() => window.BB && window.BBCapture && window.BB.app && window.BB.app.state === 'menu', { timeout: 60000 });
   await page.evaluate(() => {
     document.querySelectorAll('.tut').forEach(node => node.remove());
+    document.getElementById('btnStart')?.classList.remove('ps-hl');
     if (BB.save && BB.save.data) {
       BB.save.data.firstFight = 'done';
       BB.save.data.tutorialDone = true;
