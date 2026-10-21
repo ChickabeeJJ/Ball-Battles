@@ -7,6 +7,7 @@ cd "$ROOT"
 rm -rf www
 mkdir -p www
 cp index.html www/index.html
+cp privacy-policy.html www/privacy-policy.html
 cp -R css fonts js lib music www/
 
 # The CrazyGames SDK is only for the browser-hosted CrazyGames build.
