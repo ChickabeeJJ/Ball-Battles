@@ -65,13 +65,13 @@ cd android
 
 The policy is in `privacy-policy.html` and the game Settings menu links to it. The Android build script copies it into the packaged app, so players can read it from inside the app as well.
 
-The repository's existing public site is hosted at Vercel: https://ball-battles-phi.vercel.app. To publish the new policy on that production site:
+The repository's production site is hosted at Vercel: https://ballvsball.vercel.app. The policy is also published as a folder-based route at `/privacy/`. To publish the new policy on that production site:
 
 1. Open the existing pull request: https://github.com/ChickabeeJJ/Ball-Battles/pull/1
 2. Review the changes and choose **Merge pull request**. This pull request contains the Android build setup as well as the privacy-policy page and in-game link.
 3. Wait for Vercel's production deployment for the repository's default branch to finish successfully.
-4. Open https://ball-battles-phi.vercel.app/privacy-policy in a private/incognito window. Confirm it loads without a GitHub sign-in, shows the **Ball Battles Privacy Policy** heading, and works from your region.
-5. In Google Play Console, open your app's **App content / Privacy policy** section (the exact menu wording can vary), enter `https://ball-battles-phi.vercel.app/privacy-policy`, save, and finish the declaration.
+4. Open https://ballvsball.vercel.app/privacy/ in a private/incognito window. Confirm it loads without a GitHub sign-in, shows the **Ball Battles Privacy Policy** heading, and works from your region.
+5. In Google Play Console, open your app's **App content / Privacy policy** section (the exact menu wording can vary), enter `https://ballvsball.vercel.app/privacy/`, save, and finish the declaration.
 
 Do not submit the link until you have checked that it is live and publicly accessible. The GitHub Issues page is public: players should not include sensitive or personal information in an issue. The policy and the Play Console **Data safety** answers must accurately match the version of the app you submit; update them if you later add ads, analytics, accounts, cloud saves, or other data collection.
 ## Important pre-release checks
