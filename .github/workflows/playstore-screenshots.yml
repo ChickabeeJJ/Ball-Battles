@@ -1,0 +1,77 @@
+name: Capture Play Store Screenshots
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/playstore-screenshots.yml"
+      - "tools/playstore-screenshots.mjs"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: playstore-screenshots
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    name: Render real Ball Battles screenshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out game
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start local game server
+        run: |
+          python3 -m http.server 8080 --bind 127.0.0.1 > /tmp/ball-battles-http.log 2>&1 &
+          echo $! > /tmp/ball-battles-http.pid
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8080/index.html >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/ball-battles-http.log
+          exit 1
+
+      - name: Capture screenshots
+        run: node tools/playstore-screenshots.mjs
+        env:
+          BASE: http://127.0.0.1:8080
+          OUT: playstore-screenshots
+
+      - name: Verify screenshot dimensions
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import struct
+          files = sorted(Path("playstore-screenshots").glob("*.png"))
+          assert len(files) == 6, f"Expected 6 screenshots, got {len(files)}"
+          for f in files:
+              with f.open("rb") as stream:
+                  stream.seek(16)
+                  width, height = struct.unpack(">II", stream.read(8))
+              assert (width, height) == (1080, 1920), f"{f}: unexpected size {width}x{height}"
+              print(f"{f}: {width}x{height}")
+          PY
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: ball-battles-play-store-screenshots
+          path: playstore-screenshots/*.png
+          if-no-files-found: error
+          retention-days: 14
