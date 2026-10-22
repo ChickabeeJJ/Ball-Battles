@@ -453,7 +453,6 @@
         privacyPolicy.style.display = 'block';
         privacyPolicy.style.textAlign = 'center';
         privacyPolicy.style.textDecoration = 'none';
-        body.appendChild(privacyPolicy);
         // Tip jar: only on our own website. CrazyGames and Google Play don't allow outside payment links.
         const inApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
         if (!hostedOnCrazyGames && !app.isCrazyGames() && !inApp) {
@@ -463,6 +462,7 @@
           coffee.onclick = () => BB.audio.play('click');
           body.appendChild(coffee);
         }
+        body.appendChild(privacyPolicy);
         body.appendChild(tut);
       }, { onClose: () => app.onSettingsClosed() });
     },

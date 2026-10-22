@@ -26,7 +26,7 @@
       t0: performance.now(), stage: 0, sub: 0, stageT: performance.now(), shown: 0, raf: 0, lastDone: -1,
       tick() {
         const L = App.loader, now = performance.now(), N = L.STAGES.length;
-        const tk = Math.min(1, (now - L.t0) / 1960); // the intro fight (at 0.825x) lasts ~1.75s
+        const tk = Math.min(1, (now - L.t0) / 2500); // the intro fight (at 0.825x) lasts ~1.75s
         const timeCap = App.capture ? 1 : 1 - Math.pow(1 - tk, 2);
         const creep = L.stage >= N ? 0 : Math.max(L.sub, 0.88 * (1 - Math.exp(-(now - L.stageT) / 436)));
         const realCap = Math.min(1, (L.stage + creep) / N);
@@ -56,12 +56,12 @@
         this.set(this.STAGES.length);
         await new Promise((r) => {
           const skip = () => { this.shown = 1; this.tick(); r(); };
-          const chk = () => (this.shown >= 1 ? setTimeout(r, 80) : requestAnimationFrame(chk));
+          const chk = () => (this.shown >= 1 && performance.now() - this.t0 > 2700 ? setTimeout(r, 120) : requestAnimationFrame(chk));
           if (App.capture) { skip(); return; }
           chk(); el.addEventListener('pointerdown', skip, { once: true }); window.addEventListener('keydown', skip, { once: true });
         });
         el.classList.add('out');
-        setTimeout(() => el.remove(), 300);
+        setTimeout(() => el.remove(), 650);
       },
     },
 
