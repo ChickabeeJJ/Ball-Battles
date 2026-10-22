@@ -1853,49 +1853,51 @@ body.ui-hidden #btnHideUI.hide-ui-btn { display:none!important; }
 
 /* ---------- cinematic loader ---------- */
 #loader.cn { position: fixed; inset: 0; z-index: 10000; background: #050409; overflow: hidden; color: #fff; display: grid; place-items: center; cursor: pointer; user-select: none; }
-.cn-bg { position: absolute; inset: 0; opacity: 0; animation: cnFade .5s 1.25s ease-out forwards; }
+.cn-bg { position: absolute; inset: 0; opacity: 0; animation: cnFade .5s 1.15s ease-out forwards; }
 .cn-split { position: absolute; inset: 0; background: linear-gradient(105deg, #0d2a6e 0 49.6%, #fff 49.6% 50.4%, #6e1a0d 50.4% 100%); opacity: .55; mask: radial-gradient(circle at 50% 45%, #000 0, transparent 75%); -webkit-mask: radial-gradient(circle at 50% 45%, #000 0, transparent 75%); }
 .cn-rays { position: absolute; inset: -60%; background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,220,120,.10) 0 5deg, transparent 5deg 15deg); animation: spin 18s linear infinite; }
+.cn-embers { position: absolute; inset: 0; pointer-events: none; }
 .cn-embers i { position: absolute; bottom: -10px; width: var(--sz); height: var(--sz); border-radius: 50%; background: #ffb347; box-shadow: 0 0 8px #ff7a1a; opacity: 0; animation: cnEmber var(--du) linear var(--dl) infinite; }
 @keyframes cnEmber { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: .9; } 100% { transform: translateY(-105vh) translateX(30px); opacity: 0; } }
-.cn-shake { position: relative; width: 100%; display: flex; flex-direction: column; align-items: center; animation: cnShake .45s 1.05s both; }
+.cn-shake { position: relative; width: 100%; display: flex; flex-direction: column; align-items: center; animation: cnShake .45s 1.15s both; }
 @keyframes cnShake { 0%,100% { transform: none; } 15% { transform: translate(-9px, 5px); } 30% { transform: translate(8px, -6px); } 45% { transform: translate(-6px, -3px); } 60% { transform: translate(5px, 4px); } 80% { transform: translate(-2px, 2px); } }
-.cn-tag { position: absolute; top: 50%; left: 0; right: 0; text-align: center; transform: translateY(-50%); font-family: var(--display); letter-spacing: .5em; font-size: clamp(14px, 3.4vw, 22px); color: #cfc8e8; opacity: 0; animation: cnTag 1s .1s ease both; }
+.cn-tag { position: absolute; top: 50%; left: 0; right: 0; text-align: center; transform: translateY(-50%); font-family: var(--display); letter-spacing: .5em; font-size: clamp(14px, 3.4vw, 22px); color: #cfc8e8; opacity: 0; animation: cnTag .75s 0s ease both; }
 @keyframes cnTag { 0% { opacity: 0; letter-spacing: 1.2em; } 35%,70% { opacity: 1; letter-spacing: .5em; } 100% { opacity: 0; letter-spacing: .35em; } }
-.cn-arena { position: relative; width: min(84vw, 520px); height: 120px; }
-.cn-ball { position: absolute; top: 50%; width: 76px; height: 76px; margin-top: -38px; border-radius: 50%; border: 5px solid #111; z-index: 2; }
-.cn-ball b { position: absolute; left: 14px; top: 11px; width: 22px; height: 12px; border-radius: 50%; background: rgba(255,255,255,.5); transform: rotate(-30deg); }
-.cn-ball.l { left: calc(50% - 76px); background: radial-gradient(circle at 35% 30%, #6fa8ff, #1e5bd8 65%); box-shadow: 0 0 30px rgba(80,140,255,.7); animation: cnInL .75s .85s cubic-bezier(.6,0,.9,.5) both, cnBackL .9s 1.6s cubic-bezier(.2,.9,.3,1) forwards; }
-.cn-ball.r { left: 50%; background: radial-gradient(circle at 35% 30%, #ff8f6b, #e2391f 65%); box-shadow: 0 0 30px rgba(255,110,60,.7); animation: cnInR .75s .85s cubic-bezier(.6,0,.9,.5) both, cnBackR .9s 1.6s cubic-bezier(.2,.9,.3,1) forwards; }
+.cn-arena { position: relative; width: min(90vw, 560px); height: clamp(150px, 26vh, 230px); }
+.cn-ball { --s: clamp(76px, 22vw, 112px); position: absolute; top: 50%; width: var(--s); height: var(--s); margin-top: calc(var(--s) / -2); border-radius: 50%; border: 5px solid #111; z-index: 2; }
+.cn-ball b { position: absolute; left: 18%; top: 14%; width: 30%; height: 16%; border-radius: 50%; background: rgba(255,255,255,.5); transform: rotate(-30deg); }
+.cn-ball.l { left: calc(50% - var(--s)); background: radial-gradient(circle at 35% 30%, #6fa8ff, #1e5bd8 65%); box-shadow: 0 0 30px rgba(80,140,255,.7); animation: cnInL .7s .45s cubic-bezier(.6,0,.9,.5) both, cnBackL .9s 1.15s cubic-bezier(.2,.9,.3,1) forwards, cnBob 2.4s 2.05s ease-in-out infinite; }
+.cn-ball.r { left: 50%; background: radial-gradient(circle at 35% 30%, #ff8f6b, #e2391f 65%); box-shadow: 0 0 30px rgba(255,110,60,.7); animation: cnInR .7s .45s cubic-bezier(.6,0,.9,.5) both, cnBackR .9s 1.15s cubic-bezier(.2,.9,.3,1) forwards, cnBob 2.4s 2.25s ease-in-out infinite; }
 @keyframes cnInL { from { transform: translateX(-70vw); } }
 @keyframes cnInR { from { transform: translateX(70vw); } }
-@keyframes cnBackL { to { transform: translateX(-28vw) scale(.8); opacity: .0; } }
-@keyframes cnBackR { to { transform: translateX(28vw) scale(.8); opacity: .0; } }
-.cn-trail { position: absolute; top: 8px; height: 50px; width: 70vw; border-radius: 30px; opacity: 0; animation: cnTrail .75s .85s ease-in both; }
+@keyframes cnBackL { to { transform: translateX(min(-22vw, -110px)) rotate(-12deg); } }
+@keyframes cnBackR { to { transform: translateX(max(22vw, 110px)) rotate(12deg); } }
+@keyframes cnBob { 50% { margin-top: calc(var(--s) / -2 - 8px); } }
+.cn-trail { position: absolute; top: 8px; height: 50px; width: 70vw; border-radius: 30px; opacity: 0; animation: cnTrail .7s .45s ease-in both; }
 .cn-ball.l .cn-trail { right: 50%; background: linear-gradient(90deg, transparent, rgba(90,150,255,.7)); }
 .cn-ball.r .cn-trail { left: 50%; background: linear-gradient(-90deg, transparent, rgba(255,120,70,.7)); }
 @keyframes cnTrail { 0% { opacity: 0; } 30% { opacity: 1; } 99% { opacity: .8; } 100% { opacity: 0; } }
-.cn-wp { position: absolute; top: 31px; width: 58px; height: 8px; border: 2px solid #111; border-radius: 2px; background: linear-gradient(#fff, #b8c4d4); }
-.cn-ball.l .cn-wp { left: 62px; transform: rotate(-18deg); transform-origin: left center; }
-.cn-ball.r .cn-wp { right: 62px; transform: rotate(18deg); transform-origin: right center; background: linear-gradient(#ffe9a8, #c99b2a); }
-.cn-flash { position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px; border-radius: 50%; background: #fff; box-shadow: 0 0 90px 50px #fff, 0 0 240px 120px rgba(255,210,63,.6); opacity: 0; animation: cnFlash .8s 1.6s ease-out forwards; z-index: 3; }
+.cn-wp { position: absolute; top: calc(50% - 5px); width: calc(var(--s) * .8); height: 9px; border: 2px solid #111; border-radius: 2px; background: linear-gradient(#fff, #b8c4d4); }
+.cn-ball.l .cn-wp { left: 82%; transform: rotate(-18deg); transform-origin: left center; }
+.cn-ball.r .cn-wp { right: 82%; transform: rotate(18deg); transform-origin: right center; background: linear-gradient(#ffe9a8, #c99b2a); }
+.cn-flash { position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px; border-radius: 50%; background: #fff; box-shadow: 0 0 90px 50px #fff, 0 0 240px 120px rgba(255,210,63,.6); opacity: 0; animation: cnFlash .8s 1.15s ease-out forwards; z-index: 3; }
 @keyframes cnFlash { 0% { opacity: 1; transform: scale(.3); } 100% { opacity: 0; transform: scale(3.4); } }
-.cn-ring { position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px; border-radius: 50%; border: 6px solid #ffd23f; opacity: 0; animation: cnRing .9s 1.6s ease-out forwards; }
-.cn-ring.r2 { border-color: #fff; animation-delay: 1.72s; }
+.cn-ring { position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px; border-radius: 50%; border: 6px solid #ffd23f; opacity: 0; animation: cnRing .9s 1.15s ease-out forwards; }
+.cn-ring.r2 { border-color: #fff; animation-delay: 1.27s; }
 @keyframes cnRing { 0% { opacity: 1; transform: scale(.4); } 100% { opacity: 0; transform: scale(12); border-width: 1px; } }
-.cn-sparks i { position: absolute; left: 50%; top: 50%; width: 46px; height: 3px; margin-top: -1.5px; background: linear-gradient(90deg, #fff, #ffd23f, transparent); transform-origin: left center; opacity: 0; animation: cnSpark .6s calc(1.6s + var(--d)) ease-out forwards; }
+.cn-sparks i { position: absolute; left: 50%; top: 50%; width: 46px; height: 3px; margin-top: -1.5px; background: linear-gradient(90deg, #fff, #ffd23f, transparent); transform-origin: left center; opacity: 0; animation: cnSpark .6s calc(1.15s + var(--d)) ease-out forwards; }
 @keyframes cnSpark { 0% { opacity: 1; transform: rotate(var(--a)) translateX(10px) scaleX(.3); } 100% { opacity: 0; transform: rotate(var(--a)) translateX(150px) scaleX(1); } }
-.cn-title { position: relative; margin: -40px 0 0; display: flex; align-items: center; gap: .18em; font-family: var(--display); font-size: clamp(48px, 13vw, 104px); line-height: 1; letter-spacing: .02em; overflow: hidden; padding: 0 .1em; }
+.cn-title { position: relative; margin: 6px 0 0; display: flex; align-items: center; gap: .18em; font-family: var(--display); font-size: clamp(58px, 17vw, 128px); line-height: 1; letter-spacing: .02em; overflow: hidden; padding: 0 .1em; }
 .cn-title .w1, .cn-title .w2 { text-shadow: 0 5px 0 #111, 0 0 30px rgba(0,0,0,.6); opacity: 0; }
-.cn-title .w1 { color: #f2f6ff; animation: cnSlamL .5s 1.75s cubic-bezier(.2,1.4,.4,1) both; }
-.cn-title .w2 { color: #ffd23f; animation: cnSlamR .5s 1.85s cubic-bezier(.2,1.4,.4,1) both; }
+.cn-title .w1 { color: #f2f6ff; animation: cnSlamL .5s 1.35s cubic-bezier(.2,1.4,.4,1) both; }
+.cn-title .w2 { color: #ffd23f; animation: cnSlamR .5s 1.45s cubic-bezier(.2,1.4,.4,1) both; }
 @keyframes cnSlamL { from { opacity: 0; transform: translateX(-40%) scale(2.2); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
 @keyframes cnSlamR { from { opacity: 0; transform: translateX(40%) scale(2.2); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
-.cn-title .vs { font-size: .42em; background: #e8263f; color: #fff; border: 4px solid #111; border-radius: 8px; padding: .1em .22em; transform: rotate(-8deg); box-shadow: 0 4px 0 #111; opacity: 0; animation: cnStamp .4s 2.05s cubic-bezier(.2,1.6,.4,1) both; }
+.cn-title .vs { font-size: .42em; background: #e8263f; color: #fff; border: 4px solid #111; border-radius: 8px; padding: .1em .22em; transform: rotate(-8deg); box-shadow: 0 4px 0 #111; opacity: 0; animation: cnStamp .4s 1.65s cubic-bezier(.2,1.6,.4,1) both; }
 @keyframes cnStamp { from { opacity: 0; transform: rotate(-8deg) scale(3.2); } to { opacity: 1; transform: rotate(-8deg) scale(1); } }
-.cn-sweep { position: absolute; top: 0; bottom: 0; width: 30%; left: -40%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.65), transparent); mix-blend-mode: overlay; animation: cnSweep .9s 2.35s ease-in-out both; pointer-events: none; }
+.cn-sweep { position: absolute; top: 0; bottom: 0; width: 30%; left: -40%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.65), transparent); mix-blend-mode: overlay; animation: cnSweep .9s 1.95s ease-in-out both; pointer-events: none; }
 @keyframes cnSweep { to { left: 120%; } }
-.cn-sub { margin-top: 14px; font-family: var(--display); letter-spacing: .45em; font-size: clamp(12px, 2.8vw, 17px); color: #ffcf6b; opacity: 0; animation: cnFade .6s 2.3s ease-out forwards; }
+.cn-sub { margin-top: 18px; font-family: var(--display); letter-spacing: .45em; font-size: clamp(12px, 2.8vw, 17px); color: #ffcf6b; opacity: 0; animation: cnFade .6s 1.9s ease-out forwards; }
 @keyframes cnFade { to { opacity: 1; } }
 .cn-bars { position: absolute; left: 0; right: 0; height: 10vh; background: #000; z-index: 3; animation: cnBars .7s ease-out both; }
 .cn-bars.top { top: 0; } .cn-bars.bot { bottom: 0; }
@@ -1911,3 +1913,7 @@ body.ui-hidden #btnHideUI.hide-ui-btn { display:none!important; }
 #loader.cn.out .cn-shake { transition: transform .65s ease-in; transform: scale(1.25); }
 @keyframes cnOut { 0% { opacity: 1; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { #loader.cn *, #loader.cn { animation-duration: .01s !important; animation-delay: 0s !important; } }
+.cn-emblem { position: absolute; left: 50%; top: 50%; width: min(120vw, 760px); aspect-ratio: 1; transform: translate(-50%, -50%) scale(.6); border-radius: 50%; opacity: 0;
+  background: radial-gradient(circle, rgba(255,210,63,.18) 0 18%, transparent 19% 30%, rgba(255,255,255,.06) 30.5% 31.5%, transparent 32% 44%, rgba(255,210,63,.08) 44.5% 45.5%, transparent 46%);
+  animation: cnEmb .9s 1.15s cubic-bezier(.2,1,.3,1) forwards, spin 40s linear 1.15s infinite; }
+@keyframes cnEmb { to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
