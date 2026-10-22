@@ -6,12 +6,20 @@
   "scripts": {
     "serve": "http-server -p 8080 -c-1 .",
     "build": "bash tools/build.sh",
+    "build:android-web": "bash tools/build-android-web.sh",
+    "android:sync": "npm run build:android-web && cap sync android",
+    "android:open": "cap open android",
     "test:sim": "node tools/simtest.js",
     "test:sdk": "node tools/sdktest.mjs",
     "art:covers": "node tools/covers.mjs",
     "art:videos": "node tools/capture.mjs"
   },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/core": "8.5.3"
+  },
   "devDependencies": {
+    "@capacitor/cli": "8.5.3",
     "http-server": "^14.1.1",
     "playwright": "^1.56.1"
   }

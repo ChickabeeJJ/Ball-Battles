@@ -1,0 +1,12 @@
+{
+  "appId": "com.chickabeejj.ballbattles",
+  "appName": "Ball Battles",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "backgroundColor": "#101018",
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false,
+    "captureInput": true
+  }
+}
