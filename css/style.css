@@ -1846,10 +1846,6 @@ body.ui-hidden #btnHideUI.hide-ui-btn { display:none!important; }
   to { transform:translateY(-5px) scale(1.035); }
 }
 
-/* Settings: Buy me a coffee (own website only) */
-.bmc-btn { display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; background: #ffdd00; color: #111; }
-.bmc-btn:hover { background: #ffe733; }
-.bmc-ic { font-size: 20px; line-height: 1; }
 
 /* ---------- cinematic loader ---------- */
 #loader.cn { position: fixed; inset: 0; z-index: 10000; background: #050409; overflow: hidden; color: #fff; display: grid; place-items: center; cursor: pointer; user-select: none; }
