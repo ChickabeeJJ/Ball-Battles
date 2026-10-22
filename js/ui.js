@@ -453,7 +453,6 @@
         privacyPolicy.style.display = 'block';
         privacyPolicy.style.textAlign = 'center';
         privacyPolicy.style.textDecoration = 'none';
-        body.appendChild(privacyPolicy);
         if (!app.isCrazyGames()) { // CrazyGames keeps its own cloud save; elsewhere the save lives on this device
           const del = el('button', 'btn red', 'Delete save data');
           del.onclick = () => {
@@ -474,6 +473,7 @@
           coffee.onclick = () => BB.audio.play('click');
           body.appendChild(coffee);
         }
+        body.appendChild(privacyPolicy);
         body.appendChild(tut);
       }, { onClose: () => app.onSettingsClosed() });
     },

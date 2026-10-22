@@ -7,10 +7,30 @@
   <meta name="description" content="Pick a weapon, drop two balls in the arena and watch them battle it out.">
   <link rel="preload" href="fonts/anton.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/pixelify.woff2" as="font" type="font/woff2" crossorigin>
+  <style>html,body{background:#050409}</style>
   <link rel="stylesheet" href="css/style.css">
   <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
 <body>
+  <div id="loader" class="cn" aria-label="Loading">
+    <div class="cn-bg"><div class="cn-rays"></div><div class="cn-split"></div></div>
+    <div class="cn-embers"><i style="left:0%;--dl:0.00s;--du:2.6s;--sz:2px"></i><i style="left:37%;--dl:0.23s;--du:3.1s;--sz:3px"></i><i style="left:74%;--dl:0.46s;--du:3.6s;--sz:4px"></i><i style="left:11%;--dl:0.69s;--du:4.1s;--sz:2px"></i><i style="left:48%;--dl:0.92s;--du:4.6s;--sz:3px"></i><i style="left:85%;--dl:1.15s;--du:2.6s;--sz:4px"></i><i style="left:22%;--dl:1.38s;--du:3.1s;--sz:2px"></i><i style="left:59%;--dl:1.61s;--du:3.6s;--sz:3px"></i><i style="left:96%;--dl:1.84s;--du:4.1s;--sz:4px"></i><i style="left:33%;--dl:2.07s;--du:4.6s;--sz:2px"></i><i style="left:70%;--dl:2.30s;--du:2.6s;--sz:3px"></i><i style="left:7%;--dl:0.13s;--du:3.1s;--sz:4px"></i><i style="left:44%;--dl:0.36s;--du:3.6s;--sz:2px"></i><i style="left:81%;--dl:0.59s;--du:4.1s;--sz:3px"></i><i style="left:18%;--dl:0.82s;--du:4.6s;--sz:4px"></i><i style="left:55%;--dl:1.05s;--du:2.6s;--sz:2px"></i><i style="left:92%;--dl:1.28s;--du:3.1s;--sz:3px"></i><i style="left:29%;--dl:1.51s;--du:3.6s;--sz:4px"></i><i style="left:66%;--dl:1.74s;--du:4.1s;--sz:2px"></i><i style="left:3%;--dl:1.97s;--du:4.6s;--sz:3px"></i><i style="left:40%;--dl:2.20s;--du:2.6s;--sz:4px"></i><i style="left:77%;--dl:0.03s;--du:3.1s;--sz:2px"></i><i style="left:14%;--dl:0.26s;--du:3.6s;--sz:3px"></i><i style="left:51%;--dl:0.49s;--du:4.1s;--sz:4px"></i><i style="left:88%;--dl:0.72s;--du:4.6s;--sz:2px"></i><i style="left:25%;--dl:0.95s;--du:2.6s;--sz:3px"></i></div>
+    <div class="cn-shake">
+      <div class="cn-tag">TWO BALLS ENTER</div>
+      <div class="cn-arena">
+        <div class="cn-ball l"><span class="cn-trail"></span><span class="cn-wp"></span><b></b></div>
+        <div class="cn-ball r"><span class="cn-trail"></span><span class="cn-wp"></span><b></b></div>
+        <div class="cn-flash"></div><div class="cn-ring"></div><div class="cn-ring r2"></div>
+        <div class="cn-sparks"><i style="--a:0deg;--d:0.00s"></i><i style="--a:30deg;--d:0.00s"></i><i style="--a:60deg;--d:0.00s"></i><i style="--a:90deg;--d:0.00s"></i><i style="--a:120deg;--d:0.00s"></i><i style="--a:150deg;--d:0.00s"></i><i style="--a:180deg;--d:0.00s"></i><i style="--a:210deg;--d:0.00s"></i><i style="--a:240deg;--d:0.00s"></i><i style="--a:270deg;--d:0.00s"></i><i style="--a:300deg;--d:0.00s"></i><i style="--a:330deg;--d:0.00s"></i></div>
+      </div>
+      <h1 class="cn-title"><span class="w1">BALL</span><span class="vs">VS</span><span class="w2">BALL</span><i class="cn-sweep"></i></h1>
+      <div class="cn-sub">ONLY ONE LEAVES</div>
+    </div>
+    <div class="cn-bars top"></div><div class="cn-bars bot"></div>
+    <div class="cn-foot"><div id="ldBar" class="cn-prog"><i><b></b></i><i><b></b></i><i><b></b></i><i><b></b></i><i><b></b></i></div>
+      <div class="cn-meta"><span id="ldTip">Contacting the arena...</span><span><span id="ldStep">1/5</span> · <span id="ldPct">0%</span></span></div></div>
+    <div class="cn-skip">Tap to skip</div>
+  </div>
   
   <div id="app" class="is-menu">
     <header id="topbar">
