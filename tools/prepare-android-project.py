@@ -25,6 +25,32 @@ for key in ("compileSdkVersion", "targetSdkVersion"):
 variables.write_text(text, encoding="utf-8")
 print("Configured compileSdkVersion and targetSdkVersion to API 36.")
 
+# Ball Vs Ball launcher icons (replace Capacitor's default icon).
+import shutil
+icons = root / "android-assets" / "res"
+res = root / "android" / "app" / "src" / "main" / "res"
+if icons.is_dir():
+    for src in icons.rglob("*.png"):
+        dst = res / src.relative_to(icons)
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(src, dst)
+    bg = res / "values" / "ic_launcher_background.xml"
+    if bg.is_file():
+        bg.write_text('<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#1E5BD8</color>\n</resources>\n', encoding="utf-8")
+    print("Installed Ball Vs Ball launcher icons.")
+
+# Play needs a higher versionCode on every upload: CI passes its run number.
+import os
+vc = os.environ.get("VERSION_CODE", "").strip()
+if vc.isdigit():
+    g = app_gradle.read_text(encoding="utf-8")
+    g, n = re.subn(r"(?m)^(\s*versionCode\s+)\d+", rf"\g<1>{int(vc)}", g)
+    g = re.sub(r'(?m)^(\s*versionName\s+)"[^"]*"', rf'\g<1>"1.0.{int(vc)}"', g)
+    if n != 1:
+        sys.exit("Could not set versionCode in app/build.gradle.")
+    app_gradle.write_text(g, encoding="utf-8")
+    print(f"versionCode {vc}, versionName 1.0.{vc}")
+
 if args.enable_release_signing:
     gradle = app_gradle.read_text(encoding="utf-8")
     if 'System.getenv("PLAY_KEYSTORE_PATH")' not in gradle:

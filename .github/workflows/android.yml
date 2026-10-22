@@ -131,6 +131,7 @@ jobs:
         if: steps.signing.outputs.configured == 'true'
         env:
           PLAY_KEYSTORE_PATH: ${{ runner.temp }}/play-upload-key.jks
+          VERSION_CODE: ${{ github.run_number }}
           PLAY_KEYSTORE_PASSWORD: ${{ secrets.PLAY_KEYSTORE_PASSWORD }}
           PLAY_KEY_ALIAS: ${{ secrets.PLAY_KEY_ALIAS }}
           PLAY_KEY_PASSWORD: ${{ secrets.PLAY_KEY_PASSWORD }}
