@@ -376,7 +376,7 @@
       BB.ui.open((sheet) => {
         const body = BB.ui.head(sheet, 'Rewards');
         M.rewardTabs(body, 'play');
-        body.appendChild(Object.assign(document.createElement('div'), { className: 'f-s', textContent: 'Play today to unlock coins. Resets every day.' }));
+        body.appendChild(Object.assign(document.createElement('div'), { className: 'f-s', textContent: 'Play today to unlock coins. Resets every day. Common+ ball odds: ' + BB.season.oddsText('common') + ' (one you don\'t own yet).' }));
         const list = document.createElement('div'); list.className = 'daily pt-track'; body.appendChild(list);
         const foot = document.createElement('div'); foot.className = 'sh-foot';
         const btn = document.createElement('button'); btn.className = 'btn';
@@ -546,7 +546,7 @@
         row.appendChild(btn); body.appendChild(row);
       });
       const fin = document.createElement('div'); fin.className = 'ev-final' + (all ? ' ready' : '');
-      fin.innerHTML = `<span class="rw-orb r-rare pt-orb beg-orb">?</span><div class="q-main"><div class="q-t">Grand prize: a Rare+ ball + ${BEGINNER_PRIZE} coins</div><div class="ev-f-s">${done} / ${BEGINNER.length} quests claimed</div></div>`;
+      fin.innerHTML = `<span class="rw-orb r-rare pt-orb beg-orb">?</span><div class="q-main"><div class="q-t">Grand prize: a Rare+ ball + ${BEGINNER_PRIZE} coins</div><div class="ev-f-s">${done} / ${BEGINNER.length} quests claimed · Odds: ${BB.season.oddsText('rare')}</div></div>`;
       const fb = document.createElement('button'); fb.className = 'btn ' + (all ? 'primary ev-claim' : ''); fb.textContent = 'Claim'; fb.disabled = !all;
       fb.onclick = () => {
         g.done = true; BB.save.data.coins += BEGINNER_PRIZE;

@@ -58,7 +58,15 @@
       Save.data = d;
       return d;
     },
+    // Settings → Delete save data: erase everything this game stored on the device, then restart fresh.
+    wipe() {
+      Save.wiped = true;
+      try { window.localStorage.clear(); } catch (e) { /* storage unavailable */ }
+      try { window.sessionStorage.clear(); } catch (e) { /* storage unavailable */ }
+      window.location.reload();
+    },
     write() {
+      if (Save.wiped) return;
       try { BB.sdk.setItem(KEY, JSON.stringify(Save.data)); } catch (e) { console.warn('save failed', e); }
     },
   });

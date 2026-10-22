@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - android/capacitor-play-store
+      - google-play
   workflow_dispatch:
 
 permissions:

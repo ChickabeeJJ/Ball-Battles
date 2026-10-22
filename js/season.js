@@ -329,6 +329,8 @@
       S.addXP(xp, 'Battle', true); // saved by afterBattle right after
     },
     // ---------------------------------------------------------------- rewards
+    // "85% Common · 14% Rare · 1% Epic": shown wherever a random ball can be earned
+    oddsText(tier) { return (ROLLS[tier] || ROLLS.rare).odds.map(([r, p]) => Math.round(p * 100) + '% ' + BB.RARITY[r].name).join(' · '); },
     grant(r) {
       const sv = BB.save.data, m = BB.meta.data();
       if (r.t === 'coins') { sv.coins += r.n; return { t: 'coins', n: r.n }; }

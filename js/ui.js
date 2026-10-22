@@ -449,11 +449,22 @@
         const hostedOnCrazyGames = host === 'crazygames.com' || host.endsWith('.crazygames.com');
         privacyPolicy.href = hostedOnCrazyGames ? 'https://ballvsball.vercel.app/privacy/' : 'privacy-policy.html';
         if (hostedOnCrazyGames) { privacyPolicy.target = '_blank'; privacyPolicy.rel = 'noopener noreferrer'; }
-        privacyPolicy.setAttribute('aria-label', 'Read the Ball Battles Privacy Policy');
+        privacyPolicy.setAttribute('aria-label', 'Read the Ball Vs Ball Privacy Policy');
         privacyPolicy.style.display = 'block';
         privacyPolicy.style.textAlign = 'center';
         privacyPolicy.style.textDecoration = 'none';
         body.appendChild(privacyPolicy);
+        if (!app.isCrazyGames()) { // CrazyGames keeps its own cloud save; elsewhere the save lives on this device
+          const del = el('button', 'btn red', 'Delete save data');
+          del.onclick = () => {
+            BB.audio.play('click');
+            UI.choice('Delete all save data?', [
+              { id: 'no', html: 'Cancel' },
+              { id: 'yes', html: '<b style="color:#ff6b6b">Delete everything</b> (coins, balls, progress, settings)' },
+            ], (id) => { if (id === 'yes') BB.save.wipe(); });
+          };
+          body.appendChild(del);
+        }
         body.appendChild(tut);
       }, { onClose: () => app.onSettingsClosed() });
     },
