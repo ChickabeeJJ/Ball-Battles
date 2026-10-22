@@ -1623,7 +1623,7 @@ html.cport .feat-row .bp-strip { margin-top: 0; }
 .tut.ps, .tut.pass { pointer-events: none; }
 .tut.pass .tut-card { pointer-events: auto; }
 .tut.ps .tut-spot { box-shadow: 0 0 0 9999px rgba(4,4,8,.86); }
-#btnStart.ps-hl { position: relative; z-index: 31; animation: psBtn 1.4s ease-in-out infinite; }
+#btnStart.ps-hl { animation: psBtn 1.4s ease-in-out infinite; }
 @keyframes psBtn { 0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,210,63,.7), 0 0 18px rgba(255,210,63,.5); } 50% { transform: scale(1.04); box-shadow: 0 0 0 8px rgba(255,210,63,0), 0 0 36px rgba(255,210,63,.85); } }
 .tut.ps .ps-card { pointer-events: auto; }
 .ps-spot { animation: psPulse 1.2s ease-in-out infinite; }
@@ -1846,3 +1846,7 @@ body.ui-hidden #btnHideUI.hide-ui-btn { display:none!important; }
   to { transform:translateY(-5px) scale(1.035); }
 }
 
+/* Settings: Buy me a coffee (own website only) */
+.bmc-btn { display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; background: #ffdd00; color: #111; }
+.bmc-btn:hover { background: #ffe733; }
+.bmc-ic { font-size: 20px; line-height: 1; }
