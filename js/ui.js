@@ -454,6 +454,15 @@
         privacyPolicy.style.textAlign = 'center';
         privacyPolicy.style.textDecoration = 'none';
         body.appendChild(privacyPolicy);
+        // Tip jar: only on our own website. CrazyGames and Google Play don't allow outside payment links.
+        const inApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+        if (!hostedOnCrazyGames && !app.isCrazyGames() && !inApp) {
+          const coffee = el('a', 'btn bmc-btn', '<span class="bmc-ic">☕</span> Buy me a coffee');
+          coffee.href = 'https://buymeacoffee.com/luojj2019o';
+          coffee.target = '_blank'; coffee.rel = 'noopener noreferrer';
+          coffee.onclick = () => BB.audio.play('click');
+          body.appendChild(coffee);
+        }
         body.appendChild(tut);
       }, { onClose: () => app.onSettingsClosed() });
     },
